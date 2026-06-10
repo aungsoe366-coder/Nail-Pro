@@ -1,0 +1,161 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isSuperAdmin() {
+      return isAuthenticated() && 
+        (request.auth.token.email.lower() == "aungsoe366@gmail.com" || 
+         request.auth.token.email.lower() == "pes@gmail.com" ||
+         request.auth.token.email.lower() == "aung@gmail.com" ||
+         request.auth.token.email.lower() == "peslover.lover366@gmail.com" ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) && 
+          get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'super_admin'));
+    }
+
+    function isMasterAccount() {
+      return isAuthenticated() && request.auth.token.email.lower() == "aungsoe366@gmail.com";
+    }
+
+    function isOwner() {
+      return isSuperAdmin() || (isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) &&
+        get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'owner');
+    }
+
+    function isCashier() {
+      return isOwner() || (isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) &&
+        get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'cashier');
+    }
+
+    function isStaff() {
+      return isCashier() || (isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) &&
+        get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'staff');
+    }
+
+    function isDocOwner(email) {
+      return isAuthenticated() && request.auth.token.email.lower() == email.lower();
+    }
+
+    function isValidString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidRole(role) {
+      return role in ['super_admin', 'owner', 'cashier', 'staff', 'customer'];
+    }
+
+    function isValidStatus(status) {
+      return status in ['active', 'deleted', 'inactive', 'on_leave'];
+    }
+
+    function isValidUser(data) {
+      return isValidString(data.name, 100) &&
+             isValidEmail(data.email) &&
+             isValidRole(data.role) &&
+             isValidStatus(data.status);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Master Access for Super Admin and Owner
+    match /{document=**} {
+      allow read, write: if isSuperAdmin() || isOwner();
+    }
+
+    match /users/{email} {
+      allow get: if true; 
+      allow list: if isStaff();
+      
+      allow create: if isMasterAccount() || 
+                      ((isOwner() || isDocOwner(email)) && 
+                       isValidUser(request.resource.data) &&
+                       (request.resource.data.role != 'super_admin'));
+      
+      allow update: if isMasterAccount() || 
+                      ((isOwner() || isDocOwner(email)) && 
+                       isValidUser(request.resource.data) &&
+                       (resource.data.role != 'owner' && resource.data.role != 'super_admin' &&
+                        request.resource.data.role != 'owner' && request.resource.data.role != 'super_admin'));
+      
+      allow delete: if isSuperAdmin() && resource.data.role != 'owner';
+    }
+
+    match /customers/{id} {
+      allow read: if isStaff() || (isAuthenticated() && (
+        ('email' in resource.data && resource.data.email.lower() == request.auth.token.email.lower()) ||
+        ('phone' in resource.data && request.auth.token.email.lower() == resource.data.phone + "@nailpro.com")
+      ));
+      allow create: if isStaff() || isAuthenticated();
+      allow update: if isStaff() || (isAuthenticated() && (
+        ('email' in resource.data && resource.data.email.lower() == request.auth.token.email.lower()) ||
+        ('phone' in resource.data && request.auth.token.email.lower() == resource.data.phone + "@nailpro.com")
+      ));
+      allow delete: if isStaff();
+    }
+
+    match /categories/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner();
+    }
+
+    match /services/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner();
+    }
+
+    match /expense_categories/{id} {
+      allow read: if isStaff();
+      allow write: if isOwner();
+    }
+
+    match /settings/{id} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner();
+    }
+
+    match /sales/{id} {
+      allow read: if isStaff();
+      allow create: if isCashier();
+      allow update: if isOwner();
+      allow delete: if isSuperAdmin();
+    }
+
+    match /expenses/{id} {
+      allow read: if isOwner();
+      allow write: if isOwner();
+    }
+
+    match /appointments/{id} {
+      allow read: if isStaff() || (isAuthenticated() && (request.auth.token.email.lower() == resource.data.customerEmail.lower() || request.auth.token.email.lower() == resource.data.creatorEmail.lower()));
+      allow create: if isAuthenticated();
+      allow update: if isStaff() || (isAuthenticated() && (request.auth.token.email.lower() == resource.data.customerEmail.lower() || request.auth.token.email.lower() == resource.data.creatorEmail.lower()));
+      allow delete: if isStaff();
+    }
+
+    match /audit_logs/{id} {
+      allow read: if isSuperAdmin();
+      allow create: if isAuthenticated();
+    }
+
+    match /notifications/{id} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+  }
+}

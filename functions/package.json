@@ -1,0 +1,12 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for NailPro",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^11.10.1",
+    "firebase-functions": "^4.3.0"
+  },
+  "engines": {
+    "node": "18"
+  }
+}

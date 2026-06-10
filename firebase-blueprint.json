@@ -1,0 +1,337 @@
+{
+  "entities": {
+    "Category": {
+      "title": "Category",
+      "description": "Service categories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "icon": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Service": {
+      "title": "Service",
+      "description": "Services offered by the studio",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "duration": { "type": "number" }
+      },
+      "required": ["id", "name", "price"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Sales records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "dateTime": { "type": "string" },
+        "staff": { "type": "string" },
+        "staffEmail": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "total": { "type": "number" },
+        "payments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "method": { "type": "string", "enum": ["Cash", "KBZPay", "WavePay", "AYA Pay", "CB PAY", "OK$"] },
+              "amount": { "type": "number" }
+            }
+          }
+        },
+        "method": { "type": "string" },
+        "commission": { "type": "number" },
+        "pointsEarned": { "type": "number" },
+        "pointsRedeemed": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "qty": { "type": "number" },
+              "price": { "type": "number" },
+              "disP": { "type": "number" }
+            }
+          }
+        }
+      },
+      "required": ["id", "date", "dateTime", "staff", "staffEmail", "total", "payments", "items"]
+    },
+    "Expense": {
+      "title": "Expense",
+      "description": "Expense records",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string" },
+        "desc": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "date", "desc", "amount"]
+    },
+    "ExpenseCategory": {
+      "title": "ExpenseCategory",
+      "description": "Categories for expenses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profiles and roles",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "description": "Primary email address" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "role": { "type": "string", "enum": ["super_admin", "owner", "cashier", "staff", "customer"], "description": "User role for RBAC" },
+        "commission": { "type": "number", "description": "Commission percentage for staff" },
+        "points": { "type": "number", "description": "Loyalty points" },
+        "mustChangePassword": { "type": "boolean", "description": "Flag to force password change" },
+        "dob": { "type": "string", "description": "Date of birth (YYYY-MM-DD)" },
+        "last4Digits": { "type": "string", "description": "Last 4 digits of phone for verification" },
+        "status": { "type": "string", "enum": ["active", "inactive", "on_leave", "deleted"], "description": "Account status" },
+        "photoURL": { "type": "string", "description": "URL of profile photo" },
+        "bio": { "type": "string", "description": "Staff member bio" },
+        "specialties": { "type": "array", "items": { "type": "string" }, "description": "Array of specialized category names" },
+        "workingDays": { "type": "array", "items": { "type": "string" }, "description": "Array of working days" },
+        "rating": { "type": "number", "description": "Staff performance rating" },
+        "totalSalesCount": { "type": "number", "description": "Total sales handled" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "role", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "System audit logs for sensitive operations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "action": { "type": "string" },
+        "resource": { "type": "string" },
+        "details": { "type": "object" }
+      },
+      "required": ["timestamp", "userId", "action", "resource"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "System notifications for users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "warning", "success", "error"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "createdAt"]
+    },
+    "DeletedUser": {
+      "title": "DeletedUser",
+      "description": "Audit trail for deleted users",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "deletedAt": { "type": "string" },
+        "deletedBy": { "type": "string" },
+        "originalData": { "type": "object" }
+      },
+      "required": ["uid", "email", "deletedAt"]
+    },
+    "ShopSettings": {
+      "title": "ShopSettings",
+      "description": "General shop settings",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "addr": { "type": "string" },
+        "ph": { "type": "string" },
+        "receiptHeader": { "type": "string" },
+        "receiptFooter": { "type": "string" }
+      },
+      "required": ["name", "addr", "ph"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer profiles",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "notes": { "type": "string" },
+        "points": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "phone", "points", "createdAt"]
+    },
+    "Appointment": {
+      "title": "Appointment",
+      "description": "Appointment bookings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "customerId": { "type": "string" },
+        "serviceName": { "type": "string" },
+        "serviceId": { "type": "string" },
+        "staffName": { "type": "string" },
+        "staffEmail": { "type": "string" },
+        "date": { "type": "string" },
+        "time": { "type": "string" },
+        "endTime": { "type": "string" },
+        "duration": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"] },
+        "notes": { "type": "string" },
+        "pointsToRedeem": { "type": "number" },
+        "willEarnPoints": { "type": "number" },
+        "pointsProcessed": { "type": "boolean" },
+        "isHomeService": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "creatorEmail": { "type": "string" }
+      },
+      "required": ["id", "customerName", "customerPhone", "serviceName", "date", "time", "status", "createdAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Production management product",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "price", "createdAt"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Inventory tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "productId": { "type": "string" },
+        "quantity": { "type": "number" },
+        "location": { "type": "string" },
+        "lastRestocked": { "type": "string" }
+      },
+      "required": ["id", "productId", "quantity"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Production order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerName": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "productId": { "type": "string" },
+              "quantity": { "type": "number" },
+              "price": { "type": "number" }
+            }
+          }
+        },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "customerName", "items", "totalAmount", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{email}": {
+      "schema": "UserProfile",
+      "description": "User profiles keyed by email"
+    },
+    "/categories/{id}": {
+      "schema": "Category",
+      "description": "Service categories"
+    },
+    "/services/{id}": {
+      "schema": "Service",
+      "description": "Services offered"
+    },
+    "/sales/{id}": {
+      "schema": "Sale",
+      "description": "Sales records"
+    },
+    "/expenses/{id}": {
+      "schema": "Expense",
+      "description": "Expense records"
+    },
+    "/expense_categories/{id}": {
+      "schema": "ExpenseCategory",
+      "description": "Categories for expenses"
+    },
+    "/customers/{id}": {
+      "schema": "Customer",
+      "description": "Customer profiles"
+    },
+    "/appointments/{id}": {
+      "schema": "Appointment",
+      "description": "Appointment bookings"
+    },
+    "/api_products/{id}": {
+      "schema": "Product",
+      "description": "Production management products"
+    },
+    "/api_inventory/{id}": {
+      "schema": "InventoryItem",
+      "description": "Inventory tracking"
+    },
+    "/api_orders/{id}": {
+      "schema": "Order",
+      "description": "Production orders"
+    },
+    "/settings/{id}": {
+      "schema": "ShopSettings",
+      "description": "Shop settings"
+    },
+    "/audit_logs/{id}": {
+      "schema": "AuditLog",
+      "description": "System audit logs"
+    },
+    "/notifications/{id}": {
+      "schema": "Notification",
+      "description": "User notifications"
+    },
+    "/deleted_users/{id}": {
+      "schema": "DeletedUser",
+      "description": "Audit trail for deleted users"
+    }
+  }
+}
