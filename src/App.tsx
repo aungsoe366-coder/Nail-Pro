@@ -109,7 +109,9 @@ import {
   Lock,
   AlertCircle,
   CheckCircle2,
-  Activity
+  Activity,
+  CalendarHeart,
+  MessageCircle
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -229,7 +231,7 @@ const CustomDatePicker: React.FC<{
   
   return (
     <div className={cn(
-      "relative group flex items-center gap-3 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer h-full",
+      "relative group flex items-center gap-3 px-4 py-3 hover:bg-black/5 dark:hover:bg-input transition-colors cursor-pointer h-full",
       disabled && "opacity-50 cursor-not-allowed pointer-events-none",
       className
     )}>
@@ -614,7 +616,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(msg);
       throw new Error(msg);
     }
-    const dummyEmail = `${cleanPhone}@nailpro.com`;
+    
+    let dummyEmail = `${cleanPhone}@nailpro.com`;
+    
+    try {
+      const q = query(collection(db, 'users'), where('phone', '==', cleanPhone));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        dummyEmail = querySnapshot.docs[0].data().email;
+      }
+    } catch (err) {
+      console.warn("Could not lookup user by phone, falling back to default email format", err);
+    }
     
     try {
       const res = await signInWithEmailAndPassword(auth, dummyEmail, pass);
@@ -759,7 +772,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('Existing customer record updated');
           }
         } catch (custErr) {
-          console.warn("Failed to update customer record, but user profile was created:", custErr);
+          console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
+          try {
+            await addDoc(collection(db, 'customers'), {
+              name: name,
+              email: cleanEmail,
+              phone: '',
+              address: '',
+              notes: 'Registered via Email Sign-Up',
+              points: 0,
+              createdAt: new Date().toISOString()
+            });
+            console.log('Customer record created via fallback after query failed');
+          } catch (fallbackErr) {
+            console.error("Fallback customer creation failed:", fallbackErr);
+          }
         }
       }
       
@@ -795,51 +822,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cleanPhone = normalizePhone(phone);
     if (cleanPhone.length < 8) throw new Error("Please enter a valid phone number.");
     
-    const dummyEmail = `${cleanPhone}@nailpro.com`;
+    let dummyEmail = `${name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}@nailpro.com`;
     const last4 = cleanPhone.slice(-4);
 
     let newlyCreatedUser: any = null;
     
     try {
-      // 1. Check for existing deleted user (Reactivation flow)
-      const userDocRef = doc(db, 'users', dummyEmail);
-      console.log('Checking existing user doc for phone:', cleanPhone);
-      const userDocSnap = await getDoc(userDocRef);
-      console.log('Existing doc check complete for phone');
+      // 1. Check for existing user document by phone to preserve role/reactivate
+      const q = query(collection(db, 'users'), where('phone', '==', cleanPhone));
+      const querySnapshot = await getDocs(q);
       
-      if (userDocSnap.exists() && userDocSnap.data().status === 'deleted') {
+      let existingUserDoc: any = null;
+      let existingEmail = "";
+
+      if (!querySnapshot.empty) {
+        existingUserDoc = querySnapshot.docs[0].data();
+        existingEmail = existingUserDoc.email;
+        dummyEmail = existingEmail; // If user already has an email mapped, reuse it
+      }
+
+      if (existingUserDoc && existingUserDoc.status === 'deleted') {
         const functions = getFunctions(app, 'asia-southeast1');
         const reactivateUser = httpsCallable(functions, 'reactivateUser');
         const result = await reactivateUser({ phone: cleanPhone, password: pass, name, dob });
         
         if (result.data) {
           // Re-login to get the user object
-          await signInWithEmailAndPassword(auth, dummyEmail, pass);
+          await signInWithEmailAndPassword(auth, existingEmail, pass);
           return;
         }
       }
 
-      // 1.5 Check for existing user document to preserve role (e.g. if Admin added them as staff)
+      // 1.5 Check for existing user document to preserve role
       let roleToSet: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer' = 'customer';
       let existingCommission = 0;
       let existingDob = dob;
       
-      if (userDocSnap.exists()) {
-        const existingData = userDocSnap.data() as UserProfile;
-        if (existingData.role && existingData.role !== 'customer') {
-          roleToSet = existingData.role;
+      if (existingUserDoc) {
+        if (existingUserDoc.role && existingUserDoc.role !== 'customer') {
+          roleToSet = existingUserDoc.role;
         }
-        if (existingData.commission) {
-          existingCommission = existingData.commission;
+        if (existingUserDoc.commission) {
+          existingCommission = existingUserDoc.commission;
         }
-        if (existingData.dob) {
-          existingDob = existingData.dob;
+        if (existingUserDoc.dob) {
+          existingDob = existingUserDoc.dob;
         }
       }
 
       // 2. Create Auth User
-      const authResult = await createUserWithEmailAndPassword(auth, dummyEmail, pass);
+      let authResult;
+      try {
+        authResult = await createUserWithEmailAndPassword(auth, dummyEmail, pass);
+      } catch (err: any) {
+        if (err.code === 'auth/email-already-in-use') {
+          // Append phone's last 4 if username hits collision
+          dummyEmail = `${name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}${last4}@nailpro.com`;
+          authResult = await createUserWithEmailAndPassword(auth, dummyEmail, pass);
+        } else {
+          throw err;
+        }
+      }
       newlyCreatedUser = authResult.user;
+      
+      // We will define the docRef using the dummyEmail so it's consistent
+      const userDocRef = doc(db, 'users', dummyEmail);
       
       // 3. Update Auth Profile
       await updateProfile(newlyCreatedUser, { displayName: name });
@@ -880,7 +927,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (roleToSet === 'customer') {
         console.log('Checking/Creating customer record for phone:', cleanPhone);
         try {
-          const custQuery = query(collection(db, 'customers'), where('phone', '==', cleanPhone));
+          const custQuery = query(collection(db, 'customers'), where('email', '==', dummyEmail));
           const custSnap = await getDocs(custQuery);
           console.log('Customer query complete (phone), found:', custSnap.size);
           if (custSnap.empty) {
@@ -901,7 +948,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log('Existing customer record updated (phone)');
           }
         } catch (custErr) {
-          console.warn("Failed to update customer record, but user profile was created:", custErr);
+          console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
+          try {
+            await addDoc(collection(db, 'customers'), {
+              name: name,
+              phone: cleanPhone,
+              email: dummyEmail,
+              address: '',
+              notes: 'Registered via Phone Sign-Up',
+              points: 0,
+              createdAt: new Date().toISOString()
+            });
+            console.log('Customer record created via fallback after query failed (phone)');
+          } catch (fallbackErr) {
+            console.error("Fallback customer creation failed (phone):", fallbackErr);
+          }
         }
       }
 
@@ -909,6 +970,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(newlyCreatedUser);
       
     } catch (err: any) {
+      console.error("signUpWithPhone Error Details:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
+      console.error("signUpWithPhone Raw Error:", err);
       const errCode = err.code || "";
       const errMessage = err.message || "";
 
@@ -924,12 +987,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const msg = "Invalid phone number format. Please check and try again.";
         setError(msg);
         throw new Error(msg);
-      } else if (err.message?.includes('insufficient permissions')) {
-        const msg = "Registration failed: Missing or insufficient permissions. Please check your Firestore security rules.";
+      } else if (errMessage.includes('insufficient permissions')) {
+        const msg = "Database permission denied. Your Firebase security rules are blocking access. Please check the firestore.rules configuration for 'users' and 'customers' collections.";
         setError(msg);
         throw new Error(msg);
       } else {
-        const msg = "Registration failed: " + (err.message || "Unknown error");
+        const msg = "Registration failed: " + (errMessage || "Unknown error");
         setError(msg);
         throw new Error(msg);
       }
@@ -992,14 +1055,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       console.error("Change Password Error:", err);
       let msg = "";
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      const errCode = err.code || "";
+      const errMessage = err.message || "";
+      if (errCode === 'auth/wrong-password' || errCode === 'auth/invalid-credential' || errMessage.includes('invalid-credential') || errMessage.includes('wrong-password')) {
         msg = "Current password is incorrect.";
-      } else if (err.code === 'auth/weak-password') {
+      } else if (errCode === 'auth/weak-password' || errMessage.includes('weak-password')) {
         msg = "New password is too weak. Please use at least 6 characters.";
-      } else if (err.code === 'auth/requires-recent-login') {
+      } else if (errCode === 'auth/requires-recent-login' || errMessage.includes('requires-recent-login')) {
         msg = "Please log out and log back in to change your password.";
       } else {
-        msg = "Failed to change password: " + err.message;
+        msg = "Failed to change password: " + errMessage;
       }
       setError(msg);
       throw new Error(msg);
@@ -1155,7 +1220,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
           <div className="relative z-10">
             <span className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-2 block">{profile?.role}</span>
             <h2 className="text-2xl font-black text-foreground tracking-tighter leading-tight">{profile?.name}</h2>
-            <p className="text-[10px] text-muted font-bold mt-1 uppercase tracking-widest opacity-60">{profile?.email}</p>
+            <p className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-widest opacity-60">{profile?.email}</p>
           </div>
         </div>
         
@@ -1170,7 +1235,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
                   "w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
                   isActive 
                     ? "bg-primary text-primary-foreground font-bold shadow-xl shadow-primary/20 scale-[1.02]" 
-                    : "text-muted hover:bg-primary/5 hover:text-primary"
+                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                 )}
               >
                 {isActive && (
@@ -1231,7 +1296,7 @@ const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
       <div className="flex items-center gap-4">
         <button 
           onClick={toggleTheme}
-          className="p-2.5 text-muted hover:text-primary transition-all rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10 active:scale-90"
+          className="p-2.5 text-muted-foreground hover:text-primary transition-all rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10 active:scale-90"
           title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
@@ -1399,7 +1464,7 @@ const DashboardPage: React.FC = () => {
               {s.icon}
             </div>
             <div className="space-y-1">
-              <p className="text-[10px] text-muted font-black uppercase tracking-widest">{s.label}</p>
+              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">{s.label}</p>
               <h4 className="text-2xl font-black text-foreground tracking-tighter">{s.value}</h4>
             </div>
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 blur-3xl group-hover:bg-primary/10 transition-colors" />
@@ -1487,7 +1552,7 @@ const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mb-32 blur-3xl" />
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-input rounded-full -mr-32 -mb-32 blur-3xl" />
         </div>
       </div>
 
@@ -1504,7 +1569,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
             {sales.length === 0 ? (
               <div className="p-20 text-center space-y-4 opacity-40">
-                <ShoppingCart size={40} className="mx-auto text-muted" />
+                <ShoppingCart size={40} className="mx-auto text-muted-foreground" />
                 <p className="text-xs font-bold uppercase tracking-widest">No sales today yet</p>
               </div>
             ) : (
@@ -1517,14 +1582,14 @@ const DashboardPage: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{s.customerName || 'Guest Customer'}</p>
-                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
                           {formatDisplayDate(s.dateTime)} • {formatTime(s.dateTime)} • {s.method}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-black text-foreground">{s.total.toLocaleString()} Ks</p>
-                      <p className="text-[9px] text-muted font-bold uppercase tracking-widest">{s.items.length} items</p>
+                      <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">{s.items.length} items</p>
                     </div>
                   </div>
                 ))}
@@ -1545,7 +1610,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
             {appointments.length === 0 ? (
               <div className="p-20 text-center space-y-4 opacity-40">
-                <Calendar size={40} className="mx-auto text-muted" />
+                <Calendar size={40} className="mx-auto text-muted-foreground" />
                 <p className="text-xs font-bold uppercase tracking-widest">No appointments today</p>
               </div>
             ) : (
@@ -1561,7 +1626,7 @@ const DashboardPage: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{a.customerName}</p>
-                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{a.serviceName} • {a.staffName}</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{a.serviceName} • {a.staffName}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -1858,6 +1923,15 @@ const POSPage: React.FC = () => {
         await updateDoc(doc(db, 'customers', selectedCustomer.id), {
           points: newPoints
         });
+        
+        // Update user profile points if email is present
+        if (selectedCustomer.email) {
+          const userDocRef = doc(db, 'users', selectedCustomer.email.toLowerCase());
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+             await updateDoc(userDocRef, { points: newPoints });
+          }
+        }
       }
 
       if (selectedAppointmentId) {
@@ -1935,7 +2009,7 @@ const POSPage: React.FC = () => {
                   >
                     <div>
                       <span className="text-foreground font-bold block group-hover:text-primary transition-colors">{s.name}</span>
-                      <span className="text-[10px] text-muted uppercase tracking-[0.2em]">{s.category || 'General'}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">{s.category || 'General'}</span>
                     </div>
                     <span className="text-primary font-black">{s.price.toLocaleString()} Ks</span>
                   </button>
@@ -1959,7 +2033,7 @@ const POSPage: React.FC = () => {
                     "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap flex items-center gap-2.5",
                     selectedCategory === cat 
                       ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
-                      : "bg-card/50 text-muted border-border/50 hover:border-primary/30 hover:text-primary"
+                      : "bg-card/50 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-primary"
                   )}
                 >
                   <IconComp size={14} />
@@ -1987,8 +2061,8 @@ const POSPage: React.FC = () => {
                     <b className="block text-foreground text-sm font-black tracking-tight leading-tight line-clamp-2 group-hover:text-primary transition-colors">{s.name}</b>
                   </div>
                   <div className="mt-4 flex justify-between items-end relative z-10">
-                    <span className="text-xs text-muted font-bold">{s.price.toLocaleString()} Ks</span>
-                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                    <span className="text-xs text-muted-foreground font-bold">{s.price.toLocaleString()} Ks</span>
+                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
                       <Plus size={14} />
                     </div>
                   </div>
@@ -1997,9 +2071,9 @@ const POSPage: React.FC = () => {
             ) : (
               <div className="col-span-full py-20 text-center space-y-4">
                 <div className="w-16 h-16 bg-muted/10 rounded-full flex items-center justify-center mx-auto">
-                  <Search size={24} className="text-muted/40" />
+                  <Search size={24} className="text-muted-foreground/40" />
                 </div>
-                <p className="text-muted font-bold text-sm uppercase tracking-widest">No services found</p>
+                <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest">No services found</p>
               </div>
             )}
           </div>
@@ -2015,7 +2089,7 @@ const POSPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-black text-foreground tracking-tight">Current Order</h2>
-              <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{cart.length} items selected</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{cart.length} items selected</p>
             </div>
           </div>
           {cart.length > 0 && (
@@ -2052,7 +2126,7 @@ const POSPage: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-black text-foreground tracking-tight truncate group-hover:text-primary transition-colors">{item.name}</h4>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-[10px] text-muted font-bold uppercase tracking-widest">{item.price.toLocaleString()} Ks</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{item.price.toLocaleString()} Ks</p>
                         {item.disP > 0 && (
                           <div className="flex gap-1">
                             <span className="text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest border border-red-500/20">
@@ -2070,14 +2144,14 @@ const POSPage: React.FC = () => {
                     <div className="flex items-center bg-muted/5 rounded-xl p-1 border border-border/50">
                       <button 
                         onClick={() => updateCartItem(i, { qty: Math.max(1, item.qty - 1) })}
-                        className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted hover:text-primary transition-all"
+                        className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all"
                       >
                         <ArrowDown size={14} />
                       </button>
                       <span className="w-8 text-center font-black text-sm">{item.qty}</span>
                       <button 
                         onClick={() => updateCartItem(i, { qty: item.qty + 1 })}
-                        className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted hover:text-primary transition-all"
+                        className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all"
                       >
                         <ArrowUp size={14} />
                       </button>
@@ -2086,7 +2160,7 @@ const POSPage: React.FC = () => {
                   
                   <div className="mt-4 pt-4 border-t border-border/30 flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-black text-muted uppercase tracking-widest">Discount %</span>
+                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Discount %</span>
                       <input 
                         type="number" 
                         value={item.disP || 0}
@@ -2109,7 +2183,7 @@ const POSPage: React.FC = () => {
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40">
               <div className="w-20 h-20 bg-muted/10 rounded-full flex items-center justify-center">
-                <ShoppingCart size={32} className="text-muted" />
+                <ShoppingCart size={32} className="text-muted-foreground" />
               </div>
               <div>
                 <p className="text-sm font-black uppercase tracking-[0.2em]">Your cart is empty</p>
@@ -2123,7 +2197,7 @@ const POSPage: React.FC = () => {
           {/* Staff & Customer Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em] ml-1">Assigned Staff</label>
+              <label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Assigned Staff</label>
               <div className="relative">
                 <select 
                   value={selectedStaffEmail}
@@ -2131,16 +2205,16 @@ const POSPage: React.FC = () => {
                   disabled={isStaffMember}
                   className="w-full bg-input border border-border/50 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:border-primary outline-none appearance-none transition-all disabled:opacity-50"
                 >
-                  {staff.map(s => (
+                  {staff.filter(s => s.role === 'staff' || (s.roles && s.roles.includes('staff'))).map(s => (
                     <option key={s.email} value={s.email}>{s.name}</option>
                   ))}
                 </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" size={14} />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={14} />
               </div>
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between items-center ml-1">
-                <label className="text-[9px] font-black text-muted uppercase tracking-[0.2em]">Payments</label>
+                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Payments</label>
                 <button 
                   onClick={addPaymentMethod}
                   className="text-[9px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-1 hover:opacity-70"
@@ -2161,7 +2235,7 @@ const POSPage: React.FC = () => {
                           <option key={m.id} value={m.id}>{m.label}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-muted pointer-events-none" size={10} />
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={10} />
                     </div>
                     <div className="relative w-24">
                       <input 
@@ -2209,7 +2283,7 @@ const POSPage: React.FC = () => {
                       className="flex-none w-32 bg-primary/5 border border-primary/10 rounded-xl p-2 text-left hover:bg-primary/10 transition-all group"
                     >
                       <p className="text-[10px] font-black text-foreground truncate group-hover:text-primary transition-colors">{a.customerName}</p>
-                      <p className="text-[8px] text-muted font-bold truncate">{a.serviceName}</p>
+                      <p className="text-[8px] text-muted-foreground font-bold truncate">{a.serviceName}</p>
                       <div className="flex justify-between items-center mt-1">
                         <span className="text-[8px] font-black text-primary">{a.time}</span>
                         <ChevronRight size={10} className="text-primary/30 group-hover:translate-x-1 transition-transform" />
@@ -2251,8 +2325,8 @@ const POSPage: React.FC = () => {
                           <span className="text-[8px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">{a.time}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] text-muted truncate">{a.serviceName}</span>
-                          <span className="text-[10px] text-muted font-bold">{a.date}</span>
+                          <span className="text-[10px] text-muted-foreground truncate">{a.serviceName}</span>
+                          <span className="text-[10px] text-muted-foreground font-bold">{a.date}</span>
                         </div>
                       </div>
                     </button>
@@ -2268,7 +2342,7 @@ const POSPage: React.FC = () => {
                     <Calendar size={14} />
                   </div>
                   <div>
-                    <p className="text-[8px] text-muted font-black uppercase tracking-[0.2em]">Linked Appointment</p>
+                    <p className="text-[8px] text-muted-foreground font-black uppercase tracking-[0.2em]">Linked Appointment</p>
                     <p className="text-xs font-bold text-blue-500">
                       {appointments.find(a => a.id === selectedAppointmentId)?.customerName}
                     </p>
@@ -2276,7 +2350,7 @@ const POSPage: React.FC = () => {
                 </div>
                 <button 
                   onClick={() => setSelectedAppointmentId('')}
-                  className="p-2 text-muted hover:text-red-500 transition-colors"
+                  className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
                 >
                   <X size={16} />
                 </button>
@@ -2316,7 +2390,7 @@ const POSPage: React.FC = () => {
                     >
                       <div>
                         <span className="text-foreground font-bold block group-hover:text-primary transition-colors">{c.name}</span>
-                        <span className="text-[10px] text-muted uppercase tracking-[0.2em]">{c.phone}</span>
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">{c.phone}</span>
                       </div>
                       {selectedCustomerId === c.id && <Check size={16} className="text-primary" />}
                     </button>
@@ -2337,7 +2411,7 @@ const POSPage: React.FC = () => {
                         {customers.find(c => c.id === selectedCustomerId)?.name}
                       </p>
                       <div className="flex items-center gap-1">
-                        <p className="text-[8px] text-muted font-black uppercase tracking-[0.2em]">Loyalty Points:</p>
+                        <p className="text-[8px] text-muted-foreground font-black uppercase tracking-[0.2em]">Loyalty Points:</p>
                         <p className="text-[10px] font-black text-primary">{(customers.find(c => c.id === selectedCustomerId)?.points || 0).toLocaleString()} PTS</p>
                       </div>
                     </div>
@@ -2346,14 +2420,14 @@ const POSPage: React.FC = () => {
                     {customers.find(c => c.id === selectedCustomerId)?.points! >= LOYALTY_THRESHOLD && !isLoyaltyDiscountActive && (
                       <button 
                         onClick={applyLoyaltyDiscount}
-                        className="px-3 py-1.5 bg-primary text-white text-[9px] font-black rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-all uppercase tracking-widest"
+                        className="px-3 py-1.5 bg-primary text-primary-foreground text-[9px] font-black rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-all uppercase tracking-widest"
                       >
                         Apply 10%
                       </button>
                     )}
                     <button 
                       onClick={() => { setSelectedCustomerId(''); setPointsToRedeem(0); setIsLoyaltyDiscountActive(false); }}
-                      className="p-2 text-muted hover:text-red-500 transition-colors"
+                      className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
                     >
                       <X size={16} />
                     </button>
@@ -2373,7 +2447,7 @@ const POSPage: React.FC = () => {
                       }}
                       className="w-full bg-input border border-border/50 rounded-xl pl-4 pr-12 py-2.5 text-xs font-black text-foreground focus:border-primary outline-none transition-all"
                     />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black text-muted uppercase tracking-widest">PTS</span>
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black text-muted-foreground uppercase tracking-widest">PTS</span>
                   </div>
                   <div className="bg-red-500 text-white px-3 py-2.5 rounded-xl text-[10px] font-black shadow-lg shadow-red-500/20">
                     -{ (pointsToRedeem * 10).toLocaleString() } Ks
@@ -2385,7 +2459,7 @@ const POSPage: React.FC = () => {
 
           {/* Totals Section */}
           <div className="space-y-3 bg-muted/5 p-5 rounded-3xl border border-border/50">
-            <div className="flex justify-between items-center text-[10px] font-black text-muted uppercase tracking-[0.2em]">
+            <div className="flex justify-between items-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
               <span>Sub Total</span>
               <span className="text-foreground">{subTotal.toLocaleString()} Ks</span>
             </div>
@@ -2408,7 +2482,7 @@ const POSPage: React.FC = () => {
             <div className="pt-4 border-t border-border/50 space-y-4">
               <div className="flex justify-between items-end">
                 <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-muted uppercase tracking-[0.3em] leading-none mb-1">Net Total</span>
+                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] leading-none mb-1">Net Total</span>
                   <span className="text-3xl font-black text-primary tracking-tighter leading-none">{netTotal.toLocaleString()} <span className="text-sm">Ks</span></span>
                 </div>
                 <div className="text-right">
@@ -2424,23 +2498,23 @@ const POSPage: React.FC = () => {
 
               {remainingAmount === 0 && cart.length > 0 && (
                 <div className="space-y-2 animate-in slide-in-from-bottom-2 duration-300">
-                  <p className="text-[9px] font-black text-muted uppercase tracking-[0.2em] text-center">Quick Pay & Checkout</p>
+                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] text-center">Quick Pay & Checkout</p>
                   <div className="grid grid-cols-3 gap-2">
                     <button 
                       onClick={() => handleQuickCheckout('Cash')}
-                      className="bg-green-500/10 hover:bg-green-500 text-green-600 hover:text-white py-2 rounded-xl text-[10px] font-black transition-all border border-green-500/20"
+                      className="bg-green-500/10 hover:bg-green-500 text-green-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-green-500/20"
                     >
                       CASH
                     </button>
                     <button 
                       onClick={() => handleQuickCheckout('KBZPay')}
-                      className="bg-blue-500/10 hover:bg-blue-500 text-blue-600 hover:text-white py-2 rounded-xl text-[10px] font-black transition-all border border-blue-500/20"
+                      className="bg-blue-500/10 hover:bg-blue-500 text-blue-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-blue-500/20"
                     >
                       KBZPAY
                     </button>
                     <button 
                       onClick={() => handleQuickCheckout('WavePay')}
-                      className="bg-yellow-500/10 hover:bg-yellow-500 text-yellow-600 hover:text-white py-2 rounded-xl text-[10px] font-black transition-all border border-yellow-500/20"
+                      className="bg-yellow-500/10 hover:bg-yellow-500 text-yellow-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-yellow-500/20"
                     >
                       WAVEPAY
                     </button>
@@ -2463,18 +2537,18 @@ const POSPage: React.FC = () => {
 
       {/* Loyalty Discount Prompt Modal */}
       {showLoyaltyPrompt && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-primary/30 rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-6 text-center"
+            className="bg-card border border-primary/30 rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-6 text-center max-h-[calc(100dvh-110px)] overflow-y-auto"
           >
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
               <Star className="text-primary w-10 h-10 animate-pulse" />
             </div>
             <div className="space-y-2">
               <h3 className="text-xl font-bold text-foreground">Loyalty Reward!</h3>
-              <p className="text-sm text-muted">
+              <p className="text-sm text-muted-foreground">
                 This customer has <span className="text-primary font-bold">{(customers.find(c => c.id === selectedCustomerId)?.points || 0)}</span> points. 
                 Would you like to apply an automatic <span className="text-green-500 font-bold">{LOYALTY_DISCOUNT}% discount</span> to this sale?
               </p>
@@ -2488,7 +2562,7 @@ const POSPage: React.FC = () => {
               </button>
               <button 
                 onClick={() => setShowLoyaltyPrompt(false)}
-                className="w-full bg-muted/10 text-muted font-bold py-3 rounded-2xl hover:bg-muted/20 transition-all"
+                className="w-full bg-muted/10 text-muted-foreground font-bold py-3 rounded-2xl hover:bg-muted/20 transition-all"
               >
                 NO, THANKS
               </button>
@@ -2806,8 +2880,8 @@ const ExpenseListPage: React.FC = () => {
                       </div>
 
                       {showConfirm === e.id && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-                          <div className="bg-card w-full max-w-sm rounded-[2rem] border border-border shadow-2xl p-8 space-y-6 animate-in zoom-in-95 duration-200">
+                        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+                          <div className="bg-card w-full max-w-sm rounded-[2rem] border border-border shadow-2xl p-8 space-y-6 animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-110px)] overflow-y-auto">
                             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mx-auto">
                               <AlertTriangle size={32} />
                             </div>
@@ -2936,7 +3010,7 @@ const HistoryPage: React.FC = () => {
               onChange={setDateTo} 
               className="border-b border-border/50"
             />
-            <div className="relative group flex items-center gap-4 px-6 py-4 hover:bg-white/5 transition-colors cursor-pointer border-b md:border-b-0 md:border-r border-border/50">
+            <div className="relative group flex items-center gap-4 px-6 py-4 hover:bg-input transition-colors cursor-pointer border-b md:border-b-0 md:border-r border-border/50">
               <UserIcon size={20} className="text-primary" />
               <div className="flex flex-col flex-1">
                 <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none mb-1.5">STAFF</label>
@@ -2954,7 +3028,7 @@ const HistoryPage: React.FC = () => {
                 {staffList.map(name => <option key={name} value={name}>{name}</option>)}
               </select>
             </div>
-            <div className="relative group flex items-center gap-4 px-6 py-4 hover:bg-white/5 transition-colors cursor-pointer">
+            <div className="relative group flex items-center gap-4 px-6 py-4 hover:bg-input transition-colors cursor-pointer">
               <CreditCard size={20} className="text-primary" />
               <div className="flex flex-col flex-1">
                 <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none mb-1.5">PAYMENT</label>
@@ -3256,7 +3330,7 @@ const StaffCommissionsPage: React.FC = () => {
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className="text-[10px] text-muted font-bold uppercase tracking-widest ml-1">From</label>
+            <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">From</label>
             <input 
               type="date" 
               value={dateFrom}
@@ -3265,7 +3339,7 @@ const StaffCommissionsPage: React.FC = () => {
             />
           </div>
           <div className="space-y-1.5">
-            <label className="text-[10px] text-muted font-bold uppercase tracking-widest ml-1">To</label>
+            <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">To</label>
             <input 
               type="date" 
               value={dateTo}
@@ -3288,7 +3362,7 @@ const StaffCommissionsPage: React.FC = () => {
 
       <div className="bg-card p-6 rounded-2xl border border-green-500/20 text-center shadow-xl group relative overflow-hidden">
         <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <span className="text-[10px] text-muted font-bold uppercase tracking-widest block mb-1 relative z-10">Total Commissions (Period)</span>
+        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block mb-1 relative z-10">Total Commissions (Period)</span>
         <b className="text-green-500 text-3xl font-bold relative z-10">{grandTotalComm.toLocaleString()} Ks</b>
       </div>
 
@@ -3300,17 +3374,17 @@ const StaffCommissionsPage: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {staffAggregates.length === 0 ? (
             <div className="col-span-full text-center py-12 bg-card/50 rounded-3xl border border-dashed border-border transition-colors duration-300">
-              <p className="text-muted text-sm font-medium italic">No data found for this period.</p>
+              <p className="text-muted-foreground text-sm font-medium italic">No data found for this period.</p>
             </div>
           ) : (
             staffAggregates.map(a => (
               <div key={a.name} className="bg-card border-l-4 border-green-500 rounded-xl p-5 flex justify-between items-center shadow-lg hover:translate-x-1 transition-all group">
                 <div className="flex-1">
                   <span className="font-bold text-foreground block text-lg group-hover:text-primary transition-colors">{a.name}</span>
-                  <span className="text-muted text-[11px] font-medium uppercase tracking-wider">{a.count} Sales | Total: {a.totalSales.toLocaleString()} Ks</span>
+                  <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wider">{a.count} Sales | Total: {a.totalSales.toLocaleString()} Ks</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] text-muted font-bold uppercase tracking-widest block mb-0.5">Commission</span>
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Commission</span>
                   <span className="font-bold text-green-500 text-xl">{a.totalComm.toLocaleString()} Ks</span>
                 </div>
               </div>
@@ -3327,7 +3401,7 @@ const StaffCommissionsPage: React.FC = () => {
         <div className="space-y-2">
           {filteredSales.filter(s => !staffFilter || s.staff === staffFilter).length === 0 ? (
             <div className="text-center py-12 bg-card/50 rounded-3xl border border-dashed border-border">
-              <p className="text-muted text-sm font-medium italic">No detailed sales found.</p>
+              <p className="text-muted-foreground text-sm font-medium italic">No detailed sales found.</p>
             </div>
           ) : (
             filteredSales.filter(s => !staffFilter || s.staff === staffFilter).map(s => (
@@ -3335,9 +3409,9 @@ const StaffCommissionsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-foreground font-bold text-sm group-hover:text-primary transition-colors">{s.staff}</span>
-                    <span className="text-[10px] text-muted font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
-                  <div className="text-[10px] text-muted font-medium uppercase tracking-widest">
+                  <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
                     {s.method}
                   </div>
                 </div>
@@ -3396,7 +3470,7 @@ const SalesReportPage: React.FC = () => {
       <h3 className="text-primary text-2xl font-bold tracking-tight">Sales Report</h3>
       
       <div className="flex items-center gap-3">
-        <label className="text-[10px] text-muted font-bold uppercase tracking-widest">Select Year</label>
+        <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Select Year</label>
         <select 
           value={year}
           onChange={(e) => setYear(e.target.value)}
@@ -3475,7 +3549,7 @@ const FloatingInput: React.FC<{
           "absolute left-3 transition-all pointer-events-none",
           (isFocused || value !== "") 
             ? "-top-2.5 left-2 text-[10px] bg-card px-1 text-primary font-bold" 
-            : "top-3 text-sm text-muted"
+            : "top-3 text-sm text-muted-foreground"
         )}
       >
         {label} {required && <span className="text-red-500">*</span>}
@@ -3628,8 +3702,26 @@ const AppointmentsPage: React.FC = () => {
     }
   }, [apptTime, apptDuration]);
 
+  const checkOverlap = (date: string, time: string, duration: number, excludeId?: string) => {
+    return appointments.some(a => {
+      if (a.date !== date || a.status === 'cancelled' || a.id === excludeId) return false;
+      
+      const apptStart = new Date(`${date}T${a.time}`);
+      const apptEnd = new Date(apptStart.getTime() + (a.duration * 60000));
+      
+      const newStart = new Date(`${date}T${time}`);
+      const newEnd = new Date(newStart.getTime() + (duration * 60000));
+      
+      return newStart < apptEnd && newEnd > apptStart;
+    });
+  };
+
   const handleAddAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (checkOverlap(apptDate, apptTime, apptDuration)) {
+      setStatusMsg({ type: 'error', text: 'This time slot overlaps with an existing appointment.' });
+      return;
+    }
     try {
       let cName = manualCustName;
       let cPhone = manualCustPhone;
@@ -3709,6 +3801,10 @@ const AppointmentsPage: React.FC = () => {
   const handleUpdateAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAppointment) return;
+    if (checkOverlap(apptDate, apptTime, apptDuration, editingAppointment.id)) {
+      setStatusMsg({ type: 'error', text: 'This time slot overlaps with an existing appointment.' });
+      return;
+    }
     try {
       let cName = manualCustName;
       let cPhone = manualCustPhone;
@@ -3860,8 +3956,18 @@ const AppointmentsPage: React.FC = () => {
           newPoints = currentPoints - earn + redeem;
         }
         
-        await updateDoc(customerRef, { points: Math.max(0, newPoints) });
+        const finalPoints = Math.max(0, newPoints);
+        await updateDoc(customerRef, { points: finalPoints });
         await updateDoc(doc(db, 'appointments', appt.id), { pointsProcessed: isCompleting });
+        
+        // Update user profile points if email is present
+        if (customerSnap.data().email) {
+          const userDocRef = doc(db, 'users', customerSnap.data().email.toLowerCase());
+          const userDocSnap = await getDoc(userDocRef);
+          if (userDocSnap.exists()) {
+             await updateDoc(userDocRef, { points: finalPoints });
+          }
+        }
       }
     } catch (error) {
       console.error("Error processing points:", error);
@@ -4029,7 +4135,7 @@ const AppointmentsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={goToBack}
-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted hover:text-foreground active:scale-90 border border-border bg-card shadow-sm"
+            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-90 border border-border bg-card shadow-sm"
           >
             <ChevronLeft size={20} />
           </button>
@@ -4041,7 +4147,7 @@ const AppointmentsPage: React.FC = () => {
           </button>
           <button
             onClick={goToNext}
-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted hover:text-foreground active:scale-90 border border-border bg-card shadow-sm"
+            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-90 border border-border bg-card shadow-sm"
           >
             <ChevronRight size={20} />
           </button>
@@ -4051,7 +4157,7 @@ const AppointmentsPage: React.FC = () => {
           {toolbar.label}
         </div>
 
-        <div className="flex bg-black/40 dark:bg-gray-800/60 p-1 rounded-xl border border-white/5 shadow-xl backdrop-blur-xl">
+        <div className="flex bg-muted p-1 rounded-xl border border-white/5 shadow-xl backdrop-blur-xl">
           {['month', 'week', 'day'].map((view) => (
             <button
               key={view}
@@ -4059,8 +4165,8 @@ const AppointmentsPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                 toolbar.view === view 
-                  ? "bg-gray-700/80 text-white shadow-lg" 
-                  : "text-gray-400 hover:text-white"
+                  ? "bg-gray-700/80 text-foreground shadow-lg" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {view}
@@ -4088,14 +4194,14 @@ const AppointmentsPage: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex bg-gray-100 dark:bg-black/40 p-1 rounded-xl border border-gray-200 dark:border-white/5 shadow-xl backdrop-blur-xl">
+          <div className="flex bg-muted p-1 rounded-xl border border-border shadow-xl backdrop-blur-xl">
             <button
               onClick={() => setViewMode('list')}
               className={cn(
                 "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
                 viewMode === 'list' 
-                  ? "bg-white dark:bg-gray-700/80 text-foreground dark:text-white shadow-lg" 
-                  : "text-muted-foreground hover:text-foreground dark:text-gray-400 dark:hover:text-white"
+                  ? "bg-card text-foreground shadow-lg" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               List
@@ -4105,8 +4211,8 @@ const AppointmentsPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
                 viewMode === 'calendar' 
-                  ? "bg-white dark:bg-gray-700/80 text-foreground dark:text-white shadow-lg" 
-                  : "text-muted-foreground hover:text-foreground dark:text-gray-400 dark:hover:text-white"
+                  ? "bg-card text-foreground shadow-lg" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <CalendarIcon size={16} />
@@ -4116,7 +4222,7 @@ const AppointmentsPage: React.FC = () => {
 
           <button
             onClick={() => { resetForm(); setIsAdding(true); }}
-            className="bg-[#d4af37] text-black px-6 py-3 rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-primary/20 font-bold group"
+            className="bg-primary text-foreground px-6 py-3 rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-primary/20 font-bold group"
           >
             <div className="bg-black/10 p-1 rounded-full group-hover:bg-black/20 transition-colors">
               <Plus size={20} />
@@ -4159,7 +4265,7 @@ const AppointmentsPage: React.FC = () => {
                 placeholder="Search customer or service..."
                 value={apptSearch}
                 onChange={(e) => setApptSearch(e.target.value)}
-                className="w-full p-4 pl-12 border border-border rounded-2xl outline-none bg-input text-foreground font-bold text-sm transition-all focus:ring-2 focus:ring-primary/30 group-hover:border-primary/20 placeholder:text-muted/50"
+                className="w-full p-4 pl-12 border border-border rounded-2xl outline-none bg-input text-foreground font-bold text-sm transition-all focus:ring-2 focus:ring-primary/30 group-hover:border-primary/20 placeholder:text-muted-foreground/50"
               />
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary group-hover:scale-110 transition-transform" size={18} />
             </div>
@@ -4188,7 +4294,7 @@ const AppointmentsPage: React.FC = () => {
                   }}
                   disabled={showAllDates}
                   className={cn(
-                    "w-full h-full bg-transparent border-none hover:bg-black/5 dark:hover:bg-white/5 px-6 py-0 gap-4 relative z-10",
+                    "w-full h-full bg-transparent border-none hover:bg-black/5 dark:hover:bg-input px-6 py-0 gap-4 relative z-10",
                     showAllDates && "opacity-30 grayscale cursor-not-allowed"
                   )}
                 />
@@ -4202,7 +4308,7 @@ const AppointmentsPage: React.FC = () => {
                   <UserIcon size={20} />
                 </div>
                 <div className="pl-14 pr-12 h-full flex flex-col justify-center">
-                  <label className="text-[9px] text-muted font-black uppercase tracking-[0.2em] leading-none mb-1.5">STAFF</label>
+                  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-none mb-1.5">STAFF</label>
                   <span className="text-base font-black text-foreground truncate tracking-tight">
                     {staff.find(s => s.email === selectedStaffFilter)?.name || 'All Staff'}
                   </span>
@@ -4215,7 +4321,7 @@ const AppointmentsPage: React.FC = () => {
                   <option value="all">All Staff</option>
                   {staff.map(s => <option key={s.email} value={s.email}>{s.name}</option>)}
                 </select>
-                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-muted/50 pointer-events-none" size={16} />
+                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" size={16} />
               </div>
             )}
 
@@ -4227,7 +4333,7 @@ const AppointmentsPage: React.FC = () => {
                   "px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg border active:scale-95",
                   showAllDates 
                     ? "bg-primary text-primary-foreground border-primary shadow-primary/20" 
-                    : "bg-muted/10 text-muted hover:text-foreground border border-border hover:bg-muted/20"
+                    : "bg-muted/10 text-muted-foreground hover:text-foreground border border-border hover:bg-muted/20"
                 )}
               >
                 {showAllDates ? 'All Dates' : 'Show All'}
@@ -4242,18 +4348,18 @@ const AppointmentsPage: React.FC = () => {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="w-full appearance-none p-4 pr-12 border border-border rounded-2xl outline-none bg-input text-foreground font-bold text-sm shadow-inner cursor-pointer focus:ring-2 focus:ring-primary/30"
                 >
-                  <option value="all" className="dark:bg-[#1a1a1a]">All Status</option>
-                  <option value="pending" className="dark:bg-[#1a1a1a]">Pending</option>
-                  <option value="confirmed" className="dark:bg-[#1a1a1a]">Confirmed</option>
-                  <option value="completed" className="dark:bg-[#1a1a1a]">Completed</option>
-                  <option value="cancelled" className="dark:bg-[#1a1a1a]">Cancelled</option>
+                  <option value="all" className="dark:bg-input">All Status</option>
+                  <option value="pending" className="dark:bg-input">Pending</option>
+                  <option value="confirmed" className="dark:bg-input">Confirmed</option>
+                  <option value="completed" className="dark:bg-input">Completed</option>
+                  <option value="cancelled" className="dark:bg-input">Cancelled</option>
                 </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted/50 pointer-events-none" size={18} />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" size={18} />
               </div>
 
               <button
                 onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
-                className="flex-1 p-4 rounded-2xl bg-muted/5 text-muted font-black text-[10px] uppercase tracking-widest hover:text-foreground transition-all shadow-inner border border-border active:scale-95"
+                className="flex-1 p-4 rounded-2xl bg-muted/5 text-muted-foreground font-black text-[10px] uppercase tracking-widest hover:text-foreground transition-all shadow-inner border border-border active:scale-95"
               >
                 SORT BY {sortBy.toUpperCase()}
               </button>
@@ -4272,17 +4378,18 @@ const AppointmentsPage: React.FC = () => {
             <div className="h-[600px] bg-background rounded-2xl p-4 border border-border shadow-inner">
               <style>{`
                 .rbc-calendar { font-family: inherit; }
-                .rbc-event { background-color: var(--color-primary); border-radius: 12px; font-size: 11px; font-weight: 700; border: none; padding: 4px 8px; }
+                .rbc-event { background-color: var(--color-primary); color: #000; border-radius: 12px; font-size: 11px; font-weight: 700; border: none; padding: 4px 8px; }
                 .rbc-today { background-color: rgba(212, 175, 55, 0.08); }
                 .rbc-header { padding: 16px; font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; color: var(--muted); border-bottom: 2px solid var(--border) !important; }
+                .dark .rbc-calendar { color: #f8f9fa; }
                 .dark .rbc-off-range-bg { background: #1a1a1a; }
                 .dark .rbc-day-bg + .rbc-day-bg { border-left: 1px solid #2d2d2d; }
                 .dark .rbc-month-row + .rbc-month-row { border-top: 1px solid #2d2d2d; }
                 .dark .rbc-month-view { border: 1px solid #2d2d2d; border-radius: 24px; overflow: hidden; }
-                .dark .rbc-header { border-bottom: 1px solid #2d2d2d; border-left: 1px solid #2d2d2d; }
+                .dark .rbc-header { border-bottom: 1px solid #2d2d2d; border-left: 1px solid #2d2d2d; color: #f8f9fa; }
                 .dark .rbc-header + .rbc-header { border-left: 1px solid #2d2d2d; }
                 .dark .rbc-time-view { border: 1px solid #2d2d2d; border-radius: 24px; overflow: hidden; }
-                .dark .rbc-time-header { border-bottom: 1px solid #2d2d2d; }
+                .dark .rbc-time-header { border-bottom: 1px solid #2d2d2d; color: #f8f9fa; }
                 .dark .rbc-time-header-content { border-left: 1px solid #2d2d2d; }
                 .dark .rbc-time-content { border-top: 1px solid #2d2d2d; }
                 .dark .rbc-time-content > * + * > * { border-left: 1px solid #2d2d2d; }
@@ -4291,6 +4398,8 @@ const AppointmentsPage: React.FC = () => {
                 .dark .rbc-toolbar button { color: #f8f9fa; border: 1px solid #2d2d2d; border-radius: 8px; margin: 0 2px; }
                 .dark .rbc-toolbar button:hover { background-color: #2d2d2d; }
                 .dark .rbc-toolbar button.rbc-active { background-color: var(--color-primary); color: black; }
+                .dark .rbc-button-link { color: #f8f9fa; }
+                .dark .rbc-show-more { color: var(--color-primary); }
               `}</style>
               <BigCalendar
                 localizer={localizer}
@@ -4315,9 +4424,9 @@ const AppointmentsPage: React.FC = () => {
           ) : filteredAppts.length === 0 ? (
             <div className="text-center py-32 bg-muted/5 rounded-[3rem] border-2 border-dashed border-border">
               <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CalendarIcon className="text-muted/30" size={48} />
+                <CalendarIcon className="text-muted-foreground/30" size={48} />
               </div>
-              <p className="text-muted text-lg font-bold italic">No appointments found matching your criteria.</p>
+              <p className="text-muted-foreground text-lg font-bold italic">No appointments found matching your criteria.</p>
               <button 
                 onClick={() => { resetForm(); setIsAdding(true); }}
                 className="mt-6 text-primary font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
@@ -4351,16 +4460,16 @@ const AppointmentsPage: React.FC = () => {
                           <div className="bg-primary/5 text-primary px-4 py-2 rounded-xl font-black text-xl tracking-tighter shadow-sm border border-primary/10">
                             {appt.time}
                           </div>
-                          <div className="text-[9px] font-black text-muted uppercase tracking-[0.2em] mt-1.5 ml-1">
+                          <div className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1.5 ml-1">
                             {formatDisplayDate(appt.date)}
                           </div>
                         </div>
                         <div className={cn(
                           "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm border",
-                          appt.status === 'pending' && "bg-yellow-500/5 text-yellow-600 border-yellow-500/20",
-                          appt.status === 'confirmed' && "bg-blue-500/5 text-blue-600 border-blue-500/20",
+                          appt.status === 'pending' && "bg-yellow-500/5 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
+                          appt.status === 'confirmed' && "bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20",
                           appt.status === 'completed' && "bg-green-600 text-white border-green-600 shadow-md shadow-green-600/20",
-                          appt.status === 'cancelled' && "bg-red-500/5 text-red-600 border-red-500/20"
+                          appt.status === 'cancelled' && "bg-red-500/5 text-red-600 dark:text-red-400 border-red-500/20"
                         )}>
                           {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
                           {appt.status === 'confirmed' && <Check size={12} strokeWidth={3} />}
@@ -4374,7 +4483,7 @@ const AppointmentsPage: React.FC = () => {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="font-black text-foreground text-xl group-hover:text-primary transition-colors truncate tracking-tight leading-tight">{appt.customerName}</h3>
-                            <div className="flex flex-wrap items-center gap-3 text-muted text-xs mt-3 font-bold">
+                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-xs mt-3 font-bold">
                               <div className="flex items-center gap-1.5 bg-muted/5 px-2.5 py-1 rounded-lg border border-border">
                                 <Phone size={14} className="text-primary" />
                                 <span className="text-xs tracking-tight">{appt.customerPhone}</span>
@@ -4394,14 +4503,14 @@ const AppointmentsPage: React.FC = () => {
                             )}
                             {profile?.role !== 'customer' && (
                               <a 
-                                href={`https://wa.me/${appt.customerPhone.replace(/\D/g, '')}`}
+                                href={`https://wa.me/${appt.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello ' + appt.customerName + ',\n\nYour appointment for ' + appt.serviceName + ' has been ' + appt.status + ' for ' + formatDisplayDate(appt.date) + ' at ' + appt.time + '.\n\nThank you for choosing Nail Pro!')}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="p-2.5 bg-green-500/5 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all border border-green-500/10 shadow-sm active:scale-90"
+                                className="p-2.5 bg-green-500/5 text-green-600 hover:bg-green-600 hover:text-foreground rounded-xl transition-all border border-green-500/10 shadow-sm active:scale-90"
                                 title="WhatsApp"
                               >
-                                <Store size={16} strokeWidth={2.5} />
+                                <MessageCircle size={16} strokeWidth={2.5} />
                               </a>
                             )}
                           </div>
@@ -4414,7 +4523,7 @@ const AppointmentsPage: React.FC = () => {
                                 <Briefcase size={18} strokeWidth={2.5} />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-muted uppercase tracking-widest">Service</span>
+                                <span className="text-[9px] font-black text-muted-foreground text-muted-foreground uppercase tracking-widest">Service</span>
                                 <span className="text-lg font-black text-foreground tracking-tight">{appt.serviceName}</span>
                               </div>
                             </div>
@@ -4426,11 +4535,11 @@ const AppointmentsPage: React.FC = () => {
                           <div className="flex items-center justify-between pt-2 border-t border-border/30">
                             {appt.staffName ? (
                               <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-muted/5 rounded-xl text-muted shadow-sm border border-border">
+                                <div className="p-2.5 bg-muted/5 rounded-xl text-muted-foreground shadow-sm border border-border">
                                   <UserIcon size={18} strokeWidth={2.5} />
                                 </div>
                                 <div className="flex flex-col">
-                                  <span className="text-[9px] font-black text-muted uppercase tracking-widest">Staff</span>
+                                  <span className="text-[9px] font-black text-muted-foreground text-muted-foreground uppercase tracking-widest">Staff</span>
                                   <span className="text-xs text-foreground font-bold">{appt.staffName}</span>
                                 </div>
                               </div>
@@ -4442,7 +4551,7 @@ const AppointmentsPage: React.FC = () => {
                         </div>
 
                         {appt.notes && (
-                          <div className="text-xs text-muted italic line-clamp-2 bg-primary/5 p-3 rounded-xl border border-primary/5 font-medium leading-relaxed shadow-inner">
+                          <div className="text-xs text-muted-foreground italic line-clamp-2 bg-primary/5 p-3 rounded-xl border border-primary/5 font-medium leading-relaxed shadow-inner">
                             <span className="text-primary font-black not-italic mr-1.5">Notes:</span>
                             "{appt.notes}"
                           </div>
@@ -4450,7 +4559,7 @@ const AppointmentsPage: React.FC = () => {
 
                         <div className="pt-4 flex items-center justify-between border-t border-border">
                           <div className="flex flex-col">
-                            <span className="text-[8px] text-muted uppercase tracking-[0.2em] font-black">Booked By</span>
+                            <span className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] font-black">Booked By</span>
                             <span className="text-[9px] font-bold text-foreground">{appt.creatorName || 'SYSTEM'}</span>
                           </div>
                           <div className="flex gap-2">
@@ -4474,21 +4583,21 @@ const AppointmentsPage: React.FC = () => {
                                   <option value="completed">Completed</option>
                                   <option value="cancelled">Cancelled</option>
                                 </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none" size={12} />
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={12} />
                               </div>
                             )}
                             {(isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) && (
                               <div className="flex gap-1.5">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); startEdit(appt); }}
-                                  className="p-2.5 bg-muted/5 text-foreground hover:bg-primary hover:text-primary-foreground rounded-xl transition-all border border-border shadow-sm active:scale-90"
+                                  className="p-2.5 bg-muted/5 text-primary-foreground hover:bg-primary hover:text-primary-foreground rounded-xl transition-all border border-border shadow-sm active:scale-90"
                                   title="Edit"
                                 >
                                   <Pencil size={16} strokeWidth={2.5} />
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setConfirmDeleteAppt(appt); }}
-                                  className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-500/10 shadow-sm active:scale-90"
+                                  className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-foreground rounded-xl transition-all border border-red-500/10 shadow-sm active:scale-90"
                                   title="Delete"
                                 >
                                   <Trash2 size={16} strokeWidth={2.5} />
@@ -4511,11 +4620,11 @@ const AppointmentsPage: React.FC = () => {
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-xl font-bold text-foreground">Points Summary</h2>
-                <p className="text-sm text-muted">Track your loyalty rewards and redemptions.</p>
+                <p className="text-sm text-muted-foreground">Track your loyalty rewards and redemptions.</p>
               </div>
               <div className="text-right">
                 <div className="text-4xl font-black text-primary tracking-tighter">{profile?.points?.toLocaleString() || 0}</div>
-                <div className="text-[10px] font-bold text-muted uppercase tracking-widest">Available Points</div>
+                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Available Points</div>
               </div>
             </div>
 
@@ -4553,9 +4662,9 @@ const AppointmentsPage: React.FC = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-muted/10">
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-widest">Date</th>
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-widest">Activity</th>
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted uppercase tracking-widest text-right">Points</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Activity</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Points</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -4602,17 +4711,17 @@ const AppointmentsPage: React.FC = () => {
                       if (history.length === 0) {
                         return (
                           <tr>
-                            <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted italic">No point activity recorded yet.</td>
+                            <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted-foreground italic">No point activity recorded yet.</td>
                           </tr>
                         );
                       }
 
                       return history.map(item => (
                         <tr key={item.id} className="hover:bg-muted/5 transition-colors">
-                          <td className="px-4 py-3 text-xs text-muted">{format(new Date(item.date), 'MMM d, yyyy')}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(item.date), 'MMM d, yyyy')}</td>
                           <td className="px-4 py-3">
                             <div className="text-xs font-bold text-foreground">{item.title}</div>
-                            <div className="text-[10px] text-muted">{item.details}</div>
+                            <div className="text-[10px] text-muted-foreground">{item.details}</div>
                           </td>
                           <td className={cn(
                             "px-4 py-3 text-right text-xs font-bold",
@@ -4632,11 +4741,11 @@ const AppointmentsPage: React.FC = () => {
       )}
 
       {viewingCustomerHistory && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-md">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] backdrop-blur-md">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl border border-border transition-colors duration-300"
+            className="bg-card rounded-[2.5rem] w-full max-w-2xl max-h-[calc(100dvh-110px)] overflow-hidden shadow-2xl border border-border transition-colors duration-300"
           >
             <div className="p-8 border-b border-border bg-muted/5 flex justify-between items-center">
               <div>
@@ -4656,13 +4765,13 @@ const AppointmentsPage: React.FC = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-1">
-                  <p className="text-muted text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
+                  <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
                   <span className="text-[10px] bg-primary/10 text-primary px-3 py-1 rounded-full font-bold uppercase tracking-widest border border-primary/20">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
                 </div>
               </div>
               <button 
                 onClick={() => setViewingCustomerHistory(null)}
-                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted hover:text-foreground active:scale-90"
+                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
               >
                 <X size={24} />
               </button>
@@ -4698,7 +4807,7 @@ const AppointmentsPage: React.FC = () => {
                   </h4>
                   <div className="space-y-3">
                     {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
-                      <p className="text-muted text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No sales history found.</p>
+                      <p className="text-muted-foreground text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No sales history found.</p>
                     ) : (
                       sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name)
                         .sort((a, b) => b.dateTime.localeCompare(a.dateTime))
@@ -4706,7 +4815,7 @@ const AppointmentsPage: React.FC = () => {
                         <div key={s.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex justify-between items-center hover:border-primary/50 transition-all group">
                           <div>
                             <div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.items.map(i => i.name).join(', ')}</div>
-                            <div className="text-[10px] text-muted mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
+                            <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
                           </div>
                           <div className="text-right">
                             <div className="font-black text-primary text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
@@ -4726,7 +4835,7 @@ const AppointmentsPage: React.FC = () => {
                   </h4>
                   <div className="space-y-3">
                     {appointments.filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone).length === 0 ? (
-                      <p className="text-muted text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No appointment history found.</p>
+                      <p className="text-muted-foreground text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No appointment history found.</p>
                     ) : (
                       appointments
                         .filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone)
@@ -4735,14 +4844,14 @@ const AppointmentsPage: React.FC = () => {
                           <div key={a.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex justify-between items-center hover:border-primary/50 transition-all group">
                             <div>
                               <div className="font-bold text-foreground group-hover:text-primary transition-colors">{a.serviceName}</div>
-                              <div className="text-[10px] text-muted mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
+                              <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
                               <div className={cn(
                                 "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
                                 a.status === 'completed' ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" : 
                                 a.status === 'cancelled' ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" :
-                                "bg-muted/10 text-muted border-border"
+                                "bg-muted/10 text-muted-foreground border-border"
                               )}>
                                 {a.status}
                               </div>
@@ -4765,24 +4874,24 @@ const AppointmentsPage: React.FC = () => {
       )}
 
       {isAdding && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] w-full max-w-2xl shadow-2xl my-8 border border-border"
+            className="bg-card rounded-[2.5rem] w-full max-w-2xl shadow-2xl border border-border flex flex-col max-h-[calc(100dvh-110px)] overflow-hidden"
           >
-            <div className="p-8 border-b bg-muted/5 flex justify-between items-center">
+            <div className="p-6 sm:p-8 border-b bg-muted/5 flex justify-between items-center shrink-0">
               <div>
-                <h3 className="text-primary font-black text-3xl tracking-tighter">
+                <h3 className="text-primary font-black text-2xl sm:text-3xl tracking-tighter">
                   {editingAppointment ? 'Edit Appointment' : 'Book Appointment'}
                 </h3>
-                <p className="text-muted text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+                <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-1">
                   {editingAppointment ? 'Update existing booking details' : 'Schedule a new customer visit'}
                 </p>
               </div>
               <button 
                 onClick={resetForm}
-                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted hover:text-foreground active:scale-90"
+                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
               >
                 <X size={24} />
               </button>
@@ -4795,13 +4904,14 @@ const AppointmentsPage: React.FC = () => {
               } else {
                 editingAppointment ? handleUpdateAppointment(e) : handleAddAppointment(e);
               }
-            }} className="p-6 space-y-8">
+            }} className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
               {formStep === 1 ? (
                 <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Customer Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                     <UserIcon size={14} className="text-primary" />
                     Customer Information
                   </label>
@@ -4829,8 +4939,8 @@ const AppointmentsPage: React.FC = () => {
                             <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
                           ))}
                         </select>
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" size={16} />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
                       </div>
 
                       {selectedCustId === 'manual' && (
@@ -4854,14 +4964,14 @@ const AppointmentsPage: React.FC = () => {
                   ) : (
                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 shadow-inner">
                       <div className="font-black text-foreground text-lg tracking-tight">{profile.name}</div>
-                      <div className="text-xs text-muted font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
+                      <div className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
                     </div>
                   )}
                 </div>
 
                 {/* Service & Staff Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                     <Briefcase size={14} className="text-primary" />
                     Service & Staff
                   </label>
@@ -4886,7 +4996,7 @@ const AppointmentsPage: React.FC = () => {
                           <option key={s.id} value={s.id}>{s.name} ({s.price.toLocaleString()} Ks)</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" size={16} />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
                     </div>
 
                     {selectedSvcId === 'manual' && (
@@ -4905,18 +5015,18 @@ const AppointmentsPage: React.FC = () => {
                         className="w-full p-3 border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-bold text-sm transition-all appearance-none"
                       >
                         <option value="">Any Staff (Auto-assign)</option>
-                        {staff.map(s => (
-                          <option key={s.email} value={s.email}>{s.name} ({s.role})</option>
+                        {staff.filter(s => s.role === 'staff' || (s.roles && s.roles.includes('staff'))).map(s => (
+                          <option key={s.email} value={s.email}>{s.name}</option>
                         ))}
                       </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" size={16} />
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
                     </div>
                   </div>
                 </div>
 
                 {/* Date & Time Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                     <CalendarIcon size={14} className="text-primary" />
                     Schedule
                   </label>
@@ -4949,7 +5059,7 @@ const AppointmentsPage: React.FC = () => {
                         <HistoryIcon size={18} />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-muted uppercase tracking-widest">Duration</span>
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Duration</span>
                         <span className="text-xs text-foreground font-bold">Ends at {apptEndTime}</span>
                       </div>
                     </div>
@@ -4960,14 +5070,14 @@ const AppointmentsPage: React.FC = () => {
                         onChange={(e) => setApptDuration(parseInt(e.target.value) || 0)}
                         className="w-20 p-2 text-sm border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-black text-center"
                       />
-                      <span className="text-[9px] font-black text-muted uppercase tracking-widest">Mins</span>
+                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Mins</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Status & Points Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                     <Star size={14} className="text-primary" />
                     Status & Rewards
                   </label>
@@ -4985,7 +5095,7 @@ const AppointmentsPage: React.FC = () => {
                           <option value="completed">Completed</option>
                           <option value="cancelled">Cancelled</option>
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none" size={16} />
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
                       </div>
                     )}
 
@@ -5016,14 +5126,14 @@ const AppointmentsPage: React.FC = () => {
 
                     <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-3 shadow-inner">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-muted uppercase tracking-widest">Points to Earn</span>
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Points to Earn</span>
                         <span className="text-sm font-black text-green-600">+{willEarnPoints} PTS</span>
                       </div>
                       
                       {selectedCustId && selectedCustId !== 'manual' && (
                         <div className="space-y-2 pt-3 border-t border-primary/10">
                           <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-muted uppercase tracking-widest">Available Points</span>
+                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Available Points</span>
                             <span className="text-sm font-black text-primary">
                               {customers.find(c => c.id === selectedCustId)?.points || 0} PTS
                             </span>
@@ -5056,7 +5166,7 @@ const AppointmentsPage: React.FC = () => {
               </div>
 
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
                     <FileText size={14} className="text-primary" />
                     Additional Notes
                   </label>
@@ -5079,19 +5189,19 @@ const AppointmentsPage: React.FC = () => {
                       <h3 className="text-2xl font-black text-primary tracking-tighter">
                         Booking Confirmation
                       </h3>
-                      <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Review your appointment details</p>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Review your appointment details</p>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                         <UserIcon size={12} className="text-primary" />
                         Customer
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
                         <p className="font-black text-foreground text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
-                        <p className="text-xs text-muted font-bold mt-1.5 flex items-center gap-1.5">
+                        <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
                           <Phone size={12} />
                           {manualCustPhone || 'N/A'}
                         </p>
@@ -5099,13 +5209,13 @@ const AppointmentsPage: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                         <Briefcase size={12} className="text-primary" />
                         Service
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
                         <p className="font-black text-foreground text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
-                        <p className="text-xs text-muted font-bold mt-1.5 flex items-center gap-1.5">
+                        <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
                           <HistoryIcon size={12} />
                           {apptDuration} mins ({apptTime} - {apptEndTime})
                         </p>
@@ -5113,7 +5223,7 @@ const AppointmentsPage: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                         <UserIcon size={12} className="text-primary" />
                         Staff Member
                       </div>
@@ -5121,18 +5231,18 @@ const AppointmentsPage: React.FC = () => {
                         <p className="font-black text-foreground text-lg tracking-tight">
                           {staff.find(s => s.email === selectedStaffEmail)?.name || 'Any Staff (Auto)'}
                         </p>
-                        <p className="text-[9px] text-muted font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
+                        <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                         <CalendarIcon size={12} className="text-primary" />
                         Scheduled Date
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
                         <p className="font-black text-foreground text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
-                        <p className="text-[9px] text-muted font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
+                        <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
                       </div>
                     </div>
 
@@ -5150,11 +5260,11 @@ const AppointmentsPage: React.FC = () => {
 
                     {apptNotes && (
                       <div className="col-span-full space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-muted uppercase tracking-[0.2em]">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
                           <FileText size={12} className="text-primary" />
                           Additional Notes
                         </div>
-                        <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm italic text-muted font-medium text-xs">
+                        <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm italic text-muted-foreground font-medium text-xs">
                           "{apptNotes}"
                         </div>
                       </div>
@@ -5163,20 +5273,21 @@ const AppointmentsPage: React.FC = () => {
                 </div>
               </div>
             )}
+            </div>
 
-            <div className="p-6 bg-muted/5 border-t border-border flex justify-end gap-3 rounded-b-3xl">
+            <div className="p-6 bg-muted/5 border-t border-border flex justify-end gap-3 rounded-b-3xl shrink-0">
               {formStep === 1 ? (
                 <>
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-6 py-2.5 text-xs font-black text-muted hover:text-foreground transition-colors uppercase tracking-widest"
+                    className="px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
+                    className="px-8 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
                   >
                     Next Step
                     <ArrowRight size={14} />
@@ -5187,13 +5298,13 @@ const AppointmentsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFormStep(1)}
-                    className="px-6 py-2.5 text-xs font-black text-muted hover:text-foreground transition-colors uppercase tracking-widest"
+                    className="px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
                   >
                     Back
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
+                    className="px-8 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
                   >
                     {editingAppointment ? 'Update Appointment' : 'Confirm Booking'}
                     <Check size={14} />
@@ -5207,23 +5318,23 @@ const AppointmentsPage: React.FC = () => {
       )}
 
       {confirmDeleteAppt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border"
+            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border max-h-[calc(100dvh-110px)] overflow-y-auto"
           >
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-6 mx-auto shadow-inner border border-red-500/20">
               <Trash2 size={32} strokeWidth={2.5} />
             </div>
             <h3 className="text-2xl font-black text-foreground mb-4 tracking-tighter text-center">Confirm Deletion</h3>
-            <p className="text-muted font-bold mb-8 leading-relaxed text-center">
+            <p className="text-muted-foreground font-bold mb-8 leading-relaxed text-center">
               Are you sure you want to delete the appointment for <span className="text-foreground font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-foreground font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setConfirmDeleteAppt(null)}
-                className="flex-1 px-6 py-4 border-2 border-border text-muted font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
+                className="flex-1 px-6 py-4 border-2 border-border text-muted-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
               >
                 Cancel
               </button>
@@ -5250,16 +5361,16 @@ const Modal: React.FC<{
 }> = ({ isOpen, onClose, title, children, maxWidth = "max-w-sm" }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[20000] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px]">
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className={cn("bg-card w-full rounded-[2.5rem] border border-primary/30 p-8 space-y-8 shadow-2xl relative overflow-hidden", maxWidth)}
+        className={cn("bg-card w-full rounded-[2.5rem] border border-primary/30 p-8 space-y-8 shadow-2xl relative overflow-y-auto max-h-[calc(100dvh-110px)]", maxWidth)}
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
         <div className="flex justify-between items-center">
           <h3 className="text-primary font-bold text-xl uppercase tracking-widest">{title}</h3>
-          <button onClick={onClose} className="text-muted hover:text-foreground transition-colors p-1"><X size={24} /></button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-1"><X size={24} /></button>
         </div>
         <div className="space-y-4">
           {children}
@@ -5313,6 +5424,7 @@ const ManagePage: React.FC = () => {
   const [stfEmail, setStfEmail] = useState('');
   const [stfComm, setStfComm] = useState('');
   const [stfRole, setStfRole] = useState<'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer'>('staff');
+  const [stfRoles, setStfRoles] = useState<string[]>(['staff']);
   const [stfStatus, setStfStatus] = useState<'active' | 'inactive' | 'on_leave' | 'deleted'>('active');
   const [stfBio, setStfBio] = useState('');
   const [stfSpecialties, setStfSpecialties] = useState<string[]>([]);
@@ -5576,7 +5688,12 @@ const ManagePage: React.FC = () => {
           const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount');
           await deleteUserAccount({ targetEmail: id });
         } catch (err) {
-          handleFirestoreError(err, OperationType.DELETE, `users/${id}`);
+          console.warn("Cloud function failed, fallback to direct deletion. Auth deletion will require deployed functions.", err);
+          try {
+            await deleteDoc(doc(db, coll, id));
+          } catch(err2) {
+            handleFirestoreError(err2, OperationType.DELETE, `users/${id}`);
+          }
         }
       } else {
         try {
@@ -5642,7 +5759,10 @@ const ManagePage: React.FC = () => {
 
   const handleAddStaff = async () => {
     if (loading) return;
-    if (!stfName || !stfEmail || !stfComm) return;
+    if (!stfName || !stfEmail || !stfComm) {
+      setStatusMsg({ type: 'error', text: 'Please fill in all required fields (Name, Email, Commission).' });
+      return;
+    }
     
     // Only admins can add staff
     if (!isAdmin) {
@@ -5650,6 +5770,8 @@ const ManagePage: React.FC = () => {
       return;
     }
 
+    const commissionVal = Number(stfComm);
+    
     // Only master account can create super_admin or owner
     if (user?.email?.toLowerCase() !== 'aungsoe366@gmail.com' && (stfRole === 'super_admin' || stfRole === 'owner')) {
       setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can assign Admin or Owner roles." });
@@ -5661,7 +5783,8 @@ const ManagePage: React.FC = () => {
       name: stfName,
       email: stfEmail.toLowerCase().trim(),
       role: stfRole,
-      commission: Number(stfComm),
+      roles: stfRoles,
+      commission: isNaN(commissionVal) ? 0 : commissionVal,
       status: stfStatus,
       bio: stfBio,
       photoURL: stfPhotoURL,
@@ -5679,7 +5802,7 @@ const ManagePage: React.FC = () => {
       
       await addAuditLog('CREATE_STAFF', `users/${email}`, { role: stfRole, name: stfName });
       
-      setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff');
+      setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
       setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
       setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
       setShowStfForm(false);
@@ -5692,7 +5815,11 @@ const ManagePage: React.FC = () => {
 
   const handleUpdateStaff = async () => {
     if (loading) return;
-    if (!editingStaff || !stfName || !stfEmail || !stfComm) return;
+    if (!editingStaff) return;
+    if (!stfName || !stfEmail || !stfComm) {
+      setStatusMsg({ type: 'error', text: 'Please fill in all required fields (Name, Email, Commission).' });
+      return;
+    }
     
     // Only admins can update staff
     if (!isAdmin) {
@@ -5708,12 +5835,14 @@ const ManagePage: React.FC = () => {
 
     const now = new Date().toISOString();
     const newEmail = stfEmail.toLowerCase().trim();
+    const commissionVal = Number(stfComm);
     const userData = {
       ...editingStaff,
       name: stfName,
       email: newEmail,
       role: stfRole,
-      commission: Number(stfComm),
+      roles: stfRoles,
+      commission: isNaN(commissionVal) ? 0 : commissionVal,
       status: stfStatus,
       bio: stfBio,
       photoURL: stfPhotoURL,
@@ -5740,7 +5869,7 @@ const ManagePage: React.FC = () => {
       });
       
       setEditingStaff(null);
-      setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff');
+      setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
       setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
       setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
       setShowStfForm(false);
@@ -5828,6 +5957,17 @@ const ManagePage: React.FC = () => {
         notes: custNotes.trim(),
         points: pts
       });
+      
+      // Update user profile points if email is present
+      const targetEmail = custEmail.trim() ? custEmail.trim().toLowerCase() : editingCustomer.email;
+      if (targetEmail) {
+        const userDocRef = doc(db, 'users', targetEmail.toLowerCase());
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+           await updateDoc(userDocRef, { points: pts });
+        }
+      }
+
       setEditingCustomer(null);
       setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); setCustPoints('');
       setStatusMsg({ type: 'success', text: 'Customer updated successfully!' });
@@ -5847,6 +5987,16 @@ const ManagePage: React.FC = () => {
       await updateDoc(doc(db, 'customers', quickEditingPoints.id), {
         points: pts
       });
+      
+      // Update user profile points if email is present
+      if (quickEditingPoints.email) {
+        const userDocRef = doc(db, 'users', quickEditingPoints.email.toLowerCase());
+        const userDocSnap = await getDoc(userDocRef);
+        if (userDocSnap.exists()) {
+           await updateDoc(userDocRef, { points: pts });
+        }
+      }
+
       setQuickEditingPoints(null);
       setQuickPointsValue('');
       setStatusMsg({ type: 'success', text: 'Points updated successfully!' });
@@ -5897,7 +6047,7 @@ const ManagePage: React.FC = () => {
               "flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
               activeTab === tab.id 
                 ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-                : "bg-card text-muted border-border hover:border-primary/50"
+                : "bg-card text-muted-foreground border-border hover:border-primary/50"
             )}
           >
             {tab.icon}
@@ -5913,7 +6063,7 @@ const ManagePage: React.FC = () => {
               <div className="bg-primary/10 p-6 rounded-[2rem] border border-primary/20 flex items-center justify-between gap-4">
                 <div>
                   <h4 className="text-primary font-black text-sm uppercase tracking-widest">First Time Setup</h4>
-                  <p className="text-[10px] text-muted font-bold mt-1">Assign your account the Super Admin role in Firestore.</p>
+                  <p className="text-[10px] text-muted-foreground font-bold mt-1">Assign your account the Super Admin role in Firestore.</p>
                 </div>
                 <button 
                   onClick={handleSetupSuperAdmin}
@@ -5980,7 +6130,7 @@ const ManagePage: React.FC = () => {
                   </div>
                   <div>
                     <span className="block text-sm font-bold text-foreground">Theme Mode</span>
-                    <span className="text-[10px] text-muted font-medium uppercase tracking-wider">Switch between light and dark</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Switch between light and dark</span>
                   </div>
                 </div>
                 <button 
@@ -6007,10 +6157,10 @@ const ManagePage: React.FC = () => {
                 <div className="w-1.5 h-4 bg-red-500 rounded-full"></div>
                 Danger Zone
               </h4>
-              <p className="text-[10px] text-muted font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
+              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
               <button 
                 onClick={() => setShowClearConfirm(true)}
-                className="w-full bg-red-500/10 text-red-500 border border-red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-white transition-all active:scale-95"
+                className="w-full bg-red-500/10 text-red-500 border border-red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-foreground transition-all active:scale-95"
               >
                 CLEAR ALL SALES HISTORY
               </button>
@@ -6020,7 +6170,7 @@ const ManagePage: React.FC = () => {
                   <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
                   Debug & Diagnostics
                 </h4>
-                <p className="text-[10px] text-muted font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
                 <button
                   onClick={async () => {
                     try {
@@ -6032,7 +6182,7 @@ const ManagePage: React.FC = () => {
                       setStatusMsg({ type: 'error', text: `Functions Offline: ${err instanceof Error ? err.message : String(err)}` });
                     }
                   }}
-                  className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-white transition-all active:scale-95 uppercase tracking-widest"
+                  className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-foreground transition-all active:scale-95 uppercase tracking-widest"
                 >
                   Test Cloud Functions
                 </button>
@@ -6069,7 +6219,7 @@ const ManagePage: React.FC = () => {
               />
               
               <div className="space-y-3">
-                <label className="text-[10px] text-muted font-black uppercase tracking-widest ml-1">Select Icon</label>
+                <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-1">Select Icon</label>
                 <div className="grid grid-cols-6 gap-2">
                   {CATEGORY_ICONS.map((item) => {
                     const IconComp = item.icon;
@@ -6081,8 +6231,8 @@ const ManagePage: React.FC = () => {
                         className={cn(
                           "p-3 rounded-xl border transition-all flex items-center justify-center",
                           catIcon === item.name 
-                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105" 
-                            : "bg-background border-border text-muted hover:border-primary/50"
+                            ? "bg-primary border-primary text-foreground shadow-lg shadow-primary/20 scale-105" 
+                            : "bg-background border-border text-muted-foreground hover:border-primary/50"
                         )}
                       >
                         <IconComp size={20} />
@@ -6099,10 +6249,10 @@ const ManagePage: React.FC = () => {
               )}
             </Modal>
             <div className="space-y-3 pt-4">
-              <p className="text-[10px] text-muted font-bold uppercase tracking-widest px-1">Existing Categories</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">Existing Categories</p>
               {categories.length === 0 ? (
                 <div className="text-center py-8 bg-background/50 rounded-2xl border border-dashed border-border">
-                  <p className="text-muted text-xs italic">No categories added yet.</p>
+                  <p className="text-muted-foreground text-xs italic">No categories added yet.</p>
                 </div>
               ) : (
                 categories.map(c => {
@@ -6110,7 +6260,7 @@ const ManagePage: React.FC = () => {
                   return (
                     <div key={c.id} className="flex justify-between items-center p-4 bg-background rounded-2xl border border-border group hover:border-primary/50 transition-all shadow-sm">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                        <div className="p-2 bg-primary/10 rounded-lg text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
                           <IconComp size={16} />
                         </div>
                         <span className="font-bold text-foreground group-hover:text-primary transition-colors">{c.name}</span>
@@ -6185,7 +6335,7 @@ const ManagePage: React.FC = () => {
                 onFocusClear
               />
               <div className="space-y-1.5">
-                <label className="text-[10px] text-muted font-bold uppercase tracking-widest ml-1">Category</label>
+                <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
                 <select 
                   value={svcCategory}
                   onChange={(e) => setSvcCategory(e.target.value)}
@@ -6202,10 +6352,10 @@ const ManagePage: React.FC = () => {
               )}
             </Modal>
             <div className="space-y-3 pt-6">
-              <p className="text-[10px] text-muted font-bold uppercase tracking-widest px-1">Service List</p>
+              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">Service List</p>
               {services.length === 0 ? (
                 <div className="text-center py-8 bg-background/50 rounded-2xl border border-dashed border-border">
-                  <p className="text-muted text-xs italic">No services added yet.</p>
+                  <p className="text-muted-foreground text-xs italic">No services added yet.</p>
                 </div>
               ) : (
                 services.map(s => (
@@ -6213,9 +6363,9 @@ const ManagePage: React.FC = () => {
                     <div>
                       <span className="font-bold text-foreground block group-hover:text-primary transition-colors">{s.name}</span>
                       <div className="flex gap-2 items-center mt-1">
-                        <span className="text-xs text-muted font-medium">{s.price.toLocaleString()} Ks</span>
-                        <span className="text-[10px] text-muted font-bold uppercase tracking-widest">•</span>
-                        <span className="text-xs text-muted font-medium">{s.duration || 30} mins</span>
+                        <span className="text-xs text-muted-foreground font-medium">{s.price.toLocaleString()} Ks</span>
+                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">•</span>
+                        <span className="text-xs text-muted-foreground font-medium">{s.duration || 30} mins</span>
                         <span className="bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{s.category || 'General'}</span>
                       </div>
                     </div>
@@ -6276,21 +6426,22 @@ const ManagePage: React.FC = () => {
               onClose={() => { 
                 setShowStfForm(false); 
                 setEditingStaff(null); 
-                setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); 
+                setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
                 setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
                 setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
               }} 
               title={editingStaff ? "Edit Staff" : "Register New Staff"}
               maxWidth="max-w-md"
             >
-              <div className="space-y-4">
-                <div className="flex justify-center mb-6">
+              <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
+                {/* Profile Photo Section */}
+                <div className="flex flex-col items-center gap-3 pb-6 border-b border-border/50">
                   <div className="relative group">
-                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-border group-hover:border-primary transition-all">
+                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 border-background shadow-xl group-hover:border-primary/20 transition-all">
                       {stfPhotoURL ? (
                         <img src={stfPhotoURL} alt="Staff" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
-                        <UserIcon size={40} className="text-muted-foreground" />
+                        <UserIcon size={40} className="text-muted-foreground/30" />
                       )}
                     </div>
                     <button 
@@ -6298,126 +6449,185 @@ const ManagePage: React.FC = () => {
                         const url = prompt("Enter photo URL:", stfPhotoURL);
                         if (url !== null) setStfPhotoURL(url);
                       }}
-                      className="absolute bottom-0 right-0 p-2 bg-primary text-white rounded-full shadow-lg hover:scale-110 transition-transform"
+                      className="absolute bottom-0 right-0 p-2.5 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform"
+                      title="Update Photo"
                     >
                       <Edit2 size={14} />
                     </button>
                   </div>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Profile Photo</span>
                 </div>
 
-                <FloatingInput 
-                  label="Staff Name"
-                  value={stfName}
-                  onChange={setStfName}
-                />
-                <FloatingInput 
-                  label="Email Address"
-                  value={stfEmail}
-                  onChange={setStfEmail}
-                  type="email"
-                />
-                <div className="grid grid-cols-2 gap-4">
+                {/* Basic Information */}
+                <div className="space-y-4">
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                    <UserIcon size={12} />
+                    Basic Information
+                  </h5>
                   <FloatingInput 
-                    label="Commission %"
-                    value={stfComm}
-                    onChange={setStfComm}
-                    type="number"
+                    label="Staff Name"
+                    value={stfName}
+                    onChange={setStfName}
+                    placeholder="e.g. John Doe"
                   />
+                  <FloatingInput 
+                    label="Email Address"
+                    value={stfEmail}
+                    onChange={setStfEmail}
+                    type="email"
+                    placeholder="e.g. john@example.com"
+                  />
+                </div>
+
+                {/* Employment Details */}
+                <div className="space-y-4 pt-4 border-t border-border/50">
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                    <Briefcase size={12} />
+                    Employment Details
+                  </h5>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FloatingInput 
+                      label="Commission %"
+                      value={stfComm}
+                      onChange={setStfComm}
+                      type="number"
+                      placeholder="e.g. 50"
+                    />
+                  <div className="space-y-3">
+                    <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-1">Assigned Roles</label>
+                    <div className="flex flex-wrap gap-2 pb-4">
+                       {['staff', 'cashier', 'owner', 'super_admin'].map(roleOption => (
+                         <button 
+                           key={roleOption}
+                           type="button"
+                           onClick={() => {
+                              let newRoles;
+                              if (stfRoles.includes(roleOption)) {
+                                 newRoles = stfRoles.filter(r => r !== roleOption);
+                                 if (newRoles.length === 0) newRoles = ['staff']; // ensure at least one role
+                              } else {
+                                 newRoles = [...stfRoles, roleOption];
+                              }
+                              setStfRoles(newRoles);
+                              
+                              const calculatedRole = newRoles.includes('super_admin') ? 'super_admin' :
+                                                     newRoles.includes('owner') ? 'owner' :
+                                                     newRoles.includes('cashier') ? 'cashier' : 'staff';
+                              setStfRole(calculatedRole as any);
+                           }}
+                           className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-widest transition-all ${
+                             stfRoles.includes(roleOption) ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-border text-foreground hover:border-primary/50"
+                           }`}
+                         >
+                           {roleOption.replace('_', ' ')}
+                         </button>
+                       ))}
+                    </div>
+                  </div>
+                  </div>
+
                   <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-primary transition-colors">
-                      <Briefcase size={18} />
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
+                      <Activity size={18} />
                     </div>
                     <select 
-                      value={stfRole}
-                      onChange={(e) => setStfRole(e.target.value as any)}
-                      className="w-full bg-background border border-border rounded-2xl py-4 pl-12 pr-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none"
+                      value={stfStatus}
+                      onChange={(e) => setStfStatus(e.target.value as any)}
+                      className={cn(
+                        "w-full bg-background border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none font-bold uppercase tracking-widest text-xs",
+                        stfStatus === 'active' ? "border-green-500/30 text-green-500 focus:border-green-500" :
+                        stfStatus === 'on_leave' ? "border-yellow-500/30 text-yellow-500 focus:border-yellow-500" :
+                        "border-red-500/30 text-red-500 focus:border-red-500"
+                      )}
                     >
-                      <option value="staff">Staff</option>
-                      <option value="cashier">Cashier</option>
-                      <option value="owner">Owner</option>
-                      <option value="super_admin">Super Admin</option>
+                      <option value="active">🟢 Active</option>
+                      <option value="inactive">🔴 Inactive</option>
+                      <option value="on_leave">🟡 On Leave</option>
                     </select>
                   </div>
                 </div>
 
-                <div className="relative group">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-primary transition-colors">
-                    <Activity size={18} />
+                {/* Schedule & Capabilities */}
+                <div className="space-y-5 pt-4 border-t border-border/50">
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                    <CalendarHeart size={12} />
+                    Schedule & Expertise
+                  </h5>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Working Days</label>
+                    <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl border border-border/50">
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                        <button
+                          key={day}
+                          onClick={() => {
+                            if (stfWorkingDays.includes(day)) {
+                              setStfWorkingDays(stfWorkingDays.filter(d => d !== day));
+                            } else {
+                              setStfWorkingDays([...stfWorkingDays, day]);
+                            }
+                          }}
+                          className={cn(
+                            "px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border flex-1 text-center min-w-[80px]",
+                            stfWorkingDays.includes(day) 
+                              ? "bg-primary/10 border-primary text-primary shadow-sm" 
+                              : "bg-background border-border text-muted-foreground hover:border-primary/30"
+                          )}
+                        >
+                          {day.substring(0, 3)}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <select 
-                    value={stfStatus}
-                    onChange={(e) => setStfStatus(e.target.value as any)}
-                    className="w-full bg-background border border-border rounded-2xl py-4 pl-12 pr-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="on_leave">On Leave</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted px-1">Bio / Notes</label>
-                  <textarea 
-                    value={stfBio}
-                    onChange={(e) => setStfBio(e.target.value)}
-                    placeholder="Brief staff bio or notes..."
-                    className="w-full bg-background border border-border rounded-2xl p-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[100px]"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted px-1">Working Days</label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                      <button
-                        key={day}
-                        onClick={() => {
-                          if (stfWorkingDays.includes(day)) {
-                            setStfWorkingDays(stfWorkingDays.filter(d => d !== day));
-                          } else {
-                            setStfWorkingDays([...stfWorkingDays, day]);
-                          }
-                        }}
-                        className={cn(
-                          "px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
-                          stfWorkingDays.includes(day) 
-                            ? "bg-primary/10 border-primary text-primary" 
-                            : "bg-muted/5 border-border text-muted hover:border-primary/30"
-                        )}
-                      >
-                        {day.substring(0, 3)}
-                      </button>
-                    ))}
+
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Specialties</label>
+                    <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl border border-border/50 min-h-[60px]">
+                      {categories.map(cat => (
+                        <button
+                          key={cat.id}
+                          onClick={() => {
+                            if (stfSpecialties.includes(cat.name)) {
+                              setStfSpecialties(stfSpecialties.filter(s => s !== cat.name));
+                            } else {
+                              setStfSpecialties([...stfSpecialties, cat.name]);
+                            }
+                          }}
+                          className={cn(
+                            "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
+                            stfSpecialties.includes(cat.name) 
+                              ? "bg-secondary text-secondary-foreground border-secondary shadow-sm" 
+                              : "bg-background border-border text-muted-foreground hover:border-secondary/30"
+                          )}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
+                      {categories.length === 0 && (
+                        <p className="text-xs text-muted-foreground italic m-auto">No categories found. Please add categories first.</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-widest text-muted px-1">Specialties</label>
-                  <div className="flex flex-wrap gap-2">
-                    {categories.map(cat => (
-                      <button
-                        key={cat.id}
-                        onClick={() => {
-                          if (stfSpecialties.includes(cat.name)) {
-                            setStfSpecialties(stfSpecialties.filter(s => s !== cat.name));
-                          } else {
-                            setStfSpecialties([...stfSpecialties, cat.name]);
-                          }
-                        }}
-                        className={cn(
-                          "px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
-                          stfSpecialties.includes(cat.name) 
-                            ? "bg-secondary/10 border-secondary text-secondary" 
-                            : "bg-muted/5 border-border text-muted hover:border-secondary/30"
-                        )}
-                      >
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
+                <div className="space-y-3 pt-4 border-t border-border/50">
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                    <FileText size={12} />
+                    Additional Notes
+                  </h5>
+                  <textarea 
+                    value={stfBio}
+                    onChange={(e) => setStfBio(e.target.value)}
+                    placeholder="Brief staff bio, performance notes, or internal remarks..."
+                    className="w-full bg-background border border-border rounded-2xl p-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[100px] text-sm resize-none"
+                  />
                 </div>
+
+              </div>
+              <div className="pt-4 border-t border-border mt-4">
                 {editingStaff ? (
-                  <button onClick={handleUpdateStaff} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Update Staff</button>
+                  <button onClick={handleUpdateStaff} className="w-full btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Update Staff Profile</button>
                 ) : (
-                  <button onClick={handleAddStaff} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Register Staff</button>
+                  <button onClick={handleAddStaff} className="w-full btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Register Staff Member</button>
                 )}
               </div>
             </Modal>
@@ -6442,7 +6652,7 @@ const ManagePage: React.FC = () => {
                       </div>
                       <div>
                         <span className="block font-bold text-primary text-lg leading-tight">{s.name}</span>
-                        <span className="text-xs text-muted font-medium">{s.email}</span>
+                        <span className="text-xs text-muted-foreground font-medium">{s.email}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -6455,6 +6665,7 @@ const ManagePage: React.FC = () => {
                             setStfEmail(s.email);
                             setStfComm(s.commission.toString());
                             setStfRole(s.role);
+                            setStfRoles(s.roles || [s.role]);
                             setStfStatus(s.status || 'active');
                             setStfBio(s.bio || '');
                             setStfPhotoURL(s.photoURL || '');
@@ -6512,13 +6723,13 @@ const ManagePage: React.FC = () => {
                     </div>
 
                     <div className="bg-muted/10 px-3 py-1.5 rounded-xl border border-border flex items-center gap-2">
-                      <span className="text-[10px] text-muted font-bold uppercase tracking-widest">Comm:</span> 
+                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Comm:</span> 
                       <b className="text-green-500 text-xs">{s.commission}%</b>
                     </div>
                     <div className="bg-muted/10 px-3 py-1.5 rounded-xl border border-border flex items-center gap-2">
-                      <span className="text-[10px] text-muted font-bold uppercase tracking-widest">Role:</span> 
+                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Role:</span> 
                       <b className="text-primary text-xs uppercase">
-                        {s.role === 'super_admin' ? 'Admin' : s.role}
+                        {s.roles && s.roles.length > 0 ? s.roles.map(r => r === 'super_admin' ? 'Admin' : r).join(', ') : (s.role === 'super_admin' ? 'Admin' : s.role)}
                       </b>
                     </div>
                   </div>
@@ -6624,7 +6835,7 @@ const ManagePage: React.FC = () => {
                   onFocusClear
                 />
                 <div className="space-y-1.5">
-                  <label className="text-[10px] text-muted font-bold uppercase tracking-widest ml-1">Category</label>
+                  <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
                   <select 
                     value={expCategory}
                     onChange={(e) => setExpCategory(e.target.value)}
@@ -6643,7 +6854,7 @@ const ManagePage: React.FC = () => {
             <div className="space-y-6 pt-10 border-t border-border">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between px-1">
-                  <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Expense History</p>
+                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Expense History</p>
                   <span className="text-[10px] text-primary font-bold bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
                     Total: {filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()} Ks
                   </span>
@@ -6652,7 +6863,7 @@ const ManagePage: React.FC = () => {
                 {/* Filters UI */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-background/50 p-4 rounded-2xl border border-border shadow-sm">
                   <div className="space-y-1.5">
-                    <label className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">Category Filter</label>
+                    <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category Filter</label>
                     <select 
                       value={expFilterCat}
                       onChange={(e) => setExpFilterCat(e.target.value)}
@@ -6664,7 +6875,7 @@ const ManagePage: React.FC = () => {
                     </select>
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">From Date</label>
+                    <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest ml-1">From Date</label>
                     <input 
                       type="date"
                       value={expFilterStart}
@@ -6673,7 +6884,7 @@ const ManagePage: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[9px] text-muted font-bold uppercase tracking-widest ml-1">To Date</label>
+                    <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest ml-1">To Date</label>
                     <input 
                       type="date"
                       value={expFilterEnd}
@@ -6695,14 +6906,14 @@ const ManagePage: React.FC = () => {
 
               {filteredExpenses.length === 0 ? (
                 <div className="text-center py-12 bg-background/50 rounded-2xl border border-dashed border-border">
-                  <p className="text-muted text-xs italic">No expenses match your filters.</p>
+                  <p className="text-muted-foreground text-xs italic">No expenses match your filters.</p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {filteredExpenses.map(e => (
                     <div key={e.id} className="flex justify-between items-center p-4 bg-background rounded-2xl border border-border group hover:border-red-500/30 transition-all shadow-sm">
                       <div className="flex flex-col">
-                        <span className="text-xs text-muted font-bold uppercase tracking-widest mb-0.5">{e.date}</span>
+                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest mb-0.5">{e.date}</span>
                         <div className="flex items-center gap-2">
                           <span className="font-bold text-foreground">{e.desc}</span>
                           <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{e.category || 'General'}</span>
@@ -6763,7 +6974,7 @@ const ManagePage: React.FC = () => {
               </h4>
               {customers.length === 0 ? (
                 <div className="text-center py-12 bg-background/50 rounded-3xl border border-dashed border-border">
-                  <p className="text-muted text-sm italic">No customers registered yet.</p>
+                  <p className="text-muted-foreground text-sm italic">No customers registered yet.</p>
                 </div>
               ) : (
                 customers.map(c => (
@@ -6806,7 +7017,7 @@ const ManagePage: React.FC = () => {
                         </button>
                         <button 
                           onClick={() => setShowConfirm({ coll: 'customers', id: c.id })}
-                          className="p-2.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 hover:bg-red-500 hover:text-white transition-all"
+                          className="p-2.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all"
                           title="Delete Customer"
                         >
                           <Trash2 size={18} />
@@ -6816,7 +7027,7 @@ const ManagePage: React.FC = () => {
                     
                     <button 
                       onClick={() => setViewingCustomerHistory(c)}
-                      className="w-full bg-muted/5 border border-border text-muted py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                      className="w-full bg-muted/5 border border-border text-muted-foreground py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
                     >
                       <FileText size={14} />
                       VIEW HISTORY
@@ -6860,7 +7071,7 @@ const ManagePage: React.FC = () => {
       >
         <div className="space-y-4">
           <div className="text-center">
-            <p className="text-xs text-muted font-medium uppercase tracking-wider mb-1">Customer</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Customer</p>
             <p className="font-bold text-foreground">{quickEditingPoints?.name}</p>
           </div>
           <FloatingInput 
@@ -6886,7 +7097,7 @@ const ManagePage: React.FC = () => {
             <div>
               <h3 className="text-primary font-bold text-2xl tracking-tight">{viewingCustomerHistory.name}</h3>
               <div className="flex items-center gap-3 mt-1">
-                <p className="text-muted text-sm font-medium uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
+                <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
                 <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-primary/20">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
               </div>
             </div>
@@ -6900,24 +7111,24 @@ const ManagePage: React.FC = () => {
             </h4>
             {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
               <div className="text-center py-24 bg-card/50 rounded-[2rem] border border-dashed border-border">
-                <p className="text-muted text-sm italic">No service history found for this customer.</p>
+                <p className="text-muted-foreground text-sm italic">No service history found for this customer.</p>
               </div>
             ) : (
               sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).map(s => (
                 <div key={s.id} className="bg-card p-6 rounded-3xl border border-border space-y-4 shadow-sm hover:border-primary/30 transition-all group">
                   <div className="flex justify-between items-center">
-                    <span className="text-muted text-xs font-bold uppercase tracking-widest">{new Date(s.dateTime).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+                    <span className="text-muted-foreground text-xs font-bold uppercase tracking-widest">{new Date(s.dateTime).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
                     <span className="text-primary font-bold text-lg">{s.total.toLocaleString()} Ks</span>
                   </div>
                   <div className="space-y-2">
                     {s.items.map((item, idx) => (
                       <div key={idx} className="flex justify-between text-sm items-center">
-                        <span className="text-foreground font-medium">{item.name} <span className="text-muted text-xs ml-1">x{item.qty}</span></span>
+                        <span className="text-foreground font-medium">{item.name} <span className="text-muted-foreground text-xs ml-1">x{item.qty}</span></span>
                         {item.disP > 0 && <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold">-{item.disP}%</span>}
                       </div>
                     ))}
                   </div>
-                  <div className="pt-4 border-t border-border flex justify-between items-center text-[10px] text-muted font-bold uppercase tracking-widest">
+                  <div className="pt-4 border-t border-border flex justify-between items-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
                     <span className="flex items-center gap-1.5">
                       <UserIcon size={10} className="text-primary" />
                       Staff: {s.staff}
@@ -6940,8 +7151,8 @@ const ManagePage: React.FC = () => {
             className={cn(
               "px-6 py-4 rounded-2xl shadow-2xl border flex items-center gap-3 pointer-events-auto",
               statusMsg.type === 'success' 
-                ? "bg-green-500 border-green-600 text-white" 
-                : "bg-red-500 border-red-600 text-white"
+                ? "bg-green-500 border-green-600 text-foreground" 
+                : "bg-red-500 border-red-600 text-foreground"
             )}
           >
             {statusMsg.type === 'success' ? <div className="p-1 bg-white/20 rounded-full"><Check size={16} /></div> : <div className="p-1 bg-white/20 rounded-full"><X size={16} /></div>}
@@ -6962,7 +7173,7 @@ const ManagePage: React.FC = () => {
           <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 mx-auto animate-pulse">
             <Trash2 size={40} />
           </div>
-          <p className="text-muted text-sm font-bold leading-relaxed">This will permanently delete every single sale record. This cannot be undone.</p>
+          <p className="text-muted-foreground text-sm font-bold leading-relaxed">This will permanently delete every single sale record. This cannot be undone.</p>
           <div className="flex flex-col gap-3">
             <button 
               disabled={isClearing}
@@ -6993,7 +7204,7 @@ const ManagePage: React.FC = () => {
           <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto">
             <Trash2 size={32} />
           </div>
-          <p className="text-muted text-sm font-bold">This action cannot be undone.</p>
+          <p className="text-muted-foreground text-sm font-bold">This action cannot be undone.</p>
           <div className="grid grid-cols-2 gap-3">
             <button 
               onClick={() => setShowConfirm(null)}
@@ -7051,8 +7262,8 @@ const ForcePasswordChangePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
-      <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border/50 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background p-4 sm:p-6 overflow-y-auto">
+      <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border/50 relative overflow-hidden my-auto shrink-0">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
         
         <div className="relative z-10">
@@ -7062,11 +7273,11 @@ const ForcePasswordChangePage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-2xl font-black tracking-tighter">Security Update</h2>
-              <p className="text-xs text-muted font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
             </div>
           </div>
 
-          <p className="text-sm text-muted mb-6 font-medium leading-relaxed">
+          <p className="text-sm text-muted-foreground mb-6 font-medium leading-relaxed">
             An administrator has reset your password. For your security, you must set a new password before continuing.
           </p>
 
@@ -7094,7 +7305,7 @@ const ForcePasswordChangePage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1">New Password</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
               <input
                 type="password"
                 value={newPassword}
@@ -7106,7 +7317,7 @@ const ForcePasswordChangePage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1">Confirm New Password</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
@@ -7190,7 +7401,7 @@ const ChangePasswordPage: React.FC = () => {
           </div>
           <div>
             <h2 className="text-2xl font-black tracking-tighter">Change Password</h2>
-            <p className="text-xs text-muted font-bold uppercase tracking-widest opacity-60">Security Settings</p>
+            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">Security Settings</p>
           </div>
         </div>
 
@@ -7218,7 +7429,7 @@ const ChangePasswordPage: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1">Current Password</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Current Password</label>
             <input
               type="password"
               value={currentPassword}
@@ -7230,7 +7441,7 @@ const ChangePasswordPage: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1">New Password</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
             <input
               type="password"
               value={newPassword}
@@ -7242,7 +7453,7 @@ const ChangePasswordPage: React.FC = () => {
           </div>
 
           <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted ml-1">Confirm New Password</label>
+            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm New Password</label>
             <input
               type="password"
               value={confirmPassword}
@@ -7294,16 +7505,16 @@ const IdentityResetPage: React.FC = () => {
 
     try {
       const cleanPhone = normalizePhone(phone);
-      // Query by phone field
-      const q = query(collection(db, 'users'), where('phone', '==', cleanPhone));
-      const querySnapshot = await getDocs(q);
+      // Look up by doc ID directly
+      const dummyEmail = `${cleanPhone}@nailpro.com`;
+      const docRef = doc(db, 'users', dummyEmail);
+      const docSnap = await getDoc(docRef);
       
-      if (querySnapshot.empty) {
+      if (!docSnap.exists()) {
         throw new Error("Information does not match our records.");
       }
       
-      const userDoc = querySnapshot.docs[0];
-      const data = userDoc.data() as UserProfile;
+      const data = docSnap.data() as UserProfile;
       
       if (data.name.toLowerCase() !== name.toLowerCase() || data.dob !== dob) {
         throw new Error("Information does not match our records.");
@@ -7345,32 +7556,32 @@ const IdentityResetPage: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a1a1a] p-6">
-        <div className="max-w-md w-full p-8 bg-[#2d2d2d] rounded-3xl shadow-2xl border border-[#444] text-center">
+      <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto">
+        <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border text-center my-auto shrink-0">
           <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/20">
             <CheckCircle2 className="w-10 h-10 text-green-500" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-4">Password Reset!</h2>
-          <p className="text-[#888] font-bold">Your password has been updated successfully. Redirecting to login...</p>
+          <h2 className="text-3xl font-black text-foreground mb-4">Password Reset!</h2>
+          <p className="text-muted-foreground font-bold">Your password has been updated successfully. Redirecting to login...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1a1a1a] p-6">
-      <div className="max-w-md w-full p-8 bg-[#2d2d2d] rounded-3xl shadow-2xl border border-[#444] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+    <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto">
+      <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border relative overflow-hidden my-auto shrink-0">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
         
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-[#d4af37]/10 rounded-2xl flex items-center justify-center mb-4 border border-[#d4af37]/20">
-              <Lock className="w-8 h-8 text-[#d4af37]" />
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-primary/20">
+              <Lock className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-3xl font-black text-white tracking-tighter">
+            <h2 className="text-3xl font-black text-foreground tracking-tighter">
               {step === 'verify' ? 'Verify Identity' : 'New Password'}
             </h2>
-            <p className="text-[10px] text-[#888] font-black uppercase tracking-[0.3em] mt-2">
+            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em] mt-2">
               {step === 'verify' ? 'Confirm your details' : 'Set your new password'}
             </p>
           </div>
@@ -7389,36 +7600,36 @@ const IdentityResetPage: React.FC = () => {
           {step === 'verify' ? (
             <form onSubmit={handleVerify} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Full Name</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Full Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                  className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                   placeholder="As registered"
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Phone Number</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Phone Number</label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                  className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                   placeholder="09..."
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Date of Birth</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Date of Birth</label>
                 <input
                   type="date"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                  className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                   required
                 />
               </div>
@@ -7426,7 +7637,7 @@ const IdentityResetPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-[#d4af37] text-black rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-[#b8962d] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#d4af37]/20"
+                className="w-full py-4 bg-primary text-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
               >
                 {loading ? 'Verifying...' : 'Verify Identity'}
               </button>
@@ -7434,13 +7645,13 @@ const IdentityResetPage: React.FC = () => {
           ) : (
             <form onSubmit={handleReset} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">New Password</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
                 <div className="relative">
                   <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                    className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                     placeholder="••••••••"
                     required
                   />
@@ -7448,12 +7659,12 @@ const IdentityResetPage: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Confirm Password</label>
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm Password</label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                  className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                   placeholder="••••••••"
                   required
                 />
@@ -7462,7 +7673,7 @@ const IdentityResetPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 bg-[#d4af37] text-black rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-[#b8962d] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#d4af37]/20"
+                className="w-full py-4 bg-primary text-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
               >
                 {loading ? 'Updating...' : 'Set New Password'}
               </button>
@@ -7472,7 +7683,7 @@ const IdentityResetPage: React.FC = () => {
           <div className="mt-8 text-center">
             <button
               onClick={() => navigate('/login')}
-              className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] hover:text-white transition-colors"
+              className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
             >
               Back to Login
             </button>
@@ -7524,17 +7735,17 @@ const PhoneSignUpPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#1a1a1a] p-6">
-      <div className="max-w-md w-full p-8 bg-[#2d2d2d] rounded-3xl shadow-2xl border border-[#444] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+    <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto">
+      <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border relative overflow-hidden my-auto shrink-0">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
         
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-[#d4af37]/10 rounded-2xl flex items-center justify-center mb-4 border border-[#d4af37]/20">
-              <Phone className="w-8 h-8 text-[#d4af37]" />
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-primary/20">
+              <Phone className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-3xl font-black text-white tracking-tighter">Join Us</h2>
-            <p className="text-[10px] text-[#888] font-black uppercase tracking-[0.3em] mt-2">Sign up with Phone</p>
+            <h2 className="text-3xl font-black text-foreground tracking-tighter">Join Us</h2>
+            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em] mt-2">Sign up with Phone</p>
           </div>
 
           {error && (
@@ -7561,59 +7772,59 @@ const PhoneSignUpPage: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Full Name</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Full Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                 placeholder="Enter your full name"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Phone Number</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Phone Number</label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                 placeholder="09..."
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Date of Birth</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Date of Birth</label>
               <input
                 type="date"
                 value={dob}
                 onChange={(e) => setDob(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Password</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                 placeholder="••••••••"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[#888] ml-1">Confirm Password</label>
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-[#1a1a1a] border border-[#444] text-white focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
+                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
                 placeholder="••••••••"
                 required
               />
@@ -7622,7 +7833,7 @@ const PhoneSignUpPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 px-6 rounded-2xl bg-[#d4af37] text-black font-black text-xs tracking-[0.2em] uppercase shadow-xl shadow-[#d4af37]/20 disabled:opacity-50 active:scale-95 transition-all mt-4"
+              className="w-full py-4 px-6 rounded-2xl bg-primary text-foreground font-black text-xs tracking-[0.2em] uppercase shadow-xl shadow-primary/20 disabled:opacity-50 active:scale-95 transition-all mt-4"
             >
               {loading ? 'Creating Account...' : 'Sign Up'}
             </button>
@@ -7630,7 +7841,7 @@ const PhoneSignUpPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/')}
-              className="w-full py-4 px-6 rounded-2xl border border-[#444] text-white font-black text-xs tracking-[0.2em] uppercase hover:bg-[#444] transition-all active:scale-95"
+              className="w-full py-4 px-6 rounded-2xl border border-border text-foreground font-black text-xs tracking-[0.2em] uppercase hover:bg-muted-foreground/20 transition-all active:scale-95"
             >
               Back to Login
             </button>
@@ -7674,16 +7885,16 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-[#1a1a1a] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300">
-      <div className="bg-[#f5f5f5] dark:bg-[#2d2d2d] p-8 rounded-3xl border border-[#ddd] dark:border-[#d4af37] w-full max-w-[380px] text-center space-y-6 shadow-2xl my-auto transition-colors duration-300">
+    <div className="fixed inset-0 bg-background z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300">
+      <div className="bg-card p-8 rounded-3xl border border-border  w-full max-w-[380px] text-center space-y-6 shadow-2xl my-auto transition-colors duration-300">
         <img src="https://i.postimg.cc/vB8xGp2h/Logo.png" alt="Logo" className="w-20 mx-auto" />
         <div className="space-y-1">
-          <h2 className="text-[#d4af37] text-2xl font-bold">Reset Password</h2>
-          <p className="text-[#888] text-sm">Enter your email to receive a reset link</p>
+          <h2 className="text-primary text-2xl font-bold">Reset Password</h2>
+          <p className="text-muted-foreground text-sm">Enter your email to receive a reset link</p>
         </div>
 
         {error && (
-          <div className="bg-[#ff4444]/10 border border-[#ff4444]/30 text-[#ff4444] text-xs p-3 rounded-xl animate-shake leading-relaxed">
+          <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-xs p-3 rounded-xl animate-shake leading-relaxed">
             {error}
           </div>
         )}
@@ -7695,7 +7906,7 @@ const ResetPasswordPage: React.FC = () => {
             </div>
             <button 
               onClick={() => navigate('/')}
-              className="w-full bg-[#d4af37] text-black font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all"
+              className="w-full bg-primary text-foreground font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all"
             >
               BACK TO LOGIN
             </button>
@@ -7703,26 +7914,26 @@ const ResetPasswordPage: React.FC = () => {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 text-left">
             <div className="space-y-1">
-              <label className="text-[10px] text-[#888] uppercase ml-1">Email Address</label>
+              <label className="text-[10px] text-muted-foreground uppercase ml-1">Email Address</label>
               <input 
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter email"
-                className="w-full bg-white dark:bg-[#1a1a1a] border border-[#ddd] dark:border-[#444] rounded-xl p-3 text-[#333] dark:text-white text-sm focus:border-[#d4af37] outline-none transition-colors duration-300"
+                className="w-full bg-white dark:bg-input border border-border border-border rounded-xl p-3 text-foreground text-foreground text-sm focus:border-primary outline-none transition-colors duration-300"
               />
             </div>
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#333] text-white font-bold py-3 rounded-xl border border-[#444] active:scale-95 transition-all disabled:opacity-50"
+              className="w-full bg-muted text-foreground font-bold py-3 rounded-xl border border-border active:scale-95 transition-all disabled:opacity-50"
             >
               {isSubmitting ? "SENDING..." : "SEND RESET LINK"}
             </button>
             <button 
               type="button"
               onClick={() => navigate('/')}
-              className="w-full text-[#888] text-xs font-bold hover:text-[#d4af37] transition-colors"
+              className="w-full text-muted-foreground text-xs font-bold hover:text-primary transition-colors"
             >
               CANCEL
             </button>
@@ -7734,12 +7945,15 @@ const ResetPasswordPage: React.FC = () => {
 };
 
 const LoginPage: React.FC = () => {
-  const { user, profile, login, loginWithEmail, loginWithPhone, signUp, loading, error, setError, isCustomer } = useAuth();
+  const { user, profile, login, loginWithEmail, loginWithPhone, signUp, signUpWithPhone, loading, error, setError, isCustomer } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
   const [isSignUp, setIsSignUp] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [dob, setDob] = useState('');
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -7760,15 +7974,29 @@ const LoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier || !password || (isSignUp && !name)) {
-      setError("Please fill in all fields.");
+      setError("Please fill in all required fields.");
       return;
+    }
+
+    if (isSignUp && loginMethod === 'phone') {
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+      if (!dob) {
+        setError("Date of Birth is required for phone sign up.");
+        return;
+      }
     }
 
     setIsSubmitting(true);
     try {
       if (isSignUp) {
-        // Standard signup is email-based in this app's current logic
-        await signUp(identifier, password, name);
+        if (loginMethod === 'phone') {
+          await signUpWithPhone(identifier, password, dob, name);
+        } else {
+          await signUp(identifier, password, name);
+        }
       } else {
         if (loginMethod === 'phone') {
           await loginWithPhone(identifier, password);
@@ -7796,14 +8024,23 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0a0a0a] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto">
-      {/* Background Decorative Elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#d4af37]/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#d4af37]/5 rounded-full blur-[120px]" />
+    <div className="fixed inset-0 bg-background z-[99999] overflow-y-auto overscroll-none transition-colors duration-500 ease-in-out">
+      <div className="absolute top-6 right-6 z-50">
+        <button 
+          onClick={toggleTheme} 
+          className="text-primary hover:scale-110 active:scale-90 transition-all p-3 bg-primary/5 rounded-xl border border-primary/10"
+        >
+          {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
+        </button>
       </div>
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6 pb-20">
+        {/* Background Decorative Elements */}
+        <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px]" />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px]" />
+        </div>
 
-      <div className="relative w-full max-w-[400px] space-y-8 z-10">
+        <div className="relative w-full max-w-[400px] space-y-8 z-10 shrink-0 py-8 my-auto">
         {/* Header */}
         <div className="text-center space-y-2">
           <motion.div
@@ -7812,8 +8049,8 @@ const LoginPage: React.FC = () => {
             transition={{ duration: 0.6 }}
           >
             <img src="https://i.postimg.cc/vB8xGp2h/Logo.png" alt="Logo" className="w-24 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]" />
-            <h1 className="text-4xl font-black text-[#d4af37] tracking-tighter leading-none">NAIL PRO</h1>
-            <p className="text-[10px] font-black text-[#d4af37]/60 uppercase tracking-[0.4em] mt-1">Beauty Studio Management</p>
+            <h1 className="text-4xl font-black text-primary tracking-tighter leading-none">NAIL PRO</h1>
+            <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] mt-1">Beauty Studio Management</p>
           </motion.div>
         </div>
 
@@ -7821,7 +8058,7 @@ const LoginPage: React.FC = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.4, delay: 0.2 }}
-          className="bg-[#1a1a1a] p-8 rounded-[2.5rem] border border-[#d4af37]/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+          className="bg-card p-8 rounded-[2.5rem] border border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
         >
           {error && (
             <motion.div 
@@ -7835,108 +8072,136 @@ const LoginPage: React.FC = () => {
           )}
 
           {/* Auth Method Selector */}
-          {!isSignUp && (
-            <div className="flex p-1.5 bg-black/40 rounded-2xl mb-8 border border-[#d4af37]/10">
-              <button
-                onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
-                className={cn(
-                  "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  loginMethod === 'phone' ? "text-black" : "text-[#888] hover:text-[#d4af37]"
-                )}
-              >
-                {loginMethod === 'phone' && (
-                  <motion.div layoutId="activeTab" className="absolute inset-0 bg-[#d4af37] rounded-xl z-0" />
-                )}
-                <span className="relative z-10">Phone Number</span>
-              </button>
-              <button
-                onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
-                className={cn(
-                  "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  loginMethod === 'email' ? "text-black" : "text-[#888] hover:text-[#d4af37]"
-                )}
-              >
-                {loginMethod === 'email' && (
-                  <motion.div layoutId="activeTab" className="absolute inset-0 bg-[#d4af37] rounded-xl z-0" />
-                )}
-                <span className="relative z-10">Email Address</span>
-              </button>
-            </div>
-          )}
+          <div className="flex p-1.5 bg-input rounded-2xl mb-8 border border-primary/10">
+            <button
+              type="button"
+              onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
+              className={cn(
+                "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+                loginMethod === 'phone' ? "text-foreground" : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              {loginMethod === 'phone' && (
+                <motion.div layoutId="activeTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
+              )}
+              <span className="relative z-10">Phone Number</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
+              className={cn(
+                "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+                loginMethod === 'email' ? "text-foreground" : "text-muted-foreground hover:text-primary"
+              )}
+            >
+              {loginMethod === 'email' && (
+                <motion.div layoutId="activeTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
+              )}
+              <span className="relative z-10">Email Address</span>
+            </button>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {isSignUp && (
               <div className="space-y-2">
-                <label className="text-[10px] text-[#d4af37]/60 font-black uppercase tracking-widest ml-1">Full Name</label>
+                <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest ml-1">Full Name</label>
                 <div className="relative">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40" size={18} />
+                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
                   <input 
                     type="text" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your Name"
-                    className="w-full bg-black/40 border border-[#d4af37]/10 rounded-2xl p-4 pl-12 text-white text-sm focus:border-[#d4af37] outline-none transition-all placeholder:text-[#444]"
+                    className="w-full bg-input border border-primary/10 rounded-2xl p-4 pl-12 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] text-[#d4af37]/60 font-black uppercase tracking-widest ml-1">
-                {isSignUp ? 'Email Address' : (loginMethod === 'phone' ? 'Phone Number' : 'Email Address')}
+              <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest ml-1">
+                {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
               </label>
               <div className="relative">
-                {isSignUp || loginMethod === 'email' ? (
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40" size={18} />
+                {loginMethod === 'email' ? (
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
                 ) : (
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40" size={18} />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
                 )}
                 <input 
-                  type={isSignUp || loginMethod === 'email' ? "email" : "tel"} 
+                  type={loginMethod === 'email' ? "email" : "tel"} 
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={isSignUp || loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
-                  className="w-full bg-black/40 border border-[#d4af37]/10 rounded-2xl p-4 pl-12 text-white text-sm focus:border-[#d4af37] outline-none transition-all placeholder:text-[#444]"
+                  placeholder={loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
+                  className="w-full bg-input border border-primary/10 rounded-2xl p-4 pl-12 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
                 />
               </div>
             </div>
 
+            {isSignUp && loginMethod === 'phone' && (
+              <div className="space-y-2">
+                <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest ml-1">Date of Birth</label>
+                <input 
+                  type="date"
+                  value={dob}
+                  onChange={(e) => setDob(e.target.value)}
+                  className="w-full bg-input border border-primary/10 rounded-2xl p-4 text-foreground text-sm focus:border-primary outline-none transition-all"
+                />
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="flex justify-between items-center px-1">
-                <label className="text-[10px] text-[#d4af37]/60 font-black uppercase tracking-widest">Password</label>
+                <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest">Password</label>
                 {!isSignUp && (
                   <button 
                     type="button"
                     onClick={() => navigate('/identity-reset')}
-                    className="text-[10px] text-[#d4af37] font-bold hover:underline"
+                    className="text-[10px] text-primary font-bold hover:underline"
                   >
                     Forgot?
                   </button>
                 )}
               </div>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40" size={18} />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
                 <input 
                   type={showPassword ? "text" : "password"} 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full bg-black/40 border border-[#d4af37]/10 rounded-2xl p-4 pl-12 pr-12 text-white text-sm focus:border-[#d4af37] outline-none transition-all placeholder:text-[#444]"
+                  className="w-full bg-input border border-primary/10 rounded-2xl p-4 pl-12 pr-12 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
                 />
                 <button 
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[#d4af37]/40 hover:text-[#d4af37] transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
+            {isSignUp && loginMethod === 'phone' && (
+              <div className="space-y-2">
+                <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest ml-1">Confirm Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
+                  <input 
+                    type={showPassword ? "text" : "password"} 
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-input border border-primary/10 rounded-2xl p-4 pl-12 pr-12 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+            )}
+
             <button 
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#d4af37] text-black font-black py-4 rounded-2xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-xs tracking-[0.2em]"
+              className="w-full bg-primary text-foreground font-black py-4 rounded-2xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-xs tracking-[0.2em]"
             >
               {isSubmitting ? "PROCESSING..." : (isSignUp ? "CREATE ACCOUNT" : "SIGN IN")}
             </button>
@@ -7945,15 +8210,15 @@ const LoginPage: React.FC = () => {
           <div className="mt-8 space-y-4">
             <div className="relative flex items-center justify-center">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#d4af37]/10"></div>
+                <div className="w-full border-t border-primary/10"></div>
               </div>
-              <span className="relative px-4 bg-[#1a1a1a] text-[9px] font-black text-[#444] uppercase tracking-widest">Or continue with</span>
+              <span className="relative px-4 bg-input text-[9px] font-black text-muted-foreground uppercase tracking-widest">Or continue with</span>
             </div>
 
             <button 
               onClick={handleGoogleLogin}
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-3 bg-white/5 border border-[#d4af37]/10 text-white font-bold py-4 rounded-2xl hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-3 bg-input border border-primary/10 text-foreground font-bold py-4 rounded-2xl hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50"
             >
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
               <span className="text-xs tracking-wider">Google</span>
@@ -7963,25 +8228,15 @@ const LoginPage: React.FC = () => {
           <div className="mt-8 text-center space-y-4">
             <button 
               onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
-              className="text-[11px] font-bold text-[#888] hover:text-[#d4af37] transition-colors"
+              className="text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors"
             >
               {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Create One"}
             </button>
-            
-            {!isSignUp && (
-              <button 
-                type="button"
-                onClick={() => navigate('/phone-signup')}
-                className="block w-full text-[10px] font-black text-[#d4af37] uppercase tracking-widest hover:underline"
-              >
-                Sign up with Phone
-              </button>
-            )}
 
             <div className="pt-4">
               <button 
                 onClick={() => setShowHelp(!showHelp)}
-                className="text-[9px] font-black text-[#444] uppercase tracking-[0.2em] hover:text-[#d4af37] transition-colors flex items-center justify-center gap-2 mx-auto"
+                className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto"
               >
                 <HelpCircle size={12} />
                 Need help?
@@ -7991,17 +8246,18 @@ const LoginPage: React.FC = () => {
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 p-4 bg-[#d4af37]/5 border border-[#d4af37]/10 rounded-2xl text-left"
+                  className="mt-4 p-4 bg-primary/5 border border-primary/10 rounded-2xl text-left"
                 >
-                  <p className="text-[10px] font-black text-[#d4af37] uppercase tracking-widest mb-2">Staff Registration</p>
-                  <p className="text-[9px] text-[#888] leading-relaxed">
-                    If you were added as a staff member by an admin, you still need to <strong className="text-[#d4af37]">Sign Up</strong> once with your email to set your password.
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Staff Registration</p>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed">
+                    If you were added as a staff member by an admin, you still need to <strong className="text-primary">Sign Up</strong> once with your email to set your password.
                   </p>
                 </motion.div>
               )}
             </div>
           </div>
         </motion.div>
+      </div>
       </div>
     </div>
   );
@@ -8043,9 +8299,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (location.pathname === '/identity-reset') {
       return <IdentityResetPage />;
     }
-    if (location.pathname === '/phone-signup') {
-      return <PhoneSignUpPage />;
-    }
     return <LoginPage />;
   }
 
@@ -8078,7 +8331,6 @@ const AppRoutes = () => {
       <Route path="/sales-report" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <SalesReportPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
       <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
-      <Route path="/phone-signup" element={<PhoneSignUpPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/identity-reset" element={<IdentityResetPage />} />
       <Route path="/expenses" element={!isAdmin ? <Navigate to="/appointments" /> : <ExpenseListPage />} />

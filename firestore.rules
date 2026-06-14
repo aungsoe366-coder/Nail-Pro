@@ -9,40 +9,53 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function getUserEmail() {
+      return ('email' in request.auth.token && request.auth.token.email != null) ? request.auth.token.email.lower() : "";
+    }
+
     function isSuperAdmin() {
-      return isAuthenticated() && 
-        (request.auth.token.email.lower() == "aungsoe366@gmail.com" || 
-         request.auth.token.email.lower() == "pes@gmail.com" ||
-         request.auth.token.email.lower() == "aung@gmail.com" ||
-         request.auth.token.email.lower() == "peslover.lover366@gmail.com" ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) && 
-          get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'super_admin'));
+      let email = getUserEmail();
+      return isAuthenticated() && email != "" &&
+        (email == "aungsoe366@gmail.com" || 
+         email == "pes@gmail.com" ||
+         email == "aung@gmail.com" ||
+         email == "peslover.lover366@gmail.com" ||
+         (exists(/databases/$(database)/documents/users/$(email)) && 
+          get(/databases/$(database)/documents/users/$(email)).data.role == 'super_admin'));
     }
 
     function isMasterAccount() {
-      return isAuthenticated() && request.auth.token.email.lower() == "aungsoe366@gmail.com";
+      return isAuthenticated() && getUserEmail() == "aungsoe366@gmail.com";
     }
 
     function isOwner() {
-      return isSuperAdmin() || (isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) &&
-        get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'owner');
+      let email = getUserEmail();
+      return isSuperAdmin() || (isAuthenticated() && email != "" &&
+        exists(/databases/$(database)/documents/users/$(email)) &&
+        get(/databases/$(database)/documents/users/$(email)).data.role == 'owner');
     }
 
     function isCashier() {
-      return isOwner() || (isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) &&
-        get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'cashier');
+      let email = getUserEmail();
+      return isOwner() || (isAuthenticated() && email != "" &&
+        exists(/databases/$(database)/documents/users/$(email)) &&
+        get(/databases/$(database)/documents/users/$(email)).data.role == 'cashier');
     }
 
     function isStaff() {
-      return isCashier() || (isAuthenticated() && 
-        exists(/databases/$(database)/documents/users/$(request.auth.token.email.lower())) &&
-        get(/databases/$(database)/documents/users/$(request.auth.token.email.lower())).data.role == 'staff');
+      let email = getUserEmail();
+      return isCashier() || (isAuthenticated() && email != "" &&
+        exists(/databases/$(database)/documents/users/$(email)) &&
+        get(/databases/$(database)/documents/users/$(email)).data.role == 'staff');
     }
 
-    function isDocOwner(email) {
-      return isAuthenticated() && request.auth.token.email.lower() == email.lower();
+    function isDocOwner(emailId) {
+      let email = getUserEmail();
+      return isAuthenticated() && (
+        (email != "" && email == emailId.lower()) ||
+        (request.resource != null && 'uid' in request.resource.data && request.resource.data.uid == request.auth.uid) ||
+        (resource != null && 'uid' in resource.data && resource.data.uid == request.auth.uid)
+      );
     }
 
     function isValidString(val, maxLen) {
@@ -79,7 +92,7 @@ service cloud.firestore {
 
     match /users/{email} {
       allow get: if true; 
-      allow list: if isStaff();
+      allow list: if true;
       
       allow create: if isMasterAccount() || 
                       ((isOwner() || isDocOwner(email)) && 
@@ -96,14 +109,10 @@ service cloud.firestore {
     }
 
     match /customers/{id} {
-      allow read: if isStaff() || (isAuthenticated() && (
-        ('email' in resource.data && resource.data.email.lower() == request.auth.token.email.lower()) ||
-        ('phone' in resource.data && request.auth.token.email.lower() == resource.data.phone + "@nailpro.com")
-      ));
-      allow create: if isStaff() || isAuthenticated();
+      allow read: if isStaff() || isAuthenticated() || true;
+      allow create: if isStaff() || isAuthenticated() || true;
       allow update: if isStaff() || (isAuthenticated() && (
-        ('email' in resource.data && resource.data.email.lower() == request.auth.token.email.lower()) ||
-        ('phone' in resource.data && request.auth.token.email.lower() == resource.data.phone + "@nailpro.com")
+        ('email' in resource.data && resource.data.email == request.auth.token.email)
       ));
       allow delete: if isStaff();
     }
@@ -141,9 +150,9 @@ service cloud.firestore {
     }
 
     match /appointments/{id} {
-      allow read: if isStaff() || (isAuthenticated() && (request.auth.token.email.lower() == resource.data.customerEmail.lower() || request.auth.token.email.lower() == resource.data.creatorEmail.lower()));
+      allow read: if isStaff() || (isAuthenticated() && (request.auth.token.email == resource.data.customerEmail || request.auth.token.email == resource.data.creatorEmail));
       allow create: if isAuthenticated();
-      allow update: if isStaff() || (isAuthenticated() && (request.auth.token.email.lower() == resource.data.customerEmail.lower() || request.auth.token.email.lower() == resource.data.creatorEmail.lower()));
+      allow update: if isStaff() || (isAuthenticated() && (request.auth.token.email == resource.data.customerEmail || request.auth.token.email == resource.data.creatorEmail));
       allow delete: if isStaff();
     }
 

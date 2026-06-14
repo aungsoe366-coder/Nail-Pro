@@ -62,6 +62,7 @@ export interface UserProfile {
   email: string;
   phone?: string;
   role: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer';
+  roles?: string[]; // Multiple roles support
   commission: number;
   points?: number;
   mustChangePassword?: boolean;

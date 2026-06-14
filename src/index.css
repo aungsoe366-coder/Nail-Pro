@@ -15,6 +15,9 @@
   --color-border: var(--border-color);
   --color-input: var(--input-bg);
   --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
 }
 
 :root {
@@ -24,7 +27,10 @@
   --card-fg: #1a1a1a;
   --border-color: #e9ecef;
   --input-bg: #ffffff;
-  --muted: #6c757d;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
   --accent: #d4af37;
 }
 
@@ -35,7 +41,10 @@
   --card-fg: #f8f9fa;
   --border-color: #2d2d2d;
   --input-bg: #1a1a1a;
-  --muted: #adb5bd;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
   --accent: #d4af37;
 }
 
@@ -65,5 +74,5 @@
 }
 
 .input-field {
-  @apply w-full bg-input border border-border rounded-xl p-3 text-foreground placeholder-muted focus:outline-none focus:border-primary transition-all;
+  @apply w-full bg-input border border-border rounded-xl p-3 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all;
 }

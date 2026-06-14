@@ -1,0 +1,1037 @@
+227-  className?: string;
+228-  disabled?: boolean;
+229-}> = ({ label, value, onChange, iconColor = "text-primary", className, disabled }) => {
+230-  const dayOfWeek = new Date(value).toLocaleDateString('en-US', { weekday: 'long' });
+231-  
+232:  return (
+233-    <div className={cn(
+234-      "relative group flex items-center gap-3 px-4 py-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer h-full",
+235-      disabled && "opacity-50 cursor-not-allowed pointer-events-none",
+236-      className
+237-    )}>
+238-      {/* Technical Grid Background */}
+239-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+240-           style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
+241-      
+242-      <CalendarIcon size={18} className={iconColor} />
+243-      <div className="flex flex-col flex-1 min-w-0">
+244-        <div className="flex items-center justify-between mb-1">
+245-          <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest leading-none">
+246-            {label}
+247-          </label>
+248-          <span className="text-[8px] text-primary/50 font-mono font-bold uppercase tracking-tighter">
+249-            {dayOfWeek}
+250-          </span>
+251-        </div>
+252-        <div className="flex items-center justify-between">
+--
+525-        setLoading(false);
+526-        setIsAuthReady(true);
+527-      }
+528-    });
+529-
+530:    return () => {
+531-      unsubscribe();
+532-      if (unsubProfile) unsubProfile();
+533-    };
+534-  }, []);
+535-
+536-  const isLoggingIn = useRef(false);
+537-  const googleProvider = useMemo(() => new GoogleAuthProvider(), []);
+538-
+539-  const login = async () => {
+540-    if (isLoggingIn.current) return;
+541-    isLoggingIn.current = true;
+542-    setError(null);
+543-    try {
+544-      // Ensure auth is ready before attempting login
+545-      if (!auth) throw new Error("Firebase Auth not initialized");
+546-      await signInWithPopup(auth, googleProvider);
+547-    } catch (err: any) {
+548-      if (err.code === 'auth/popup-closed-by-user') {
+549-        console.log("User closed the login popup.");
+550-      } else if (err.code === 'auth/cancelled-popup-request') {
+--
+1105-  const isStaffMember = profile?.role === 'staff';
+1106-  const isCustomer = profile?.role === 'customer';
+1107-  const isAdmin = isSuperAdmin || isOwner;
+1108-  const isStaff = isSuperAdmin || isOwner || isCashier || isStaffMember;
+1109-
+1110:  return (
+1111-    <AuthContext.Provider value={{ 
+1112-      user, profile, loading, isAdmin, isSuperAdmin, isOwner, isCashier, isStaff, isStaffMember, isCustomer,
+1113-      login, loginWithEmail, loginWithPhone, signUp, signUpWithPhone, resetPassword, resetPasswordWithIdentity, changePassword, forceChangePassword, logout, error, setError 
+1114-    }}>
+1115-      {children}
+1116-    </AuthContext.Provider>
+1117-  );
+1118-};
+1119-
+1120-const useAuth = () => {
+1121-  const context = useContext(AuthContext);
+1122-  if (!context) throw new Error("useAuth must be used within AuthProvider");
+1123-  return context;
+1124-};
+1125-
+1126-// --- Theme Context ---
+1127-type Theme = 'light' | 'dark';
+1128-
+1129-interface ThemeContextType {
+1130-  theme: Theme;
+--
+1156-      if (!localStorage.getItem('app-theme')) {
+1157-        setTheme(e.matches ? 'dark' : 'light');
+1158-      }
+1159-    };
+1160-    mediaQuery.addEventListener('change', handleChange);
+1161:    return () => mediaQuery.removeEventListener('change', handleChange);
+1162-  }, []);
+1163-
+1164-  const toggleTheme = () => {
+1165-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+1166-  };
+1167-
+1168:  return (
+1169-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+1170-      {children}
+1171-    </ThemeContext.Provider>
+1172-  );
+1173-};
+1174-
+1175-const useTheme = () => {
+1176-  const context = useContext(ThemeContext);
+1177-  if (!context) throw new Error("useTheme must be used within ThemeProvider");
+1178-  return context;
+1179-};
+1180-
+1181-// --- Components ---
+1182-
+1183-const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+1184-  const { profile, logout } = useAuth();
+1185-  const navigate = useNavigate();
+1186-  const location = useLocation();
+1187-
+1188-  const menuItems = [
+--
+1198-    { id: 'change-password', label: 'Change Password', icon: <Lock size={18} />, path: '/change-password', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
+1199-  ];
+1200-
+1201-  const filteredItems = menuItems.filter(item => item.roles.includes(profile?.role || ''));
+1202-
+1203:  return (
+1204-    <>
+1205-      <div 
+1206-        className={cn(
+1207-          "fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] transition-opacity duration-500",
+1208-          isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+1209-        )}
+1210-        onClick={onClose}
+1211-      />
+1212-      <div className={cn(
+1213-        "fixed top-0 left-0 w-[300px] h-full bg-card z-[10001] transition-transform duration-500 ease-out flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.2)]",
+1214-        isOpen ? "translate-x-0" : "-translate-x-full"
+1215-      )}>
+1216-        <div className="p-8 border-b border-border/50 relative overflow-hidden">
+1217-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+1218-          <div className="relative z-10">
+1219-            <span className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-2 block">{profile?.role}</span>
+1220-            <h2 className="text-2xl font-black text-foreground tracking-tighter leading-tight">{profile?.name}</h2>
+1221-            <p className="text-[10px] text-muted font-bold mt-1 uppercase tracking-widest opacity-60">{profile?.email}</p>
+1222-          </div>
+1223-        </div>
+1224-        
+1225-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto scrollbar-hide">
+1226-          {filteredItems.map(item => {
+1227-            const isActive = location.pathname === item.path;
+1228:            return (
+1229-              <button
+1230-                key={item.id}
+1231-                onClick={() => { navigate(item.path); onClose(); }}
+1232-                className={cn(
+1233-                  "w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
+1234-                  isActive 
+1235-                    ? "bg-primary text-primary-foreground font-bold shadow-xl shadow-primary/20 scale-[1.02]" 
+1236-                    : "text-muted hover:bg-primary/5 hover:text-primary"
+1237-                )}
+1238-              >
+1239-                {isActive && (
+1240-                  <motion.div 
+1241-                    layoutId="sidebar-active"
+1242-                    className="absolute inset-0 bg-primary z-0"
+1243-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+1244-                  />
+1245-                )}
+1246-                <span className={cn(
+1247-                  "mr-4 transition-all duration-300 relative z-10",
+1248-                  isActive ? "text-primary-foreground scale-110" : "text-primary group-hover:scale-120"
+--
+1272-
+1273-const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
+1274-  const navigate = useNavigate();
+1275-  const { theme, toggleTheme } = useTheme();
+1276-  
+1277:  return (
+1278-    <header className="sticky top-0 z-[1000] flex justify-between items-center px-6 py-4 bg-card/80 backdrop-blur-xl border-b border-border/50 transition-all duration-500">
+1279-      <div className="flex items-center gap-6">
+1280-        <button 
+1281-          onClick={onMenuClick} 
+1282-          className="text-primary hover:scale-110 active:scale-90 transition-all p-2 bg-primary/5 rounded-xl border border-primary/10"
+1283-        >
+1284-          <Menu size={20} />
+1285-        </button>
+1286-        <div 
+1287-          onClick={() => navigate('/')} 
+1288-          className="flex flex-col cursor-pointer group"
+1289-        >
+1290-          <span className="text-xl font-black text-foreground tracking-tighter group-hover:text-primary transition-colors leading-none">NAIL PRO</span>
+1291-          <span className="text-[8px] font-black text-primary tracking-[0.4em] mt-0.5 opacity-80 uppercase">Luxury Salon</span>
+1292-        </div>
+1293-      </div>
+1294-      <div className="flex items-center gap-4">
+1295-        <button 
+1296-          onClick={toggleTheme}
+1297-          className="p-2.5 text-muted hover:text-primary transition-all rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10 active:scale-90"
+--
+1394-        amount
+1395-      })));
+1396-      setLoading(false);
+1397-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+1398-
+1399:    return () => {
+1400-      unsubSales();
+1401-      unsubExp();
+1402-      unsubAppts();
+1403-      unsubChart();
+1404-    };
+1405-  }, [profile, today]);
+1406-
+1407-  const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
+1408-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+1409-  const netProfit = totalSales - totalExpenses;
+1410-  const pendingAppts = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
+1411-
+1412-  const stats = [
+1413-    { label: "Today's Sales", value: `${totalSales.toLocaleString()} Ks`, icon: <DollarSign size={24} />, color: "text-green-500", bg: "bg-green-500/10" },
+1414-    ...(isAdmin ? [
+1415-      { label: "Today's Expenses", value: `${totalExpenses.toLocaleString()} Ks`, icon: <TrendingDown size={24} />, color: "text-red-500", bg: "bg-red-500/10" },
+1416-      { label: "Net Profit", value: `${netProfit.toLocaleString()} Ks`, icon: <TrendingUp size={24} />, color: "text-blue-500", bg: "bg-blue-500/10" },
+1417-    ] : []),
+1418-    { label: "Appointments", value: pendingAppts.toString(), icon: <Calendar size={24} />, color: "text-purple-500", bg: "bg-purple-500/10" },
+1419-  ];
+1420-
+1421:  if (loading) return (
+1422-    <div className="flex-1 flex items-center justify-center">
+1423-      <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+1424-    </div>
+1425-  );
+1426-
+1427:  return (
+1428-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+1429-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
+1430-        <div className="space-y-1">
+1431-          <h3 className="text-3xl font-black tracking-tighter text-foreground uppercase">Dashboard</h3>
+1432-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Business Overview for {formatFullDate(new Date())}</p>
+1433-        </div>
+1434-        <div className="flex gap-3">
+1435-          <button 
+1436-            onClick={() => navigate('/pos')}
+1437-            className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-black text-xs tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+1438-          >
+1439-            <Plus size={16} />
+1440-            NEW SALE
+1441-          </button>
+1442-          <button 
+1443-            onClick={() => navigate('/appointments')}
+1444-            className="flex items-center gap-2 bg-card border border-border px-6 py-3 rounded-2xl font-black text-xs tracking-widest hover:border-primary transition-all"
+1445-          >
+1446-            <Calendar size={16} />
+1447-            APPOINTMENTS
+--
+1968-    { id: 'AYA Pay', label: 'AYA Pay' },
+1969-    { id: 'CB PAY', label: 'CB PAY' },
+1970-    { id: 'OK$', label: 'OK$' },
+1971-  ];
+1972-
+1973:  return (
+1974-    <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-73px)] overflow-y-auto lg:overflow-hidden bg-background">
+1975-      {/* Left Side: Services Selection */}
+1976-      <div className="flex-none lg:flex-1 flex flex-col min-w-0 border-r border-border/50">
+1977-        <div className="p-4 space-y-4 bg-card/30 backdrop-blur-sm border-b border-border/50">
+1978-          <div className="relative z-50">
+1979-            <div className="relative">
+1980-              <FloatingInput 
+1981-                label="Search Service..." 
+1982-                value={search}
+1983-                onChange={setSearch}
+1984-                onFocusClear
+1985-                className="mt-0"
+1986-              />
+1987-              {search && (
+1988-                <button 
+1989-                  onClick={() => setSearch('')}
+1990-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600 transition-colors z-10"
+1991-                >
+1992-                  <X size={18} />
+1993-                </button>
+--
+2021-              const categoryData = categories.find(c => c.name === cat);
+2022-              const IconComp = categoryData 
+2023-                ? (CATEGORY_ICONS.find(i => i.name === categoryData.icon)?.icon || LayoutGrid)
+2024-                : (cat === 'All' ? LayoutGrid : LayoutGrid);
+2025-              
+2026:              return (
+2027-                <button
+2028-                  key={cat}
+2029-                  onClick={() => setSelectedCategory(cat)}
+2030-                  className={cn(
+2031-                    "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap flex items-center gap-2.5",
+2032-                    selectedCategory === cat 
+2033-                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
+2034-                      : "bg-card/50 text-muted border-border/50 hover:border-primary/30 hover:text-primary"
+2035-                  )}
+2036-                >
+2037-                  <IconComp size={14} />
+2038-                  {cat}
+2039-                </button>
+2040-              );
+2041-            })}
+2042-          </div>
+2043-        </div>
+2044-
+2045-        <div className="flex-none lg:flex-1 overflow-y-visible lg:overflow-y-auto p-4 scrollbar-hide">
+2046-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+--
+2596-      setExpenses(data);
+2597-      const allYears = [...new Set(data.map(e => e.date.substring(0, 4)))];
+2598-      setYears(prev => [...new Set([...prev, ...allYears])].sort().reverse());
+2599-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
+2600-
+2601:    return () => { unsubSales(); unsubExp(); };
+2602-  }, [profile]);
+2603-
+2604-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+2605-  
+2606-  const monthlyData = months.map((mName, i) => {
+2607-    const monthStr = (i + 1).toString().padStart(2, '0');
+2608-    const prefix = `${year}-${monthStr}`;
+2609-    const mSales = sales.filter(s => s.date.startsWith(prefix));
+2610-    const mExp = expenses.filter(e => e.date.startsWith(prefix));
+2611-    
+2612-    const income = mSales.reduce((sum, s) => sum + s.total, 0);
+2613-    const comms = mSales.reduce((sum, s) => sum + s.commission, 0);
+2614-    const shopExp = mExp.reduce((sum, e) => sum + e.amount, 0);
+2615-    const totalExp = shopExp + comms;
+2616-    const profit = income - totalExp;
+2617-
+2618-    return { mName, income, totalExp, profit };
+2619-  }).filter(d => d.income > 0 || d.totalExp > 0);
+2620-
+2621-  const gIncome = monthlyData.reduce((sum, d) => sum + d.income, 0);
+2622-  const gExp = monthlyData.reduce((sum, d) => sum + d.totalExp, 0);
+2623-  const gProfit = gIncome - gExp;
+2624-
+2625:  return (
+2626-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+2627-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
+2628-        <div className="space-y-1">
+2629-          <h3 className="text-3xl font-light tracking-tight text-foreground">Monthly <span className="italic font-serif">Summary</span></h3>
+2630-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Financial Performance Overview</p>
+2631-        </div>
+2632-        <div className="flex items-center gap-4 bg-card/50 p-2 rounded-2xl border border-border shadow-sm">
+2633-          <div className="flex flex-col px-3">
+2634-            <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Fiscal Year</label>
+2635-            <select 
+2636-              value={year}
+2637-              onChange={(e) => setYear(e.target.value)}
+2638-              className="bg-transparent text-foreground text-sm font-bold focus:outline-none cursor-pointer hover:text-primary transition-colors"
+2639-            >
+2640-              {years.map(y => <option key={y} value={y}>{y}</option>)}
+2641-            </select>
+2642-          </div>
+2643-        </div>
+2644-      </div>
+2645-
+--
+2772-    } catch (error) {
+2773-      handleFirestoreError(error, OperationType.DELETE, `expenses/${id}`);
+2774-    }
+2775-  };
+2776-
+2777:  return (
+2778-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+2779-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
+2780-        <div className="space-y-1">
+2781-          <h3 className="text-3xl font-light tracking-tight text-foreground">Shop <span className="italic font-serif">Expenses</span></h3>
+2782-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Operating Cost Management</p>
+2783-        </div>
+2784-        
+2785-        <div className="bg-card/50 rounded-[2rem] border border-border shadow-2xl overflow-hidden backdrop-blur-md min-w-[320px]">
+2786-          <div className="grid grid-cols-1 md:grid-cols-2">
+2787-            <CustomDatePicker 
+2788-              label="FROM" 
+2789-              value={dateFrom} 
+2790-              onChange={setDateFrom} 
+2791-              iconColor="text-red-500"
+2792-              className="border-b md:border-b-0 md:border-r border-border/50"
+2793-            />
+2794-            <CustomDatePicker 
+2795-              label="TO" 
+2796-              value={dateTo} 
+2797-              onChange={setDateTo} 
+--
+2984-      groups[date].push(s);
+2985-    });
+2986-    return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
+2987-  }, [filteredSales]);
+2988-
+2989:  return (
+2990-    <div className="p-6 max-w-7xl mx-auto space-y-8">
+2991-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
+2992-        <div className="space-y-1">
+2993-          <h3 className="text-3xl font-light tracking-tight text-foreground">Daily <span className="italic font-serif">Sales List</span></h3>
+2994-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
+2995-        </div>
+2996-        
+2997-        <div className="bg-card/50 rounded-[2rem] border border-border shadow-2xl overflow-hidden backdrop-blur-md min-w-[320px]">
+2998-          <div className="grid grid-cols-1 md:grid-cols-2">
+2999-            <CustomDatePicker 
+3000-              label="FROM" 
+3001-              value={dateFrom} 
+3002-              onChange={setDateFrom} 
+3003-              className="border-b md:border-r border-border/50"
+3004-            />
+3005-            <CustomDatePicker 
+3006-              label="TO" 
+3007-              value={dateTo} 
+3008-              onChange={setDateTo} 
+3009-              className="border-b border-border/50"
+--
+3289-      const unsubSales = onSnapshot(q, (snapshot) => {
+3290-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+3291-        setSales(data);
+3292-      }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+3293-
+3294:      return () => {
+3295-        unsubStaff();
+3296-        unsubSales();
+3297-      };
+3298-    } else if (isStaff) {
+3299-      setStaffList([profile.name]);
+3300-      const q = query(collection(db, 'sales'), where('staffEmail', '==', profile.email), orderBy('dateTime', 'desc'));
+3301-      const unsubSales = onSnapshot(q, (snapshot) => {
+3302-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+3303-        setSales(data);
+3304-      }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+3305-      return unsubSales;
+3306-    }
+3307-  }, [profile, isAdmin, isStaff]);
+3308-
+3309-  const filteredSales = sales.filter(s => 
+3310-    (!dateFrom || s.date >= dateFrom) && 
+3311-    (!dateTo || s.date <= dateTo)
+3312-  );
+3313-
+3314-  const staffAggregates = staffList.map(name => {
+--
+3319-    return { name, totalSales, totalComm, count };
+3320-  }).filter(a => !staffFilter || a.name === staffFilter).sort((a, b) => b.totalComm - a.totalComm);
+3321-
+3322-  const grandTotalComm = staffAggregates.reduce((sum, a) => sum + a.totalComm, 0);
+3323-
+3324:  return (
+3325-    <div className="p-4 space-y-6">
+3326-      <h3 className="text-primary text-2xl font-bold tracking-tight">Staff Commissions</h3>
+3327-      
+3328-      <div className="space-y-4">
+3329-        <div className="grid grid-cols-2 gap-3">
+3330-          <div className="space-y-1.5">
+3331-            <label className="text-[10px] text-muted font-bold uppercase tracking-widest ml-1">From</label>
+3332-            <input 
+3333-              type="date" 
+3334-              value={dateFrom}
+3335-              onChange={(e) => setDateFrom(e.target.value)}
+3336-              className="w-full bg-input border border-border rounded-xl p-2.5 text-foreground text-sm focus:border-primary outline-none transition-all"
+3337-            />
+3338-          </div>
+3339-          <div className="space-y-1.5">
+3340-            <label className="text-[10px] text-muted font-bold uppercase tracking-widest ml-1">To</label>
+3341-            <input 
+3342-              type="date" 
+3343-              value={dateTo}
+3344-              onChange={(e) => setDateTo(e.target.value)}
+--
+3461-
+3462-  const grandTotal = reportData.reduce((sum, d) => sum + d.totalSales, 0);
+3463-  const grandComm = reportData.reduce((sum, d) => sum + d.totalComm, 0);
+3464-  const totalCount = reportData.reduce((sum, d) => sum + d.count, 0);
+3465-
+3466:  return (
+3467-    <div className="p-4 space-y-6">
+3468-      <h3 className="text-primary text-2xl font-bold tracking-tight">Sales Report</h3>
+3469-      
+3470-      <div className="flex items-center gap-3">
+3471-        <label className="text-[10px] text-muted font-bold uppercase tracking-widest">Select Year</label>
+3472-        <select 
+3473-          value={year}
+3474-          onChange={(e) => setYear(e.target.value)}
+3475-          className="flex-1 bg-input border border-border rounded-xl p-2.5 text-foreground text-sm focus:border-primary outline-none transition-all"
+3476-        >
+3477-          {years.map(y => <option key={y} value={y}>{y}</option>)}
+3478-        </select>
+3479-      </div>
+3480-
+3481-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+3482-        <table className="w-full text-sm">
+3483-          <thead className="bg-primary/10 text-primary">
+3484-            <tr>
+3485-              <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Month</th>
+3486-              <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Count</th>
+--
+3523-  className?: string;
+3524-}> = ({ label, type = "text", value, onChange, onFocusClear, placeholder, required, className }) => {
+3525-  const [isFocused, setIsFocused] = useState(false);
+3526-  const id = React.useId();
+3527-
+3528:  return (
+3529-    <div className={cn("relative mt-2", className)}>
+3530-      <input
+3531-        id={id}
+3532-        type={type}
+3533-        value={value}
+3534-        onChange={(e) => onChange(e.target.value)}
+3535-        required={required}
+3536-        onFocus={() => {
+3537-          setIsFocused(true);
+3538-          if (onFocusClear) onChange("");
+3539-        }}
+3540-        onBlur={() => setIsFocused(false)}
+3541-        placeholder=" "
+3542-        className="peer w-full bg-input border border-border rounded-xl p-3 text-foreground placeholder-transparent focus:outline-none focus:border-primary transition-all"
+3543-      />
+3544-      <label
+3545-        htmlFor={id}
+3546-        className={cn(
+3547-          "absolute left-3 transition-all pointer-events-none",
+3548-          (isFocused || value !== "") 
+--
+3663-      unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('dateTime', 'desc')), (snapshot) => {
+3664-        setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
+3665-      }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+3666-    }
+3667-
+3668:    return () => {
+3669-      unsubAppts();
+3670-      unsubCusts();
+3671-      unsubSvcs();
+3672-      unsubStaff();
+3673-      unsubSales();
+3674-    };
+3675-  }, [profile]);
+3676-
+3677-  useEffect(() => {
+3678-    if (selectedSvcId && selectedSvcId !== 'manual') {
+3679-      const s = services.find(s => s.id === selectedSvcId);
+3680-      if (s) {
+3681-        setWillEarnPoints(Math.floor(s.price / 1000));
+3682-        if (s.duration) {
+3683-          setApptDuration(s.duration);
+3684-        }
+3685-      }
+3686-    } else {
+3687-      setWillEarnPoints(0);
+3688-    }
+--
+4126-    };
+4127-    const goToToday = () => {
+4128-      toolbar.onNavigate('TODAY');
+4129-    };
+4130-
+4131:    return (
+4132-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-muted/5 p-4 rounded-3xl border border-border shadow-inner">
+4133-        <div className="flex items-center gap-2">
+4134-          <button
+4135-            onClick={goToBack}
+4136-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted hover:text-foreground active:scale-90 border border-border bg-card shadow-sm"
+4137-          >
+4138-            <ChevronLeft size={20} />
+4139-          </button>
+4140-          <button
+4141-            onClick={goToToday}
+4142-            className="px-6 py-2.5 bg-primary/10 text-primary rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10 active:scale-95 shadow-sm"
+4143-          >
+4144-            Today
+4145-          </button>
+4146-          <button
+4147-            onClick={goToNext}
+4148-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted hover:text-foreground active:scale-90 border border-border bg-card shadow-sm"
+4149-          >
+4150-            <ChevronRight size={20} />
+4151-          </button>
+--
+4173-        </div>
+4174-      </div>
+4175-    );
+4176-  };
+4177-
+4178:  return (
+4179-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
+4180-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+4181-        <div className="flex flex-col gap-1">
+4182-          <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground leading-none">
+4183-            {isCustomer ? 'My Appointments' : 'Customer Appointments'}
+4184-          </h1>
+4185-          {isCustomer && profile.points !== undefined && (
+4186-            <div className="flex items-center gap-2 mt-1">
+4187-              <span className="text-xs font-bold bg-primary/20 text-primary px-3 py-1 rounded-full border border-primary/30 shadow-sm">
+4188-                {profile.points.toLocaleString()} Points Available
+4189-              </span>
+4190-            </div>
+4191-          )}
+4192-        </div>
+4193-        
+4194-        <div className="flex flex-wrap items-center gap-4">
+4195-          <div className="flex bg-gray-100 dark:bg-black/40 p-1 rounded-xl border border-gray-200 dark:border-white/5 shadow-xl backdrop-blur-xl">
+4196-            <button
+4197-              onClick={() => setViewMode('list')}
+4198-              className={cn(
+--
+4435-            </div>
+4436-          ) : (
+4437-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+4438-              {filteredAppts.map((appt) => {
+4439-                  const customer = customers.find(c => c.id === appt.customerId);
+4440:                  return (
+4441-                    <motion.div 
+4442-                      layout
+4443-                      key={appt.id} 
+4444-                      onClick={() => {
+4445-                        if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
+4446-                          startEdit(appt);
+4447-                        }
+4448-                      }}
+4449-                      className={cn(
+4450-                        "bg-card border border-border rounded-2xl p-5 shadow-sm transition-all group relative overflow-hidden",
+4451-                        (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) ? "hover:shadow-xl hover:border-primary/30 cursor-pointer" : "opacity-90"
+4452-                      )}
+4453-                    >
+4454-                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[3rem] -mr-8 -mt-8 transition-all group-hover:scale-110 group-hover:bg-primary/10"></div>
+4455-                      
+4456-                      <div className="flex justify-between items-start relative z-10 mb-6">
+4457-                        <div className="flex flex-col">
+4458-                          <div className="bg-primary/5 text-primary px-4 py-2 rounded-xl font-black text-xl tracking-tighter shadow-sm border border-primary/10">
+4459-                            {appt.time}
+4460-                          </div>
+--
+4705-                          }] : [])
+4706-                        ])
+4707-                      ].sort((a, b) => b.date.localeCompare(a.date));
+4708-
+4709-                      if (history.length === 0) {
+4710:                        return (
+4711-                          <tr>
+4712-                            <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted italic">No point activity recorded yet.</td>
+4713-                          </tr>
+4714-                        );
+4715-                      }
+4716-
+4717-                      return history.map(item => (
+4718-                        <tr key={item.id} className="hover:bg-muted/5 transition-colors">
+4719-                          <td className="px-4 py-3 text-xs text-muted">{format(new Date(item.date), 'MMM d, yyyy')}</td>
+4720-                          <td className="px-4 py-3">
+4721-                            <div className="text-xs font-bold text-foreground">{item.title}</div>
+4722-                            <div className="text-[10px] text-muted">{item.details}</div>
+4723-                          </td>
+4724-                          <td className={cn(
+4725-                            "px-4 py-3 text-right text-xs font-bold",
+4726-                            item.type === 'earned' ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"
+4727-                          )}>
+4728-                            {item.points > 0 ? `+${item.points}` : item.points}
+4729-                          </td>
+4730-                        </tr>
+--
+5354-  title: string;
+5355-  children: React.ReactNode;
+5356-  maxWidth?: string;
+5357-}> = ({ isOpen, onClose, title, children, maxWidth = "max-w-sm" }) => {
+5358-  if (!isOpen) return null;
+5359:  return (
+5360-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[20000] flex items-center justify-center p-4">
+5361-      <motion.div 
+5362-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+5363-        animate={{ opacity: 1, scale: 1, y: 0 }}
+5364-        className={cn("bg-card w-full rounded-[2.5rem] border border-primary/30 p-8 space-y-8 shadow-2xl relative overflow-hidden", maxWidth)}
+5365-      >
+5366-        <div className="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
+5367-        <div className="flex justify-between items-center">
+5368-          <h3 className="text-primary font-bold text-xl uppercase tracking-widest">{title}</h3>
+5369-          <button onClick={onClose} className="text-muted hover:text-foreground transition-colors p-1"><X size={24} /></button>
+5370-        </div>
+5371-        <div className="space-y-4">
+5372-          {children}
+5373-        </div>
+5374-      </motion.div>
+5375-    </div>
+5376-  );
+5377-};
+5378-
+5379-const ManagePage: React.FC = () => {
+--
+5491-
+5492-    const unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('dateTime', 'desc')), (snapshot) => {
+5493-      setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
+5494-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+5495-
+5496:    return () => { 
+5497-      unsubSettings(); 
+5498-      unsubServices(); 
+5499-      unsubCategories(); 
+5500-      unsubStaff(); 
+5501-      unsubExp(); 
+5502-      unsubExpCategories();
+5503-      unsubCustomers();
+5504-      unsubSales();
+5505-    };
+5506-  }, [profile]);
+5507-
+5508-  useEffect(() => {
+5509-    if (location.state?.activeTab) {
+5510-      setActiveTab(location.state.activeTab);
+5511-    }
+5512-    if (location.state?.viewCustomer) {
+5513-      setViewingCustomerHistory(location.state.viewCustomer);
+5514-    }
+5515-  }, [location.state]);
+5516-
+--
+6020-    }
+6021-  };
+6022-
+6023-  if (!isAdmin) return <Navigate to="/" />;
+6024-
+6025:  return (
+6026-    <div className="p-4 space-y-6">
+6027-      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+6028-        {[
+6029-          { id: 'shop', label: 'Shop', icon: <Store size={16} /> },
+6030-          { id: 'categories', label: 'Categories', icon: <Menu size={16} /> },
+6031-          { id: 'services', label: 'Services', icon: <Briefcase size={16} /> },
+6032-          { id: 'staff', label: 'Staff', icon: <UserIcon size={16} /> },
+6033-          { id: 'expense', label: 'Expense', icon: <TrendingDown size={16} /> },
+6034-          { id: 'customers', label: 'Customers', icon: <UsersIcon size={16} /> },
+6035-        ].map(tab => (
+6036-          <button
+6037-            key={tab.id}
+6038-            onClick={() => setActiveTab(tab.id as any)}
+6039-            className={cn(
+6040-              "flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
+6041-              activeTab === tab.id 
+6042-                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
+6043-                : "bg-card text-muted border-border hover:border-primary/50"
+6044-            )}
+6045-          >
+--
+6214-              <div className="space-y-3">
+6215-                <label className="text-[10px] text-muted font-black uppercase tracking-widest ml-1">Select Icon</label>
+6216-                <div className="grid grid-cols-6 gap-2">
+6217-                  {CATEGORY_ICONS.map((item) => {
+6218-                    const IconComp = item.icon;
+6219:                    return (
+6220-                      <button
+6221-                        key={item.name}
+6222-                        type="button"
+6223-                        onClick={() => setCatIcon(item.name)}
+6224-                        className={cn(
+6225-                          "p-3 rounded-xl border transition-all flex items-center justify-center",
+6226-                          catIcon === item.name 
+6227-                            ? "bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-105" 
+6228-                            : "bg-background border-border text-muted hover:border-primary/50"
+6229-                        )}
+6230-                      >
+6231-                        <IconComp size={20} />
+6232-                      </button>
+6233-                    );
+6234-                  })}
+6235-                </div>
+6236-              </div>
+6237-
+6238-              {editingCategory ? (
+6239-                <button onClick={handleUpdateCategory} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Update Category</button>
+--
+6248-                  <p className="text-muted text-xs italic">No categories added yet.</p>
+6249-                </div>
+6250-              ) : (
+6251-                categories.map(c => {
+6252-                  const IconComp = CATEGORY_ICONS.find(i => i.name === c.icon)?.icon || LayoutGrid;
+6253:                  return (
+6254-                    <div key={c.id} className="flex justify-between items-center p-4 bg-background rounded-2xl border border-border group hover:border-primary/50 transition-all shadow-sm">
+6255-                      <div className="flex items-center gap-3">
+6256-                        <div className="p-2 bg-primary/10 rounded-lg text-primary group-hover:bg-primary group-hover:text-white transition-all">
+6257-                          <IconComp size={16} />
+6258-                        </div>
+6259-                        <span className="font-bold text-foreground group-hover:text-primary transition-colors">{c.name}</span>
+6260-                      </div>
+6261-                      <div className="flex gap-2">
+6262-                        {isAdmin && (
+6263-                          <button 
+6264-                            onClick={() => { setEditingCategory(c); setCatName(c.name); setCatIcon(c.icon || 'LayoutGrid'); setShowCatForm(true); }} 
+6265-                            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+6266-                            title="Edit Category"
+6267-                          >
+6268-                            <Settings size={16} />
+6269-                          </button>
+6270-                        )}
+6271-                        {isAdmin && (
+6272-                          <button 
+6273-                            onClick={() => setShowConfirm({ coll: 'categories', id: c.id })} 
+--
+7235-    } finally {
+7236-      setLoading(false);
+7237-    }
+7238-  };
+7239-
+7240:  return (
+7241-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background p-4 sm:p-6 overflow-y-auto">
+7242-      <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border/50 relative overflow-hidden my-auto shrink-0">
+7243-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+7244-        
+7245-        <div className="relative z-10">
+7246-          <div className="flex items-center gap-4 mb-8">
+7247-            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+7248-              <AlertTriangle className="w-6 h-6 text-primary" />
+7249-            </div>
+7250-            <div>
+7251-              <h2 className="text-2xl font-black tracking-tighter">Security Update</h2>
+7252-              <p className="text-xs text-muted font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
+7253-            </div>
+7254-          </div>
+7255-
+7256-          <p className="text-sm text-muted mb-6 font-medium leading-relaxed">
+7257-            An administrator has reset your password. For your security, you must set a new password before continuing.
+7258-          </p>
+7259-
+7260-          {error && (
+--
+7364-    } finally {
+7365-      setLoading(false);
+7366-    }
+7367-  };
+7368-
+7369:  return (
+7370-    <div className="max-w-md mx-auto mt-10 p-8 bg-card rounded-3xl shadow-2xl border border-border/50 relative overflow-hidden">
+7371-      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+7372-      
+7373-      <div className="relative z-10">
+7374-        <div className="flex items-center gap-4 mb-8">
+7375-          <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+7376-            <Lock className="w-6 h-6 text-primary" />
+7377-          </div>
+7378-          <div>
+7379-            <h2 className="text-2xl font-black tracking-tighter">Change Password</h2>
+7380-            <p className="text-xs text-muted font-bold uppercase tracking-widest opacity-60">Security Settings</p>
+7381-          </div>
+7382-        </div>
+7383-
+7384-        {error && (
+7385-          <motion.div 
+7386-            initial={{ opacity: 0, y: -10 }}
+7387-            animate={{ opacity: 1, y: 0 }}
+7388-            className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
+7389-          >
+--
+7529-      setLoading(false);
+7530-    }
+7531-  };
+7532-
+7533-  if (success) {
+7534:    return (
+7535-      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#1a1a1a] p-4 sm:p-6 overflow-y-auto">
+7536-        <div className="max-w-md w-full p-8 bg-[#2d2d2d] rounded-3xl shadow-2xl border border-[#444] text-center my-auto shrink-0">
+7537-          <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/20">
+7538-            <CheckCircle2 className="w-10 h-10 text-green-500" />
+7539-          </div>
+7540-          <h2 className="text-3xl font-black text-white mb-4">Password Reset!</h2>
+7541-          <p className="text-[#888] font-bold">Your password has been updated successfully. Redirecting to login...</p>
+7542-        </div>
+7543-      </div>
+7544-    );
+7545-  }
+7546-
+7547:  return (
+7548-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#1a1a1a] p-4 sm:p-6 overflow-y-auto">
+7549-      <div className="max-w-md w-full p-8 bg-[#2d2d2d] rounded-3xl shadow-2xl border border-[#444] relative overflow-hidden my-auto shrink-0">
+7550-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+7551-        
+7552-        <div className="relative z-10">
+7553-          <div className="flex flex-col items-center mb-8">
+7554-            <div className="w-16 h-16 bg-[#d4af37]/10 rounded-2xl flex items-center justify-center mb-4 border border-[#d4af37]/20">
+7555-              <Lock className="w-8 h-8 text-[#d4af37]" />
+7556-            </div>
+7557-            <h2 className="text-3xl font-black text-white tracking-tighter">
+7558-              {step === 'verify' ? 'Verify Identity' : 'New Password'}
+7559-            </h2>
+7560-            <p className="text-[10px] text-[#888] font-black uppercase tracking-[0.3em] mt-2">
+7561-              {step === 'verify' ? 'Confirm your details' : 'Set your new password'}
+7562-            </p>
+7563-          </div>
+7564-
+7565-          {error && (
+7566-            <motion.div 
+7567-              initial={{ opacity: 0, y: -10 }}
+--
+7708-    } finally {
+7709-      setLoading(false);
+7710-    }
+7711-  };
+7712-
+7713:  return (
+7714-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-[#1a1a1a] p-4 sm:p-6 overflow-y-auto">
+7715-      <div className="max-w-md w-full p-8 bg-[#2d2d2d] rounded-3xl shadow-2xl border border-[#444] relative overflow-hidden my-auto shrink-0">
+7716-        <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+7717-        
+7718-        <div className="relative z-10">
+7719-          <div className="flex flex-col items-center mb-8">
+7720-            <div className="w-16 h-16 bg-[#d4af37]/10 rounded-2xl flex items-center justify-center mb-4 border border-[#d4af37]/20">
+7721-              <Phone className="w-8 h-8 text-[#d4af37]" />
+7722-            </div>
+7723-            <h2 className="text-3xl font-black text-white tracking-tighter">Join Us</h2>
+7724-            <p className="text-[10px] text-[#888] font-black uppercase tracking-[0.3em] mt-2">Sign up with Phone</p>
+7725-          </div>
+7726-
+7727-          {error && (
+7728-            <motion.div 
+7729-              initial={{ opacity: 0, y: -10 }}
+7730-              animate={{ opacity: 1, y: 0 }}
+7731-              className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex flex-col gap-3 font-bold"
+7732-            >
+7733-              <div className="flex items-center gap-3">
+--
+7858-    } finally {
+7859-      setIsSubmitting(false);
+7860-    }
+7861-  };
+7862-
+7863:  return (
+7864-    <div className="fixed inset-0 bg-white dark:bg-[#1a1a1a] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300">
+7865-      <div className="bg-[#f5f5f5] dark:bg-[#2d2d2d] p-8 rounded-3xl border border-[#ddd] dark:border-[#d4af37] w-full max-w-[380px] text-center space-y-6 shadow-2xl my-auto transition-colors duration-300">
+7866-        <img src="https://i.postimg.cc/vB8xGp2h/Logo.png" alt="Logo" className="w-20 mx-auto" />
+7867-        <div className="space-y-1">
+7868-          <h2 className="text-[#d4af37] text-2xl font-bold">Reset Password</h2>
+7869-          <p className="text-[#888] text-sm">Enter your email to receive a reset link</p>
+7870-        </div>
+7871-
+7872-        {error && (
+7873-          <div className="bg-[#ff4444]/10 border border-[#ff4444]/30 text-[#ff4444] text-xs p-3 rounded-xl animate-shake leading-relaxed">
+7874-            {error}
+7875-          </div>
+7876-        )}
+7877-
+7878-        {isSent ? (
+7879-          <div className="space-y-6">
+7880-            <div className="bg-green-500/10 border border-green-500/30 text-green-600 text-xs p-4 rounded-xl leading-relaxed">
+7881-              Password reset link has been sent to <strong>{email}</strong>. Please check your inbox and follow the instructions.
+7882-            </div>
+7883-            <button 
+--
+7996-    } finally {
+7997-      setIsSubmitting(false);
+7998-    }
+7999-  };
+8000-
+8001:  return (
+8002-    <div className="fixed inset-0 bg-[#0a0a0a] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto">
+8003-      {/* Background Decorative Elements */}
+8004-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+8005-        <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#d4af37]/5 rounded-full blur-[120px]" />
+8006-        <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#d4af37]/5 rounded-full blur-[120px]" />
+8007-      </div>
+8008-
+8009-      <div className="relative w-full max-w-[400px] space-y-8 z-10 shrink-0 my-auto py-8">
+8010-        {/* Header */}
+8011-        <div className="text-center space-y-2">
+8012-          <motion.div
+8013-            initial={{ opacity: 0, y: -20 }}
+8014-            animate={{ opacity: 1, y: 0 }}
+8015-            transition={{ duration: 0.6 }}
+8016-          >
+8017-            <img src="https://i.postimg.cc/vB8xGp2h/Logo.png" alt="Logo" className="w-24 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]" />
+8018-            <h1 className="text-4xl font-black text-[#d4af37] tracking-tighter leading-none">NAIL PRO</h1>
+8019-            <p className="text-[10px] font-black text-[#d4af37]/60 uppercase tracking-[0.4em] mt-1">Beauty Studio Management</p>
+8020-          </motion.div>
+8021-        </div>
+--
+8249-        sessionStorage.setItem('initial_redirect_done', 'true');
+8250-      }
+8251-    }
+8252-  }, [user, profile, loading, navigate]);
+8253-
+8254:  if (loading) return (
+8255-    <div className="fixed inset-0 flex items-center justify-center bg-background transition-colors duration-300">
+8256-      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+8257-    </div>
+8258-  );
+8259-
+8260-  if (!user) {
+8261-    if (location.pathname === '/reset-password') {
+8262-      return <ResetPasswordPage />;
+8263-    }
+8264-    if (location.pathname === '/identity-reset') {
+8265-      return <IdentityResetPage />;
+8266-    }
+8267-    return <LoginPage />;
+8268-  }
+8269-
+8270-  if (profile?.mustChangePassword && location.pathname !== '/force-password-change') {
+8271-    return <Navigate to="/force-password-change" />;
+8272-  }
+8273-
+8274:  return (
+8275-    <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300">
+8276-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+8277-      <Header onMenuClick={() => setIsSidebarOpen(true)} />
+8278-      <main className="max-w-md mx-auto px-4 pt-4">
+8279-        {children}
+8280-      </main>
+8281-    </div>
+8282-  );
+8283-};
+8284-
+8285-const AppRoutes = () => {
+8286-  const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
+8287-
+8288:  return (
+8289-    <Routes>
+8290-      <Route path="/" element={isCustomer ? <Navigate to="/appointments" /> : <DashboardPage />} />
+8291-      <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <POSPage />} />
+8292-      <Route path="/appointments" element={<AppointmentsPage />} />
+8293-      <Route path="/history" element={!isStaff ? <Navigate to="/appointments" /> : <HistoryPage />} />
+8294-      <Route path="/staff-commissions" element={!(isAdmin || isStaffMember) ? <Navigate to="/appointments" /> : <StaffCommissionsPage />} />
+8295-      <Route path="/monthly" element={!isAdmin ? <Navigate to="/appointments" /> : <MonthlySummaryPage />} />
+8296-      <Route path="/sales-report" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <SalesReportPage />} />
+8297-      <Route path="/change-password" element={<ChangePasswordPage />} />
+8298-      <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
+8299-      <Route path="/reset-password" element={<ResetPasswordPage />} />
+8300-      <Route path="/identity-reset" element={<IdentityResetPage />} />
+8301-      <Route path="/expenses" element={!isAdmin ? <Navigate to="/appointments" /> : <ExpenseListPage />} />
+8302-      <Route path="/manage" element={!isAdmin ? <Navigate to="/appointments" /> : <ManagePage />} />
+8303-      <Route path="*" element={<Navigate to="/" />} />
+8304-    </Routes>
+8305-  );
+8306-};
+8307-
+8308-// --- App ---
+8309-
+8310-export default function App() {
+8311:  return (
+8312-    <ErrorBoundary>
+8313-      <AuthProvider>
+8314-        <ThemeProvider>
+8315-          <Router>
+8316-            <Layout>
+8317-              <AppRoutes />
+8318-            </Layout>
+8319-          </Router>
+8320-        </ThemeProvider>
+8321-      </AuthProvider>
+8322-    </ErrorBoundary>
+8323-  );
+8324-}
