@@ -7,6 +7,8 @@ import {
   useNavigate, 
   useLocation 
 } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { Printer as CapPrinter } from '@capgo/capacitor-printer';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -1670,6 +1672,8 @@ const POSPage: React.FC = () => {
   const [pointsToRedeem, setPointsToRedeem] = useState(0);
   const [showLoyaltyPrompt, setShowLoyaltyPrompt] = useState(false);
   const [isLoyaltyDiscountActive, setIsLoyaltyDiscountActive] = useState(false);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [pendingSaleParams, setPendingSaleParams] = useState<{sale: Omit<Sale, 'id'>, overridePayments?: typeof payments} | null>(null);
 
   const LOYALTY_THRESHOLD = 500;
   const LOYALTY_DISCOUNT = 10; // 10%
@@ -1873,7 +1877,7 @@ const POSPage: React.FC = () => {
     setAppointmentSearch('');
   };
 
-  const handleCheckout = async (overridePayments?: typeof payments) => {
+  const handleCheckout = (overridePayments?: typeof payments) => {
     if (cart.length === 0) return;
     const selectedStaff = staff.find(s => s.email === selectedStaffEmail);
     if (!selectedStaff) return;
@@ -1892,7 +1896,6 @@ const POSPage: React.FC = () => {
     }
 
     const commissionAmt = Math.round(netTotal * (selectedStaff.commission / 100));
-    // pointsEarned is now calculated in the component body
 
     const sale: Omit<Sale, 'id'> = {
       date: localDateStr,
@@ -1915,16 +1918,24 @@ const POSPage: React.FC = () => {
       }))
     };
 
+    setPendingSaleParams({ sale, overridePayments });
+    setShowPrintPreview(true);
+  };
+
+  const confirmCheckout = async (print: boolean) => {
+    if (!pendingSaleParams) return;
+    const { sale } = pendingSaleParams;
+
     try {
       await addDoc(collection(db, 'sales'), sale);
       
+      const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
       if (selectedCustomer) {
-        const newPoints = (selectedCustomer.points || 0) + pointsEarned - pointsToRedeem;
+        const newPoints = (selectedCustomer.points || 0) + (sale.pointsEarned || 0) - (sale.pointsRedeemed || 0);
         await updateDoc(doc(db, 'customers', selectedCustomer.id), {
           points: newPoints
         });
         
-        // Update user profile points if email is present
         if (selectedCustomer.email) {
           const userDocRef = doc(db, 'users', selectedCustomer.email.toLowerCase());
           const userDocSnap = await getDoc(userDocRef);
@@ -1941,10 +1952,19 @@ const POSPage: React.FC = () => {
         });
       }
 
-      // Print logic (simplified for web)
-      const printText = generateReceiptText(sale, shopSettings);
-      const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(printText))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
-      window.location.href = rawbtUrl;
+      if (print) {
+        const printText = generateReceiptText(sale, shopSettings);
+        if (Capacitor.isNativePlatform()) {
+          const htmlStr = "<html><body style='margin:0;padding:10px;'><pre style='font-family:monospace;font-size:12px;'>" + printText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + "</pre></body></html>";
+          CapPrinter.printHtml({ name: 'Receipt', html: htmlStr }).catch(e => {
+            console.error('Printer error:', e);
+            alert('Failed to print: ' + String(e));
+          });
+        } else {
+          const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(printText))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+          window.location.href = rawbtUrl;
+        }
+      }
 
       setCart([]);
       setSelectedCustomerId('');
@@ -1953,6 +1973,8 @@ const POSPage: React.FC = () => {
       setPointsToRedeem(0);
       setIsLoyaltyDiscountActive(false);
       setPayments([{ method: 'Cash', amount: 0 }]);
+      setShowPrintPreview(false);
+      setPendingSaleParams(null);
       alert("Sale saved successfully!");
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'sales');
@@ -2570,6 +2592,20 @@ const POSPage: React.FC = () => {
           </motion.div>
         </div>
       )}
+
+      {pendingSaleParams && (
+        <PrintPreviewModal
+          isOpen={showPrintPreview}
+          onClose={() => {
+            setShowPrintPreview(false);
+            setPendingSaleParams(null);
+          }}
+          text={generateReceiptText(pendingSaleParams.sale, shopSettings)}
+          onPrint={() => confirmCheckout(true)}
+          onSkipPrint={() => confirmCheckout(false)}
+          title="Checkout & Print Preview"
+        />
+      )}
     </div>
   );
 };
@@ -2932,6 +2968,7 @@ const HistoryPage: React.FC = () => {
   const [staffFilter, setStaffFilter] = useState(isStaff ? profile.name : '');
   const [paymentFilter, setPaymentFilter] = useState('');
   const [staffList, setStaffList] = useState<string[]>([]);
+  const [showPrintPreview, setShowPrintPreview] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -2973,9 +3010,23 @@ const HistoryPage: React.FC = () => {
 
   const handlePrintAll = () => {
     if (filteredSales.length === 0) return;
+    setShowPrintPreview(true);
+  };
+
+  const confirmPrintAll = () => {
+    if (filteredSales.length === 0) return;
     const printText = generateConsolidatedReceiptText(filteredSales, shopSettings, dateFrom, dateTo);
-    const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(printText))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
-    window.location.href = rawbtUrl;
+    
+    if (Capacitor.isNativePlatform()) {
+      const htmlStr = "<html><body style='margin:0;padding:10px;'><pre style='font-family:monospace;font-size:12px;'>" + printText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + "</pre></body></html>";
+      CapPrinter.printHtml({ name: 'Consolidated_Report', html: htmlStr }).catch(e => {
+        console.error('Printer error:', e);
+        alert('Failed to print: ' + String(e));
+      });
+    } else {
+      const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(printText))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+      window.location.href = rawbtUrl;
+    }
   };
 
   const groupedSales = useMemo(() => {
@@ -3251,10 +3302,18 @@ const HistoryPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <PrintPreviewModal
+        isOpen={showPrintPreview}
+        onClose={() => setShowPrintPreview(false)}
+        text={generateConsolidatedReceiptText(filteredSales, shopSettings, dateFrom, dateTo)}
+        onPrint={confirmPrintAll}
+        title="Consolidated Report Preview"
+        printLabel="Print Report"
+      />
     </div>
   );
 };
-
 
 const StaffCommissionsPage: React.FC = () => {
   const { profile, isAdmin, isStaffMember: isStaff } = useAuth();
@@ -4993,7 +5052,7 @@ const AppointmentsPage: React.FC = () => {
                         <option value="">Select Service...</option>
                         <option value="manual">Other Service (Manual Entry)</option>
                         {services.map(s => (
-                          <option key={s.id} value={s.id}>{s.name} ({s.price.toLocaleString()} Ks)</option>
+                          <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
@@ -5348,6 +5407,63 @@ const AppointmentsPage: React.FC = () => {
           </motion.div>
         </div>
       )}
+    </div>
+  );
+};
+
+const PrintPreviewModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  text: string;
+  onPrint: () => void;
+  onSkipPrint?: () => void;
+  title?: string;
+  printLabel?: string;
+  skipLabel?: string;
+}> = ({ isOpen, onClose, text, onPrint, onSkipPrint, title = "Print Preview", printLabel = "Process & Print", skipLabel = "Complete Without Printing" }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[30000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl border border-border flex flex-col overflow-hidden max-h-[calc(100dvh-40px)]"
+      >
+        <div className="p-6 border-b border-border flex justify-between items-center bg-muted/10 shrink-0">
+          <h3 className="font-bold text-lg tracking-tight flex items-center gap-2">
+            <Printer size={20} className="text-primary" />
+            {title}
+          </h3>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></button>
+        </div>
+        
+        <div className="p-6 overflow-y-auto bg-muted/20 flex-1 flex justify-center custom-scrollbar">
+          <div className="bg-white text-black p-6 shadow-md shadow-black/5" style={{ minWidth: '320px' }}>
+            <pre className="font-mono text-[12px] leading-[1.4] whitespace-pre-wrap font-medium">
+              {text}
+            </pre>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-border bg-card shrink-0 space-y-3">
+          <button
+            onClick={() => { onPrint(); onClose(); }}
+            className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
+          >
+            <Printer size={20} />
+            {printLabel}
+          </button>
+          
+          {onSkipPrint && (
+            <button
+              onClick={() => { onSkipPrint(); onClose(); }}
+              className="w-full bg-muted text-muted-foreground hover:text-foreground py-4 rounded-2xl font-bold transition-colors"
+            >
+              {skipLabel}
+            </button>
+          )}
+        </div>
+      </motion.div>
     </div>
   );
 };

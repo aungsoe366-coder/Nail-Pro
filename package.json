@@ -12,6 +12,8 @@
     "start": "node server.ts"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.0",
+    "@capgo/capacitor-printer": "^8.0.15",
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
