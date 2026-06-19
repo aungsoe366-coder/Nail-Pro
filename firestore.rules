@@ -13,15 +13,50 @@ service cloud.firestore {
       return ('email' in request.auth.token && request.auth.token.email != null) ? request.auth.token.email.lower() : "";
     }
 
-    function isSuperAdmin() {
+    function hasRole(roleName) {
       let email = getUserEmail();
-      return isAuthenticated() && email != "" &&
-        (email == "aungsoe366@gmail.com" || 
-         email == "pes@gmail.com" ||
-         email == "aung@gmail.com" ||
-         email == "peslover.lover366@gmail.com" ||
-         (exists(/databases/$(database)/documents/users/$(email)) && 
-          get(/databases/$(database)/documents/users/$(email)).data.role == 'super_admin'));
+      if (!isAuthenticated() || email == "") return false;
+      
+      // Master emails are always super_admin
+      if (email == "aungsoe366@gmail.com" || 
+          email == "pes@gmail.com" ||
+          email == "aung@gmail.com" ||
+          email == "peslover.lover366@gmail.com") {
+        return true;
+      }
+      
+      let docPath = /databases/$(database)/documents/users/$(email);
+      let docData = exists(docPath) ? get(docPath).data : null;
+      if (docData == null) return false;
+      
+      let primaryRole = 'role' in docData ? docData.role : 'customer';
+      let isRoleList = ('roles' in docData) && (docData.roles is list);
+      
+      let hasPrimary = (primaryRole == roleName);
+      let hasInRoles = isRoleList && (roleName in docData.roles);
+      let userHasRole = hasPrimary || hasInRoles;
+      
+      if (roleName == 'staff') {
+        return userHasRole || 
+          primaryRole == 'cashier' || (isRoleList && 'cashier' in docData.roles) ||
+          primaryRole == 'owner' || (isRoleList && 'owner' in docData.roles) ||
+          primaryRole == 'super_admin' || (isRoleList && 'super_admin' in docData.roles);
+      }
+      if (roleName == 'cashier') {
+        return userHasRole || 
+          primaryRole == 'owner' || (isRoleList && 'owner' in docData.roles) ||
+          primaryRole == 'super_admin' || (isRoleList && 'super_admin' in docData.roles);
+      }
+      if (roleName == 'owner') {
+        return userHasRole || 
+          primaryRole == 'super_admin' || (isRoleList && 'super_admin' in docData.roles);
+      }
+      
+      return userHasRole;
+    }
+
+    function isSuperAdmin() {
+      return hasRole('super_admin');
     }
 
     function isMasterAccount() {
@@ -29,24 +64,15 @@ service cloud.firestore {
     }
 
     function isOwner() {
-      let email = getUserEmail();
-      return isSuperAdmin() || (isAuthenticated() && email != "" &&
-        exists(/databases/$(database)/documents/users/$(email)) &&
-        get(/databases/$(database)/documents/users/$(email)).data.role == 'owner');
+      return hasRole('owner');
     }
 
     function isCashier() {
-      let email = getUserEmail();
-      return isOwner() || (isAuthenticated() && email != "" &&
-        exists(/databases/$(database)/documents/users/$(email)) &&
-        get(/databases/$(database)/documents/users/$(email)).data.role == 'cashier');
+      return hasRole('cashier');
     }
 
     function isStaff() {
-      let email = getUserEmail();
-      return isCashier() || (isAuthenticated() && email != "" &&
-        exists(/databases/$(database)/documents/users/$(email)) &&
-        get(/databases/$(database)/documents/users/$(email)).data.role == 'staff');
+      return hasRole('staff');
     }
 
     function isDocOwner(emailId) {
@@ -103,7 +129,8 @@ service cloud.firestore {
                       ((isOwner() || isDocOwner(email)) && 
                        isValidUser(request.resource.data) &&
                        (resource.data.role != 'owner' && resource.data.role != 'super_admin' &&
-                        request.resource.data.role != 'owner' && request.resource.data.role != 'super_admin'));
+                        request.resource.data.role != 'owner' && request.resource.data.role != 'super_admin')) ||
+                      (isStaff() && resource.data.role == 'customer' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points']));
       
       allow delete: if isSuperAdmin() && resource.data.role != 'owner';
     }
@@ -139,14 +166,14 @@ service cloud.firestore {
 
     match /sales/{id} {
       allow read: if isStaff();
-      allow create: if isCashier();
+      allow create: if isStaff();
       allow update: if isOwner();
       allow delete: if isSuperAdmin();
     }
 
     match /expenses/{id} {
-      allow read: if isOwner();
-      allow write: if isOwner();
+      allow read: if isOwner() || isCashier();
+      allow write: if isOwner() || isCashier();
     }
 
     match /appointments/{id} {

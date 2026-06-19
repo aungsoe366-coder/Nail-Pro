@@ -1194,10 +1194,10 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
     { id: 'pos', label: 'Point of Sale', icon: <ShoppingCart size={18} />, path: '/pos', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
     { id: 'appointments', label: 'Appointments', icon: <Calendar size={18} />, path: '/appointments', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
     { id: 'history', label: 'Daily Sales', icon: <BarChart2 size={18} />, path: '/history', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
-    { id: 'staff-commissions', label: 'Commissions', icon: <UserIcon size={18} />, path: '/staff-commissions', roles: ['super_admin', 'owner', 'staff'] },
-    { id: 'monthly', label: 'Monthly Summary', icon: <LayoutGrid size={18} />, path: '/monthly', roles: ['super_admin', 'owner'] },
+    { id: 'staff-commissions', label: 'Commissions', icon: <UserIcon size={18} />, path: '/staff-commissions', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
+    { id: 'monthly', label: 'Monthly Summary', icon: <LayoutGrid size={18} />, path: '/monthly', roles: ['super_admin', 'owner', 'cashier'] },
     { id: 'sales-report', label: 'Sales Report', icon: <FileText size={18} />, path: '/sales-report', roles: ['super_admin', 'owner', 'cashier'] },
-    { id: 'expenses', label: 'Expenses', icon: <TrendingDown size={18} />, path: '/expenses', roles: ['super_admin', 'owner'] },
+    { id: 'expenses', label: 'Expenses', icon: <TrendingDown size={18} />, path: '/expenses', roles: ['super_admin', 'owner', 'cashier'] },
     { id: 'manage', label: 'Management', icon: <Settings size={18} />, path: '/manage', roles: ['super_admin', 'owner'] },
     { id: 'change-password', label: 'Change Password', icon: <Lock size={18} />, path: '/change-password', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
   ];
@@ -2227,9 +2227,14 @@ const POSPage: React.FC = () => {
                   disabled={isStaffMember}
                   className="w-full bg-input border border-border/50 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:border-primary outline-none appearance-none transition-all disabled:opacity-50"
                 >
-                  {staff.filter(s => s.role === 'staff' || (s.roles && s.roles.includes('staff'))).map(s => (
-                    <option key={s.email} value={s.email}>{s.name}</option>
-                  ))}
+                  <option value="">Any Staff (Auto-assign)</option>
+                  {staff.map(s => {
+                    const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+                    const isWorking = !s.workingDays || s.workingDays.includes(todayName);
+                    return isWorking ? (
+                      <option key={s.email} value={s.email}>{s.name}</option>
+                    ) : null;
+                  })}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={14} />
               </div>
@@ -2611,15 +2616,15 @@ const POSPage: React.FC = () => {
 };
 
 const MonthlySummaryPage: React.FC = () => {
-  const { profile, isAdmin } = useAuth();
-  if (!isAdmin) return <Navigate to="/" />;
+  const { profile, isAdmin, isCashier } = useAuth();
+  if (!isAdmin && !isCashier) return <Navigate to="/" />;
   const [sales, setSales] = useState<Sale[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin && !isCashier) return;
     const qSales = query(collection(db, 'sales'), orderBy('date', 'desc'));
     const unsubSales = onSnapshot(qSales, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
@@ -2769,26 +2774,43 @@ const MonthlySummaryPage: React.FC = () => {
 };
 
 const ExpenseListPage: React.FC = () => {
-  const { profile, isAdmin } = useAuth();
-  if (!isAdmin) return <Navigate to="/" />;
+  const { profile, isAdmin, isCashier } = useAuth();
+  if (!isAdmin && !isCashier) return <Navigate to="/" />;
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
   const today = getLocalISODate();
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
-  const [showConfirm, setShowConfirm] = useState<string | null>(null);
+  const [expFilterCat, setExpFilterCat] = useState('');
+
+  const [showExpCatForm, setShowExpCatForm] = useState(false);
+  const [showExpForm, setShowExpForm] = useState(false);
+  const [expCatName, setExpCatName] = useState('');
+  const [expDesc, setExpDesc] = useState('');
+  const [expAmt, setExpAmt] = useState('');
+  const [expCategory, setExpCategory] = useState('');
+  const [editingExpenseCategory, setEditingExpenseCategory] = useState<ExpenseCategory | null>(null);
+  
+  const [showConfirm, setShowConfirm] = useState<{coll: string, id: string} | null>(null);
 
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin && !isCashier) return;
     const q = query(collection(db, 'expenses'), orderBy('date', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
-    return unsubscribe;
+    
+    const unsubCat = onSnapshot(query(collection(db, 'expense_categories'), orderBy('name')), (snapshot) => {
+      setExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExpenseCategory)));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'expense_categories'));
+    
+    return () => { unsubscribe(); unsubCat(); };
   }, [profile]);
 
   const filteredExpenses = expenses.filter(e => 
     (!dateFrom || e.date >= dateFrom) && 
-    (!dateTo || e.date <= dateTo)
+    (!dateTo || e.date <= dateTo) &&
+    (!expFilterCat || e.category === expFilterCat)
   );
 
   const totalExp = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -2803,25 +2825,153 @@ const ExpenseListPage: React.FC = () => {
     return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
   }, [filteredExpenses]);
 
-  const handleDelete = async (id: string) => {
+  const handleAddExpense = async () => {
+    if (!expDesc || !expAmt) return;
+    const now = new Date();
+    const localDateStr = getLocalISODate(now);
     try {
-      await deleteDoc(doc(db, 'expenses', id));
+      await addDoc(collection(db, 'expenses'), { 
+        date: localDateStr, 
+        desc: expDesc, 
+        amount: Number(expAmt),
+        category: expCategory || 'General'
+      });
+      setExpDesc(''); setExpAmt(''); setExpCategory('');
+      setShowExpForm(false);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'expenses');
+    }
+  };
+
+  const handleAddExpenseCategory = async () => {
+    if (!expCatName) return;
+    try {
+      await addDoc(collection(db, 'expense_categories'), { name: expCatName.trim() });
+      setExpCatName('');
+      setShowExpCatForm(false);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'expense_categories');
+    }
+  };
+
+  const handleUpdateExpenseCategory = async () => {
+    if (!editingExpenseCategory || !expCatName) return;
+    try {
+      await updateDoc(doc(db, 'expense_categories', editingExpenseCategory.id), { name: expCatName.trim() });
+      setEditingExpenseCategory(null);
+      setExpCatName('');
+      setShowExpCatForm(false);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `expense_categories/${editingExpenseCategory.id}`);
+    }
+  };
+
+  const handleDelete = async (coll: string, id: string) => {
+    try {
+      await deleteDoc(doc(db, coll, id));
       setShowConfirm(null);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `expenses/${id}`);
+      handleFirestoreError(error, OperationType.DELETE, `${coll}/${id}`);
     }
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
+      <Modal 
+        isOpen={showExpForm} 
+        onClose={() => { setShowExpForm(false); setExpDesc(''); setExpAmt(''); setExpCategory(''); }} 
+        title="Add Daily Expense"
+      >
+        <div className="space-y-4">
+          <FloatingInput 
+            label="Reason"
+            value={expDesc}
+            onChange={setExpDesc}
+            onFocusClear
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <FloatingInput 
+              label="Amount (Ks)"
+              type="number"
+              value={expAmt}
+              onChange={setExpAmt}
+              onFocusClear
+            />
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
+              <select 
+                value={expCategory}
+                onChange={(e) => setExpCategory(e.target.value)}
+                className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-red-500 outline-none transition-all"
+              >
+                <option value="">General</option>
+                {expenseCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+              </select>
+            </div>
+          </div>
+          <button onClick={handleAddExpense} className="w-full bg-red-500 text-white font-bold py-4 rounded-2xl mt-2 hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-red-500/20 uppercase tracking-widest">Add Expense</button>
+        </div>
+      </Modal>
+
+      <Modal 
+        isOpen={showExpCatForm} 
+        onClose={() => { setShowExpCatForm(false); setEditingExpenseCategory(null); setExpCatName(''); }} 
+        title={editingExpenseCategory ? "Edit Expense Category" : "Manage Expense Categories"}
+      >
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <FloatingInput 
+              label={editingExpenseCategory ? "Edit Category Name" : "New Category Name"}
+              value={expCatName}
+              onChange={setExpCatName}
+              onFocusClear
+            />
+            {editingExpenseCategory ? (
+              <button onClick={handleUpdateExpenseCategory} className="w-full bg-red-500 text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl">Update Category</button>
+            ) : (
+              <button onClick={handleAddExpenseCategory} className="w-full bg-red-500 text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl">Add Category</button>
+            )}
+          </div>
+
+          <div className="space-y-3 pt-6 border-t border-border">
+            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Existing Categories</h4>
+            <div className="flex flex-wrap gap-2">
+              {expenseCategories.map(c => (
+                <div key={c.id} className="flex items-center gap-2 bg-background border border-border px-3 py-1.5 rounded-full group hover:border-red-500/50 transition-all">
+                  <span className="text-xs font-bold text-foreground">{c.name}</span>
+                  <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"><Settings size={12} /></button>
+                  {isAdmin && (
+                    <button onClick={() => setShowConfirm({ coll: 'expense_categories', id: c.id })} className="text-red-500 hover:text-red-600 hover:scale-110 transition-all"><Trash2 size={12} /></button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
         <div className="space-y-1">
           <h3 className="text-3xl font-light tracking-tight text-foreground">Shop <span className="italic font-serif">Expenses</span></h3>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Operating Cost Management</p>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-4">Operating Cost Management</p>
+          <div className="flex items-center gap-3 mt-4">
+            <button 
+              onClick={() => setShowExpForm(true)}
+              className="bg-red-500 text-white px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors"
+            >
+              <Plus size={14} /> ADD EXPENSE
+            </button>
+            <button 
+              onClick={() => setShowExpCatForm(true)}
+              className="bg-card border border-border text-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 hover:border-red-500/30 transition-colors"
+            >
+              <Settings size={14} /> MANAGE CATEGORIES
+            </button>
+          </div>
         </div>
         
         <div className="bg-card/50 rounded-[2rem] border border-border shadow-2xl overflow-hidden backdrop-blur-md min-w-[320px]">
-          <div className="grid grid-cols-1 md:grid-cols-2">
+          <div className="grid grid-cols-1 md:grid-cols-3">
             <CustomDatePicker 
               label="FROM" 
               value={dateFrom} 
@@ -2834,7 +2984,22 @@ const ExpenseListPage: React.FC = () => {
               value={dateTo} 
               onChange={setDateTo} 
               iconColor="text-red-500"
+              className="border-b md:border-b-0 md:border-r border-border/50"
             />
+            <div className="flex flex-col p-4">
+               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+                 <Settings size={12} className="text-red-500" /> CATEGORY
+               </label>
+               <select 
+                 value={expFilterCat}
+                 onChange={(e) => setExpFilterCat(e.target.value)}
+                 className="w-full bg-transparent border-none text-foreground font-medium text-sm outline-none px-0"
+               >
+                 <option value="">All Categories</option>
+                 <option value="General">General</option>
+                 {expenseCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+               </select>
+            </div>
           </div>
         </div>
       </div>
@@ -2895,9 +3060,10 @@ const ExpenseListPage: React.FC = () => {
                         <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
                           <Receipt size={24} />
                         </div>
-                        <div className="space-y-0.5">
-                          <span className="text-lg font-medium text-foreground block group-hover:text-red-500 transition-colors">{e.desc}</span>
+                        <div className="space-y-1">
+                          <span className="text-lg font-medium text-foreground block group-hover:text-red-500 transition-colors leading-tight">{e.desc}</span>
                           <div className="flex items-center gap-3">
+                            <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{e.category || 'General'}</span>
                             <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">{new Date(e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         </div>
@@ -2907,41 +3073,15 @@ const ExpenseListPage: React.FC = () => {
                         <div className="text-right">
                           <span className="text-xl font-mono font-bold text-red-500">{e.amount.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
                         </div>
-                        <button 
-                          onClick={() => setShowConfirm(e.id)}
-                          className="p-2.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all active:scale-90"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {isAdmin && (
+                          <button 
+                            onClick={() => setShowConfirm({ coll: 'expenses', id: e.id })}
+                            className="p-2.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all active:scale-90"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
-
-                      {showConfirm === e.id && (
-                        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px] bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
-                          <div className="bg-card w-full max-w-sm rounded-[2rem] border border-border shadow-2xl p-8 space-y-6 animate-in zoom-in-95 duration-200 max-h-[calc(100dvh-110px)] overflow-y-auto">
-                            <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-500 mx-auto">
-                              <AlertTriangle size={32} />
-                            </div>
-                            <div className="text-center space-y-2">
-                              <h3 className="text-xl font-bold text-foreground">Delete Expense?</h3>
-                              <p className="text-sm text-muted-foreground">This action is permanent and will remove the record from the ledger.</p>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <button 
-                                onClick={() => setShowConfirm(null)}
-                                className="py-3 rounded-xl border border-border font-bold text-sm hover:bg-muted transition-colors"
-                              >
-                                Cancel
-                              </button>
-                              <button 
-                                onClick={() => handleDelete(e.id)}
-                                className="py-3 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
-                              >
-                                Confirm
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -2950,6 +3090,35 @@ const ExpenseListPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      <Modal 
+        isOpen={!!showConfirm} 
+        onClose={() => setShowConfirm(null)} 
+        title="Are you sure?"
+        maxWidth="max-w-xs"
+      >
+        <div className="text-center space-y-6">
+          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto">
+            <Trash2 size={32} />
+          </div>
+          <p className="text-muted-foreground text-sm font-bold">This action cannot be undone.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <button 
+              onClick={() => setShowConfirm(null)}
+              className="bg-muted/20 text-foreground font-black py-3 rounded-xl border border-border hover:bg-muted/30 transition-all uppercase tracking-widest text-xs"
+            >
+              CANCEL
+            </button>
+            <button 
+              onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)}
+              className="bg-red-500 text-white font-black py-3 rounded-xl shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs"
+            >
+              DELETE
+            </button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 };
@@ -3316,9 +3485,9 @@ const HistoryPage: React.FC = () => {
 };
 
 const StaffCommissionsPage: React.FC = () => {
-  const { profile, isAdmin, isStaffMember: isStaff } = useAuth();
+  const { profile, isAdmin, isCashier, isStaffMember: isStaff } = useAuth();
 
-  if (!isAdmin && !isStaff) return <Navigate to="/" />;
+  if (!isAdmin && !isCashier && !isStaff) return <Navigate to="/" />;
 
   const [sales, setSales] = useState<Sale[]>([]);
   const now = new Date();
@@ -3332,7 +3501,7 @@ const StaffCommissionsPage: React.FC = () => {
     if (!profile) return;
     
     // Fetch staff names for filter
-    if (isAdmin) {
+    if (isAdmin || isCashier) {
       const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
         const superAdminEmails = ['aungsoe366@gmail.com', 'pes@gmail.com', 'aung@gmail.com', 'peslover.lover366@gmail.com'];
         const names = snapshot.docs
@@ -3365,7 +3534,7 @@ const StaffCommissionsPage: React.FC = () => {
       }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
       return unsubSales;
     }
-  }, [profile, isAdmin, isStaff]);
+  }, [profile, isAdmin, isCashier, isStaff]);
 
   const filteredSales = sales.filter(s => 
     (!dateFrom || s.date >= dateFrom) && 
@@ -3663,6 +3832,22 @@ const AppointmentsPage: React.FC = () => {
   const [apptEndTime, setApptEndTime] = useState('');
   const [apptDuration, setApptDuration] = useState(30);
   const [formStep, setFormStep] = useState<1 | 2>(1);
+
+  // Validate that selected staff works on the chosen date
+  useEffect(() => {
+    if (!selectedStaffEmail) return;
+    const s = staff.find(member => member.email === selectedStaffEmail);
+    if (!s) return;
+    
+    const [year, month, day] = (apptDate || getLocalISODate()).split('-');
+    const apptDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const apptDayName = apptDateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    const isWorking = !s.workingDays || s.workingDays.includes(apptDayName);
+    
+    if (!isWorking) {
+      setSelectedStaffEmail(''); // Clear the selection if they don't work that day
+    }
+  }, [apptDate, staff, selectedStaffEmail]);
 
   useEffect(() => {
     if (isCustomer && !editingAppointment && isAdding) {
@@ -5074,9 +5259,15 @@ const AppointmentsPage: React.FC = () => {
                         className="w-full p-3 border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-bold text-sm transition-all appearance-none"
                       >
                         <option value="">Any Staff (Auto-assign)</option>
-                        {staff.filter(s => s.role === 'staff' || (s.roles && s.roles.includes('staff'))).map(s => (
-                          <option key={s.email} value={s.email}>{s.name}</option>
-                        ))}
+                        {staff.map(s => {
+                          const [year, month, day] = (apptDate || getLocalISODate()).split('-');
+                          const apptDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                          const apptDayName = apptDateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                          const isWorking = !s.workingDays || s.workingDays.includes(apptDayName);
+                          return isWorking ? (
+                            <option key={s.email} value={s.email}>{s.name}</option>
+                          ) : null;
+                        })}
                       </select>
                       <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
                     </div>
@@ -5497,21 +5688,18 @@ const Modal: React.FC<{
 };
 
 const ManagePage: React.FC = () => {
-  const { user, profile, isAdmin, isSuperAdmin, loading } = useAuth();
+  const { user, profile, isAdmin, isSuperAdmin, isCashier, loading } = useAuth();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'shop' | 'categories' | 'services' | 'staff' | 'expense' | 'customers'>('shop');
+  const [activeTab, setActiveTab] = useState<'shop' | 'categories' | 'services' | 'staff' | 'customers'>('shop');
   const [shopSettings, setShopSettings] = useState<ShopSettings>({ name: '', addr: '', ph: '', receiptHeader: '', receiptFooter: '' });
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [staff, setStaff] = useState<UserProfile[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [editingStaff, setEditingStaff] = useState<UserProfile | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [editingExpenseCategory, setEditingExpenseCategory] = useState<ExpenseCategory | null>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [quickEditingPoints, setQuickEditingPoints] = useState<Customer | null>(null);
@@ -5524,8 +5712,6 @@ const ManagePage: React.FC = () => {
   const [showSvcForm, setShowSvcForm] = useState(false);
   const [showStfForm, setShowStfForm] = useState(false);
   const [showCustForm, setShowCustForm] = useState(false);
-  const [showExpForm, setShowExpForm] = useState(false);
-  const [showExpCatForm, setShowExpCatForm] = useState(false);
   const [showCatForm, setShowCatForm] = useState(false);
   const [showShopForm, setShowShopForm] = useState(false);
 
@@ -5546,19 +5732,12 @@ const ManagePage: React.FC = () => {
   const [stfSpecialties, setStfSpecialties] = useState<string[]>([]);
   const [stfWorkingDays, setStfWorkingDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
   const [stfPhotoURL, setStfPhotoURL] = useState('');
-  const [expDesc, setExpDesc] = useState('');
-  const [expAmt, setExpAmt] = useState('');
-  const [expCategory, setExpCategory] = useState('');
-  const [expCatName, setExpCatName] = useState('');
   const [custName, setCustName] = useState('');
   const [custPhone, setCustPhone] = useState('');
   const [custEmail, setCustEmail] = useState('');
   const [custAddr, setCustAddr] = useState('');
   const [custNotes, setCustNotes] = useState('');
   const [custPoints, setCustPoints] = useState('');
-  const [expFilterStart, setExpFilterStart] = useState('');
-  const [expFilterEnd, setExpFilterEnd] = useState('');
-  const [expFilterCat, setExpFilterCat] = useState('');
   const [showAccessMatrix, setShowAccessMatrix] = useState(false);
 
   useEffect(() => {
@@ -5598,14 +5777,6 @@ const ManagePage: React.FC = () => {
       setStaff(Array.from(uniqueStaff.values()));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
-    const unsubExp = onSnapshot(query(collection(db, 'expenses'), orderBy('date', 'desc')), (snapshot) => {
-      setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
-
-    const unsubExpCategories = onSnapshot(query(collection(db, 'expense_categories'), orderBy('name')), (snapshot) => {
-      setExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExpenseCategory)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'expense_categories'));
-
     const unsubCustomers = onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
       setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
@@ -5619,8 +5790,6 @@ const ManagePage: React.FC = () => {
       unsubServices(); 
       unsubCategories(); 
       unsubStaff(); 
-      unsubExp(); 
-      unsubExpCategories();
       unsubCustomers();
       unsubSales();
     };
@@ -5706,47 +5875,6 @@ const ManagePage: React.FC = () => {
       setShowCatForm(false);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `categories/${editingCategory.id}`);
-    }
-  };
-
-  const handleAddExpense = async () => {
-    if (!expDesc || !expAmt) return;
-    const now = new Date();
-    const localDateStr = getLocalISODate(now);
-    try {
-      await addDoc(collection(db, 'expenses'), { 
-        date: localDateStr, 
-        desc: expDesc, 
-        amount: Number(expAmt),
-        category: expCategory || 'General'
-      });
-      setExpDesc(''); setExpAmt(''); setExpCategory('');
-      setShowExpForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'expenses');
-    }
-  };
-
-  const handleAddExpenseCategory = async () => {
-    if (!expCatName) return;
-    try {
-      await addDoc(collection(db, 'expense_categories'), { name: expCatName.trim() });
-      setExpCatName('');
-      setShowExpCatForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'expense_categories');
-    }
-  };
-
-  const handleUpdateExpenseCategory = async () => {
-    if (!editingExpenseCategory || !expCatName) return;
-    try {
-      await updateDoc(doc(db, 'expense_categories', editingExpenseCategory.id), { name: expCatName.trim() });
-      setEditingExpenseCategory(null);
-      setExpCatName('');
-      setShowExpCatForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `expense_categories/${editingExpenseCategory.id}`);
     }
   };
 
@@ -6121,13 +6249,6 @@ const ManagePage: React.FC = () => {
     }
   };
 
-  const filteredExpenses = expenses.filter(e => {
-    const matchesCat = !expFilterCat || e.category === expFilterCat;
-    const matchesStart = !expFilterStart || e.date >= expFilterStart;
-    const matchesEnd = !expFilterEnd || e.date <= expFilterEnd;
-    return matchesCat && matchesStart && matchesEnd;
-  });
-
   const handleClearHistory = async () => {
     setIsClearing(true);
     try {
@@ -6143,7 +6264,7 @@ const ManagePage: React.FC = () => {
     }
   };
 
-  if (!isAdmin) return <Navigate to="/" />;
+  if (!isAdmin && !isCashier) return <Navigate to="/" />;
 
   return (
     <div className="p-4 space-y-6">
@@ -6153,7 +6274,6 @@ const ManagePage: React.FC = () => {
           { id: 'categories', label: 'Categories', icon: <Menu size={16} /> },
           { id: 'services', label: 'Services', icon: <Briefcase size={16} /> },
           { id: 'staff', label: 'Staff', icon: <UserIcon size={16} /> },
-          { id: 'expense', label: 'Expense', icon: <TrendingDown size={16} /> },
           { id: 'customers', label: 'Customers', icon: <UsersIcon size={16} /> },
         ].map(tab => (
           <button
@@ -6194,20 +6314,9 @@ const ManagePage: React.FC = () => {
                 <div className="w-1.5 h-4 bg-primary rounded-full"></div>
                 Shop Settings
               </h4>
-              <button 
-                onClick={() => setShowShopForm(!showShopForm)}
-                className="text-[10px] font-bold text-primary uppercase tracking-widest border border-primary/30 px-3 py-1.5 rounded-lg hover:bg-primary/5 transition-all"
-              >
-                {showShopForm ? 'Hide Settings' : 'Edit Settings'}
-              </button>
             </div>
             
-            <Modal 
-              isOpen={showShopForm} 
-              onClose={() => setShowShopForm(false)} 
-              title="Shop Settings"
-              maxWidth="max-w-md"
-            >
+            <div className="space-y-4">
               <FloatingInput 
                 label="Shop Name"
                 value={shopSettings.name}
@@ -6266,44 +6375,46 @@ const ManagePage: React.FC = () => {
               </div>
 
               <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Settings</button>
-            </Modal>
-
-            <div className="pt-8 border-t border-border space-y-4">
-              <h4 className="text-red-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-red-500 rounded-full"></div>
-                Danger Zone
-              </h4>
-              <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
-              <button 
-                onClick={() => setShowClearConfirm(true)}
-                className="w-full bg-red-500/10 text-red-500 border border-red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-foreground transition-all active:scale-95"
-              >
-                CLEAR ALL SALES HISTORY
-              </button>
-
-              <div className="pt-6 border-t border-border space-y-4">
-                <h4 className="text-blue-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
-                  Debug & Diagnostics
-                </h4>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
-                <button
-                  onClick={async () => {
-                    try {
-                      const functions = getFunctions(app, 'asia-southeast1');
-                      const pingFunctions = httpsCallable(functions, 'pingFunctions');
-                      const result = await pingFunctions();
-                      setStatusMsg({ type: 'success', text: `Functions Online: ${JSON.stringify(result.data)}` });
-                    } catch (err) {
-                      setStatusMsg({ type: 'error', text: `Functions Offline: ${err instanceof Error ? err.message : String(err)}` });
-                    }
-                  }}
-                  className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-foreground transition-all active:scale-95 uppercase tracking-widest"
-                >
-                  Test Cloud Functions
-                </button>
-              </div>
             </div>
+
+            {isSuperAdmin && (
+              <div className="pt-8 border-t border-border space-y-4">
+                <h4 className="text-red-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-red-500 rounded-full"></div>
+                  Danger Zone
+                </h4>
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
+                <button 
+                  onClick={() => setShowClearConfirm(true)}
+                  className="w-full bg-red-500/10 text-red-500 border border-red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-foreground transition-all active:scale-95"
+                >
+                  CLEAR ALL SALES HISTORY
+                </button>
+
+                <div className="pt-6 border-t border-border space-y-4">
+                  <h4 className="text-blue-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+                    <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
+                    Debug & Diagnostics
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const functions = getFunctions(app, 'asia-southeast1');
+                        const pingFunctions = httpsCallable(functions, 'pingFunctions');
+                        const result = await pingFunctions();
+                        setStatusMsg({ type: 'success', text: `Functions Online: ${JSON.stringify(result.data)}` });
+                      } catch (err) {
+                        setStatusMsg({ type: 'error', text: `Functions Offline: ${err instanceof Error ? err.message : String(err)}` });
+                      }
+                    }}
+                    className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-foreground transition-all active:scale-95 uppercase tracking-widest"
+                  >
+                    Test Cloud Functions
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {activeTab === 'categories' && (
@@ -6853,7 +6964,7 @@ const ManagePage: React.FC = () => {
                   {s.specialties && s.specialties.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {s.specialties.map(spec => (
-                        <span key={spec} className="text-[9px] font-bold bg-secondary/10 text-secondary border border-secondary/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        <span key={spec} className="text-[9px] font-bold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
                           {spec}
                         </span>
                       ))}
@@ -6865,187 +6976,7 @@ const ManagePage: React.FC = () => {
           </div>
         )}
 
-        {activeTab === 'expense' && (
-          <div className="space-y-10">
-            {/* Expense Categories Management */}
-            <div className="space-y-6 pb-8 border-b border-border">
-              <div className="flex items-center justify-between">
-                <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                  Expense Categories
-                </h4>
-                <button 
-                  onClick={() => setShowExpCatForm(!showExpCatForm)}
-                  className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
-                >
-                  {showExpCatForm ? <X size={14} /> : <Plus size={14} />}
-                  {showExpCatForm ? 'CANCEL' : 'ADD NEW'}
-                </button>
-              </div>
 
-            <Modal 
-              isOpen={showExpCatForm} 
-              onClose={() => { setShowExpCatForm(false); setEditingExpenseCategory(null); setExpCatName(''); }} 
-              title={editingExpenseCategory ? "Edit Expense Category" : "Add Expense Category"}
-            >
-              <FloatingInput 
-                label="New Category Name"
-                value={expCatName}
-                onChange={setExpCatName}
-                onFocusClear
-              />
-              {editingExpenseCategory ? (
-                <button onClick={handleUpdateExpenseCategory} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Update Category</button>
-              ) : (
-                <button onClick={handleAddExpenseCategory} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Add Category</button>
-              )}
-            </Modal>
-              <div className="flex flex-wrap gap-2">
-                {expenseCategories.map(c => (
-                  <div key={c.id} className="flex items-center gap-2 bg-background border border-border px-3 py-1.5 rounded-full group hover:border-primary/50 transition-all">
-                    <span className="text-xs font-bold text-foreground">{c.name}</span>
-                    {isAdmin && (
-                      <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-primary hover:scale-110 transition-transform"><Settings size={12} /></button>
-                    )}
-                    {isAdmin && (
-                      <button onClick={() => setShowConfirm({ coll: 'expense_categories', id: c.id })} className="text-red-500 hover:scale-110 transition-transform"><Trash2 size={12} /></button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Add Expense Form */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                  Add Daily Expense
-                </h4>
-                <button 
-                  onClick={() => setShowExpForm(!showExpForm)}
-                  className="bg-red-500 text-white px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20"
-                >
-                  {showExpForm ? <X size={14} /> : <Plus size={14} />}
-                  {showExpForm ? 'CANCEL' : 'ADD EXPENSE'}
-                </button>
-              </div>
-
-            <Modal 
-              isOpen={showExpForm} 
-              onClose={() => { setShowExpForm(false); setExpDesc(''); setExpAmt(''); setExpCategory(''); }} 
-              title="Add Daily Expense"
-            >
-              <FloatingInput 
-                label="Reason"
-                value={expDesc}
-                onChange={setExpDesc}
-                onFocusClear
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <FloatingInput 
-                  label="Amount (Ks)"
-                  type="number"
-                  value={expAmt}
-                  onChange={setExpAmt}
-                  onFocusClear
-                />
-                <div className="space-y-1.5">
-                  <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
-                  <select 
-                    value={expCategory}
-                    onChange={(e) => setExpCategory(e.target.value)}
-                    className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary outline-none transition-all"
-                  >
-                    <option value="">General</option>
-                    {expenseCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <button onClick={handleAddExpense} className="w-full bg-red-500 text-white font-bold py-4 rounded-2xl mt-2 hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-red-500/20 uppercase tracking-widest">Add Expense</button>
-            </Modal>
-            </div>
-
-            {/* Recent Expenses List with Filters */}
-            <div className="space-y-6 pt-10 border-t border-border">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between px-1">
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Expense History</p>
-                  <span className="text-[10px] text-primary font-bold bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
-                    Total: {filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()} Ks
-                  </span>
-                </div>
-                
-                {/* Filters UI */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 bg-background/50 p-4 rounded-2xl border border-border shadow-sm">
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category Filter</label>
-                    <select 
-                      value={expFilterCat}
-                      onChange={(e) => setExpFilterCat(e.target.value)}
-                      className="w-full bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary outline-none transition-all"
-                    >
-                      <option value="">All Categories</option>
-                      <option value="General">General</option>
-                      {expenseCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest ml-1">From Date</label>
-                    <input 
-                      type="date"
-                      value={expFilterStart}
-                      onChange={(e) => setExpFilterStart(e.target.value)}
-                      className="w-full bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary outline-none transition-all"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest ml-1">To Date</label>
-                    <input 
-                      type="date"
-                      value={expFilterEnd}
-                      onChange={(e) => setExpFilterEnd(e.target.value)}
-                      className="w-full bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary outline-none transition-all"
-                    />
-                  </div>
-                </div>
-                
-                {(expFilterCat || expFilterStart || expFilterEnd) && (
-                  <button 
-                    onClick={() => { setExpFilterCat(''); setExpFilterStart(''); setExpFilterEnd(''); }}
-                    className="text-[10px] text-red-500 font-bold uppercase tracking-widest hover:underline self-start px-1"
-                  >
-                    Clear Filters
-                  </button>
-                )}
-              </div>
-
-              {filteredExpenses.length === 0 ? (
-                <div className="text-center py-12 bg-background/50 rounded-2xl border border-dashed border-border">
-                  <p className="text-muted-foreground text-xs italic">No expenses match your filters.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {filteredExpenses.map(e => (
-                    <div key={e.id} className="flex justify-between items-center p-4 bg-background rounded-2xl border border-border group hover:border-red-500/30 transition-all shadow-sm">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest mb-0.5">{e.date}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-foreground">{e.desc}</span>
-                          <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{e.category || 'General'}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-red-500 font-bold">{e.amount.toLocaleString()} Ks</span>
-                        <button onClick={() => setShowConfirm({ coll: 'expenses', id: e.id })} className="text-red-500 hover:bg-red-500/10 p-2 rounded-lg transition-colors"><Trash2 size={16} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {activeTab === 'customers' && (
           <div className="space-y-8">
@@ -8442,14 +8373,14 @@ const AppRoutes = () => {
       <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <POSPage />} />
       <Route path="/appointments" element={<AppointmentsPage />} />
       <Route path="/history" element={!isStaff ? <Navigate to="/appointments" /> : <HistoryPage />} />
-      <Route path="/staff-commissions" element={!(isAdmin || isStaffMember) ? <Navigate to="/appointments" /> : <StaffCommissionsPage />} />
-      <Route path="/monthly" element={!isAdmin ? <Navigate to="/appointments" /> : <MonthlySummaryPage />} />
+      <Route path="/staff-commissions" element={!(isAdmin || isCashier || isStaffMember) ? <Navigate to="/appointments" /> : <StaffCommissionsPage />} />
+      <Route path="/monthly" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <MonthlySummaryPage />} />
       <Route path="/sales-report" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <SalesReportPage />} />
       <Route path="/change-password" element={<ChangePasswordPage />} />
       <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/identity-reset" element={<IdentityResetPage />} />
-      <Route path="/expenses" element={!isAdmin ? <Navigate to="/appointments" /> : <ExpenseListPage />} />
+      <Route path="/expenses" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <ExpenseListPage />} />
       <Route path="/manage" element={!isAdmin ? <Navigate to="/appointments" /> : <ManagePage />} />
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
