@@ -18,10 +18,7 @@ service cloud.firestore {
       if (!isAuthenticated() || email == "") return false;
       
       // Master emails are always super_admin
-      if (email == "aungsoe366@gmail.com" || 
-          email == "pes@gmail.com" ||
-          email == "aung@gmail.com" ||
-          email == "peslover.lover366@gmail.com") {
+      if (email == "aungsoe366@gmail.com") {
         return true;
       }
       

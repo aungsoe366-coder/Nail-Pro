@@ -10,9 +10,8 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { Printer as CapPrinter } from '@capgo/capacitor-printer';
 import { 
-  onAuthStateChanged, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
+  onAuthStateChanged,
+  GoogleAuthProvider,
   signOut,
   User,
   signInWithEmailAndPassword,
@@ -21,7 +20,10 @@ import {
   sendPasswordResetEmail,
   EmailAuthProvider,
   reauthenticateWithCredential,
-  updatePassword
+  updatePassword,
+  signInWithPopup,
+  signInWithRedirect,
+  browserPopupRedirectResolver
 } from 'firebase/auth';
 import { 
   collection, 
@@ -459,8 +461,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
 
             const docSnap = await getDoc(docRef);
+            let currentRole = 'customer';
+            
             if (docSnap.exists()) {
               const data = docSnap.data() as UserProfile;
+              currentRole = data.role;
               if (!data.uid || !data.createdAt) {
                 await setDoc(docRef, { 
                   uid: u.uid,
@@ -468,25 +473,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   updatedAt: now
                 }, { merge: true });
               }
-            } else {
-              const custQuery = query(collection(db, 'customers'), where('email', '==', email));
-              const custSnap = await getDocs(custQuery);
+            }
+
+            if (currentRole === 'customer' && email !== 'aungsoe366@gmail.com') {
               let initialName = u.displayName || 'Customer';
               let initialPoints = 0;
-              
-              if (!custSnap.empty) {
-                const custData = custSnap.docs[0].data() as Customer;
-                initialName = custData.name || initialName;
-                initialPoints = custData.points || 0;
+              try {
+                const custQuery = query(collection(db, 'customers'), where('email', '==', email));
+                const custSnap = await getDocs(custQuery);
+                
+                if (!custSnap.empty) {
+                  const custData = custSnap.docs[0].data() as Customer;
+                  initialName = custData.name || initialName;
+                  initialPoints = custData.points || 0;
+                } else {
+                  if (docSnap.exists()) {
+                    const existingData = docSnap.data() as UserProfile;
+                    if (existingData.points) {
+                      initialPoints = existingData.points;
+                    }
+                  }
+                  await addDoc(collection(db, 'customers'), {
+                    name: initialName,
+                    email: email,
+                    phone: '',
+                    address: '',
+                    notes: 'Registered via Google Sign-In',
+                    points: initialPoints,
+                    totalVisits: 0,
+                    totalSpent: 0
+                  });
+                }
+              } catch (err) {
+                console.error("Failed to check or create customer record", err);
               }
 
+              if (!docSnap.exists()) {
+                const profileData: UserProfile = {
+                  name: initialName,
+                  email: email,
+                  role: 'customer',
+                  commission: 0,
+                  uid: u.uid,
+                  points: initialPoints,
+                  status: 'active',
+                  createdAt: now,
+                  updatedAt: now
+                };
+                await setDoc(docRef, profileData);
+              }
+            } else if (!docSnap.exists()) {
               const profileData: UserProfile = {
-                name: initialName,
+                name: u.displayName || 'User',
                 email: email,
-                role: (['aungsoe366@gmail.com', 'peslover.lover366@gmail.com', 'pes@gmail.com', 'aung@gmail.com'].includes(email)) ? 'super_admin' : 'customer',
+                role: (email === 'aungsoe366@gmail.com') ? 'super_admin' : 'customer',
                 commission: 0,
                 uid: u.uid,
-                points: initialPoints,
+                points: 0,
                 status: 'active',
                 createdAt: now,
                 updatedAt: now
@@ -545,12 +588,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Ensure auth is ready before attempting login
       if (!auth) throw new Error("Firebase Auth not initialized");
-      await signInWithPopup(auth, googleProvider);
+      
+      if (Capacitor.isNativePlatform()) {
+        await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver);
+      } else {
+        await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+      }
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
         console.log("User closed the login popup.");
       } else if (err.code === 'auth/cancelled-popup-request') {
         console.log("Popup request was cancelled by a newer request.");
+      } else if (err.code === 'auth/network-request-failed') {
+        console.error("Login Error:", err);
+        setError("Login failed. If you are in preview, please open the app in a new tab using the icon in the top right, or check your internet connection.");
       } else {
         console.error("Login Error:", err);
         setError("Google login failed: " + (err.message || "Unknown error"));
@@ -698,6 +749,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let existingCommission = 0;
       let existingPhone = '';
       let existingDob = '';
+      let existingPoints = 0;
       
       if (existingDoc.exists()) {
         const existingData = existingDoc.data() as UserProfile;
@@ -712,6 +764,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (existingData.dob) {
           existingDob = existingData.dob;
+        }
+        if (existingData.points) {
+          existingPoints = existingData.points;
         }
       }
 
@@ -730,7 +785,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: roleToSet,
         commission: existingCommission,
         uid: newlyCreatedUser.uid,
-        points: 0,
+        points: existingPoints,
         mustChangePassword: false,
         dob: existingDob,
         status: 'active'
@@ -764,7 +819,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               phone: '',
               address: '',
               notes: 'Registered via Email Sign-Up',
-              points: 0,
+              points: existingPoints,
               createdAt: new Date().toISOString()
             });
             console.log('New customer record created');
@@ -782,7 +837,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               phone: '',
               address: '',
               notes: 'Registered via Email Sign-Up',
-              points: 0,
+              points: existingPoints,
               createdAt: new Date().toISOString()
             });
             console.log('Customer record created via fallback after query failed');
@@ -859,6 +914,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       let roleToSet: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer' = 'customer';
       let existingCommission = 0;
       let existingDob = dob;
+      let existingPoints = 0;
       
       if (existingUserDoc) {
         if (existingUserDoc.role && existingUserDoc.role !== 'customer') {
@@ -869,6 +925,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         if (existingUserDoc.dob) {
           existingDob = existingUserDoc.dob;
+        }
+        if (existingUserDoc.points) {
+          existingPoints = existingUserDoc.points;
         }
       }
 
@@ -901,7 +960,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: roleToSet,
         commission: existingCommission,
         uid: newlyCreatedUser.uid,
-        points: 0,
+        points: existingPoints,
         mustChangePassword: false,
         dob: existingDob,
         last4Digits: last4,
@@ -940,7 +999,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: dummyEmail,
               address: '',
               notes: 'Registered via Phone Sign-Up',
-              points: 0,
+              points: existingPoints,
               createdAt: new Date().toISOString()
             });
             console.log('New customer record created (phone)');
@@ -958,7 +1017,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: dummyEmail,
               address: '',
               notes: 'Registered via Phone Sign-Up',
-              points: 0,
+              points: existingPoints,
               createdAt: new Date().toISOString()
             });
             console.log('Customer record created via fallback after query failed (phone)');
@@ -1102,8 +1161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isSuperAdmin = profile?.role === 'super_admin' || 
-    (user?.email?.toLowerCase() === 'aungsoe366@gmail.com') ||
-    ['pes@gmail.com', 'aung@gmail.com', 'peslover.lover366@gmail.com'].includes(user?.email?.toLowerCase() || '');
+    (user?.email?.toLowerCase() === 'aungsoe366@gmail.com');
   const isOwner = profile?.role === 'owner' || isSuperAdmin;
   const isCashier = profile?.role === 'cashier';
   const isStaffMember = profile?.role === 'staff';
@@ -1361,7 +1419,12 @@ const DashboardPage: React.FC = () => {
     }
 
     const unsubAppts = onSnapshot(qAppts, (snapshot) => {
-      setAppointments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment)));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+      data.sort((a,b) => {
+        if (a.date !== b.date) return b.date.localeCompare(a.date);
+        return b.time.localeCompare(a.time);
+      });
+      setAppointments(data);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
 
     // Fetch last 7 days for chart
@@ -1703,7 +1766,7 @@ const POSPage: React.FC = () => {
       snapshot.docs.forEach(doc => {
         const data = doc.data() as UserProfile;
         // Client-side filtering: Hide super_admin and customers from the staff list
-        const superAdminEmails = ['aungsoe366@gmail.com', 'pes@gmail.com', 'aung@gmail.com', 'peslover.lover366@gmail.com'];
+        const superAdminEmails = ['aungsoe366@gmail.com'];
         const isExcluded = data.role === 'super_admin' || 
                           data.role === 'customer' || 
                           (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
@@ -1855,9 +1918,16 @@ const POSPage: React.FC = () => {
     if (appt.customerId && appt.customerId !== 'manual') {
       setSelectedCustomerId(appt.customerId);
     } else {
-      // Try to find customer by phone
-      const customer = customers.find(c => c.phone === appt.customerPhone);
-      if (customer) setSelectedCustomerId(customer.id);
+      // Try to find customer by phone or name if phone is not empty
+      let customer = undefined;
+      if (appt.customerPhone && appt.customerPhone.trim() !== '') {
+        customer = customers.find(c => c.phone === appt.customerPhone);
+      }
+      if (customer) {
+        setSelectedCustomerId(customer.id);
+      } else {
+        setSelectedCustomerId('');
+      }
     }
 
     // 2. Add service to cart
@@ -3503,7 +3573,7 @@ const StaffCommissionsPage: React.FC = () => {
     // Fetch staff names for filter
     if (isAdmin || isCashier) {
       const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
-        const superAdminEmails = ['aungsoe366@gmail.com', 'pes@gmail.com', 'aung@gmail.com', 'peslover.lover366@gmail.com'];
+        const superAdminEmails = ['aungsoe366@gmail.com'];
         const names = snapshot.docs
           .map(doc => doc.data() as UserProfile)
           .filter(u => {
@@ -3851,27 +3921,31 @@ const AppointmentsPage: React.FC = () => {
 
   useEffect(() => {
     if (isCustomer && !editingAppointment && isAdding) {
-      setManualCustName(profile.name);
-      setManualCustPhone(profile.phone || '');
-      setSelectedCustId('manual');
+      if (customers.length > 0) {
+        setSelectedCustId(customers[0].id);
+        setManualCustName(customers[0].name);
+        setManualCustPhone(customers[0].phone || '');
+      } else {
+        setManualCustName(profile.name);
+        setManualCustPhone(profile.phone || '');
+        setSelectedCustId('manual');
+      }
     }
-  }, [profile, isAdding, editingAppointment]);
+  }, [profile, isAdding, editingAppointment, customers, isCustomer]);
 
   useEffect(() => {
     if (!profile) return;
 
     const apptsQuery = isCustomer
       ? query(collection(db, 'appointments'), where('creatorEmail', '==', profile.email))
-      : query(collection(db, 'appointments'), orderBy('date'), orderBy('time'));
+      : query(collection(db, 'appointments'));
 
     const unsubAppts = onSnapshot(apptsQuery, (snapshot) => {
       let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-      if (isCustomer) {
-        data.sort((a, b) => {
-          if (a.date !== b.date) return a.date.localeCompare(b.date);
-          return a.time.localeCompare(b.time);
-        });
-      }
+      data.sort((a, b) => {
+        if (a.date !== b.date) return b.date.localeCompare(a.date);
+        return b.time.localeCompare(a.time);
+      });
       setAppointments(data);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
 
@@ -3879,7 +3953,9 @@ const AppointmentsPage: React.FC = () => {
       ? onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
           setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
         }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'))
-      : () => {};
+      : onSnapshot(query(collection(db, 'customers'), where('email', '==', profile.email)), (snapshot) => {
+          setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
+        }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
 
     const unsubSvcs = onSnapshot(query(collection(db, 'services'), orderBy('name')), (snapshot) => {
       setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
@@ -3890,7 +3966,7 @@ const AppointmentsPage: React.FC = () => {
       snapshot.docs.forEach(doc => {
         const data = doc.data() as UserProfile;
         // Client-side filtering: Hide super_admin and customers from the staff list
-        const superAdminEmails = ['aungsoe366@gmail.com', 'pes@gmail.com', 'aung@gmail.com', 'peslover.lover366@gmail.com'];
+        const superAdminEmails = ['aungsoe366@gmail.com'];
         const isExcluded = data.role === 'super_admin' || 
                           data.role === 'customer' || 
                           (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
@@ -5762,7 +5838,7 @@ const ManagePage: React.FC = () => {
         const data = doc.data() as UserProfile;
         // Client-side filtering: Hide super_admin and customers from the staff list
         // EXCLUDE the Super Admin emails from appearing in any UI list
-        const superAdminEmails = ['aungsoe366@gmail.com', 'pes@gmail.com', 'aung@gmail.com', 'peslover.lover366@gmail.com'];
+        const superAdminEmails = ['aungsoe366@gmail.com'];
         const isExcluded = data.role === 'super_admin' || 
                           data.role === 'customer' || 
                           (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
@@ -5973,7 +6049,7 @@ const ManagePage: React.FC = () => {
 
   const handleSetupSuperAdmin = async () => {
     if (!user?.email) return;
-    const superAdminEmails = ['aungsoe366@gmail.com', 'peslover.lover366@gmail.com', 'pes@gmail.com', 'aung@gmail.com'];
+    const superAdminEmails = ['aungsoe366@gmail.com'];
     if (superAdminEmails.includes(user.email.toLowerCase())) {
       try {
         const docRef = doc(db, 'users', user.email.toLowerCase());
