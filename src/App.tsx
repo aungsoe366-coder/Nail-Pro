@@ -590,7 +590,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!auth) throw new Error("Firebase Auth not initialized");
       
       if (Capacitor.isNativePlatform()) {
-        await signInWithRedirect(auth, googleProvider, browserPopupRedirectResolver);
+        await signInWithRedirect(auth, googleProvider);
       } else {
         await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
       }
@@ -1737,6 +1737,7 @@ const POSPage: React.FC = () => {
   const [isLoyaltyDiscountActive, setIsLoyaltyDiscountActive] = useState(false);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [pendingSaleParams, setPendingSaleParams] = useState<{sale: Omit<Sale, 'id'>, overridePayments?: typeof payments} | null>(null);
+  const [loadingPOS, setLoadingPOS] = useState(true);
 
   const LOYALTY_THRESHOLD = 500;
   const LOYALTY_DISCOUNT = 10; // 10%
@@ -1746,7 +1747,11 @@ const POSPage: React.FC = () => {
     const q = query(collection(db, 'services'), orderBy('name'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'services'));
+      setLoadingPOS(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'services');
+      setLoadingPOS(false);
+    });
     return unsubscribe;
   }, [profile]);
 
@@ -2138,7 +2143,21 @@ const POSPage: React.FC = () => {
 
         <div className="flex-none lg:flex-1 overflow-y-visible lg:overflow-y-auto p-4 scrollbar-hide">
           <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredServices.length > 0 ? (
+            {loadingPOS ? (
+              Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="bg-card border border-border/50 rounded-2xl p-4 text-left shadow-sm min-h-[100px] flex flex-col justify-between animate-pulse">
+                   <div>
+                     <div className="h-2 bg-primary/10 rounded w-1/3 mb-2"></div>
+                     <div className="h-4 bg-primary/20 rounded w-3/4 mb-1"></div>
+                     <div className="h-4 bg-primary/20 rounded w-1/2"></div>
+                   </div>
+                   <div className="mt-4 flex justify-between items-end">
+                     <div className="h-3 bg-primary/10 rounded w-1/2"></div>
+                     <div className="w-6 h-6 rounded-lg bg-primary/10"></div>
+                   </div>
+                </div>
+              ))
+            ) : filteredServices.length > 0 ? (
               filteredServices.map(s => (
                 <motion.button 
                   whileHover={{ scale: 1.02, translateY: -2 }}
@@ -3874,6 +3893,7 @@ const AppointmentsPage: React.FC = () => {
   const [showSvcSuggestions, setShowSvcSuggestions] = useState(false);
   const [showCustSuggestions, setShowCustSuggestions] = useState(false);
   const [viewingCustomerHistory, setViewingCustomerHistory] = useState<Customer | null>(null);
+  const [showOverlapPopup, setShowOverlapPopup] = useState(false);
   const [apptSearch, setApptSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'status'>('date');
@@ -3884,6 +3904,8 @@ const AppointmentsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'appointments' | 'points'>('appointments');
   const [showAllDates, setShowAllDates] = useState(isCustomer);
   const [selectedStaffFilter, setSelectedStaffFilter] = useState<string>('all');
+  const [loadingAppts, setLoadingAppts] = useState(true);
+  const [isSubmittingAppt, setIsSubmittingAppt] = useState(false);
 
   // Form states
   const [selectedCustId, setSelectedCustId] = useState('');
@@ -3947,7 +3969,11 @@ const AppointmentsPage: React.FC = () => {
         return b.time.localeCompare(a.time);
       });
       setAppointments(data);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
+      setLoadingAppts(false);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'appointments');
+      setLoadingAppts(false);
+    });
 
     const unsubCusts = (!isCustomer)
       ? onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
@@ -4022,9 +4048,9 @@ const AppointmentsPage: React.FC = () => {
     }
   }, [apptTime, apptDuration]);
 
-  const checkOverlap = (date: string, time: string, duration: number, excludeId?: string) => {
+  const checkOverlap = (date: string, time: string, duration: number, staffEmail: string, excludeId?: string) => {
     return appointments.some(a => {
-      if (a.date !== date || a.status === 'cancelled' || a.id === excludeId) return false;
+      if (a.date !== date || a.status === 'cancelled' || a.id === excludeId || a.staffEmail !== staffEmail) return false;
       
       const apptStart = new Date(`${date}T${a.time}`);
       const apptEnd = new Date(apptStart.getTime() + (a.duration * 60000));
@@ -4038,10 +4064,11 @@ const AppointmentsPage: React.FC = () => {
 
   const handleAddAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (checkOverlap(apptDate, apptTime, apptDuration)) {
-      setStatusMsg({ type: 'error', text: 'This time slot overlaps with an existing appointment.' });
+    if (checkOverlap(apptDate, apptTime, apptDuration, selectedStaffEmail)) {
+      setShowOverlapPopup(true);
       return;
     }
+    setIsSubmittingAppt(true);
     try {
       let cName = manualCustName;
       let cPhone = manualCustPhone;
@@ -4115,16 +4142,19 @@ const AppointmentsPage: React.FC = () => {
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'appointments');
       setStatusMsg({ type: 'error', text: 'Failed to add appointment' });
+    } finally {
+      setIsSubmittingAppt(false);
     }
   };
 
   const handleUpdateAppointment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingAppointment) return;
-    if (checkOverlap(apptDate, apptTime, apptDuration, editingAppointment.id)) {
-      setStatusMsg({ type: 'error', text: 'This time slot overlaps with an existing appointment.' });
+    if (checkOverlap(apptDate, apptTime, apptDuration, selectedStaffEmail, editingAppointment.id)) {
+      setShowOverlapPopup(true);
       return;
     }
+    setIsSubmittingAppt(true);
     try {
       let cName = manualCustName;
       let cPhone = manualCustPhone;
@@ -4191,6 +4221,8 @@ const AppointmentsPage: React.FC = () => {
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, 'appointments');
       setStatusMsg({ type: 'error', text: 'Failed to update appointment' });
+    } finally {
+      setIsSubmittingAppt(false);
     }
   };
 
@@ -4694,7 +4726,22 @@ const AppointmentsPage: React.FC = () => {
           </div>
 
           <div className="p-0">
-            {viewMode === 'calendar' ? (
+            {loadingAppts ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="bg-card border border-border rounded-2xl p-5 shadow-sm transition-all group relative overflow-hidden animate-pulse h-[160px]">
+                    <div className="flex justify-between items-start mb-6">
+                      <div className="w-16 h-10 bg-primary/20 rounded-xl"></div>
+                      <div className="w-20 h-6 bg-primary/10 rounded-full"></div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="w-1/2 h-5 bg-primary/20 rounded-md"></div>
+                      <div className="w-3/4 h-4 bg-primary/10 rounded-md"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : viewMode === 'calendar' ? (
             <div className="h-[600px] bg-background rounded-2xl p-4 border border-border shadow-inner">
               <style>{`
                 .rbc-calendar { font-family: inherit; }
@@ -4785,11 +4832,11 @@ const AppointmentsPage: React.FC = () => {
                           </div>
                         </div>
                         <div className={cn(
-                          "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 shadow-sm border",
-                          appt.status === 'pending' && "bg-yellow-500/5 text-yellow-600 dark:text-yellow-400 border-yellow-500/20",
-                          appt.status === 'confirmed' && "bg-blue-500/5 text-blue-600 dark:text-blue-400 border-blue-500/20",
-                          appt.status === 'completed' && "bg-green-600 text-white border-green-600 shadow-md shadow-green-600/20",
-                          appt.status === 'cancelled' && "bg-red-500/5 text-red-600 dark:text-red-400 border-red-500/20"
+                          "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border backdrop-blur-sm transition-all",
+                          appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+                          appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+                          appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
+                          appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 dark:text-red-400 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
                         )}>
                           {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
                           {appt.status === 'confirmed' && <Check size={12} strokeWidth={3} />}
@@ -4891,11 +4938,11 @@ const AppointmentsPage: React.FC = () => {
                                   onClick={(e) => e.stopPropagation()}
                                   onChange={(e) => handleQuickStatusUpdate(appt.id, e.target.value as any)}
                                   className={cn(
-                                    "appearance-none text-[9px] font-black uppercase tracking-widest border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-primary/10 transition-all shadow-sm cursor-pointer pr-8",
-                                    appt.status === 'pending' && "bg-yellow-500/5 text-yellow-600 border-yellow-500/10",
-                                    appt.status === 'confirmed' && "bg-blue-500/5 text-blue-600 border-blue-500/10",
-                                    appt.status === 'completed' && "bg-green-500/5 text-green-600 border-green-500/10",
-                                    appt.status === 'cancelled' && "bg-red-500/5 text-red-600 border-red-500/10"
+                                    "appearance-none text-[9px] font-black uppercase tracking-widest border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer pr-8 backdrop-blur-sm",
+                                    appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+                                    appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+                                    appt.status === 'completed' && "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600 dark:text-green-400 border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
+                                    appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 dark:text-red-400 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
                                   )}
                                 >
                                   <option value="pending">Pending</option>
@@ -5630,10 +5677,20 @@ const AppointmentsPage: React.FC = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
+                    disabled={isSubmittingAppt}
+                    className="px-8 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {editingAppointment ? 'Update Appointment' : 'Confirm Booking'}
-                    <Check size={14} />
+                    {isSubmittingAppt ? (
+                      <>
+                        Processing...
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      </>
+                    ) : (
+                      <>
+                        {editingAppointment ? 'Update Appointment' : 'Confirm Booking'}
+                        <Check size={14} />
+                      </>
+                    )}
                   </button>
                 </>
               )}
@@ -5669,6 +5726,33 @@ const AppointmentsPage: React.FC = () => {
                 className="flex-1 px-6 py-4 bg-red-600 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-600/20 active:scale-95"
               >
                 Delete
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Overlap Alert Popup */}
+      {showOverlapPopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border max-h-[calc(100dvh-110px)] overflow-y-auto"
+          >
+            <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-6 mx-auto shadow-inner border border-red-500/20">
+              <AlertCircle size={32} strokeWidth={2.5} />
+            </div>
+            <h3 className="text-2xl font-black text-foreground mb-4 tracking-tighter text-center">Time Slot Overlap</h3>
+            <p className="text-muted-foreground font-bold mb-8 leading-relaxed text-center">
+              The selected time slot overlaps with an existing appointment for this staff member. Please select a different time or staff member.
+            </p>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setShowOverlapPopup(false)}
+                className="w-full px-6 py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 active:scale-95"
+              >
+                Okay
               </button>
             </div>
           </motion.div>
