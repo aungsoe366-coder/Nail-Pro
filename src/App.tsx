@@ -8,10 +8,12 @@ import {
   useLocation 
 } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { Printer as CapPrinter } from '@capgo/capacitor-printer';
 import { 
   onAuthStateChanged,
   GoogleAuthProvider,
+  signInWithCredential,
   signOut,
   User,
   signInWithEmailAndPassword,
@@ -22,7 +24,6 @@ import {
   reauthenticateWithCredential,
   updatePassword,
   signInWithPopup,
-  signInWithRedirect,
   browserPopupRedirectResolver
 } from 'firebase/auth';
 import { 
@@ -590,7 +591,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!auth) throw new Error("Firebase Auth not initialized");
       
       if (Capacitor.isNativePlatform()) {
-        await signInWithRedirect(auth, googleProvider);
+        try {
+          GoogleAuth.initialize();
+          const googleUser = await GoogleAuth.signIn();
+          if (googleUser && googleUser.authentication && googleUser.authentication.idToken) {
+            const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
+            await signInWithCredential(auth, credential);
+          } else {
+            throw new Error('Google Auth did not return an ID token');
+          }
+        } catch (nativeErr) {
+          console.error("Capacitor Google Auth error:", nativeErr);
+          throw nativeErr;
+        }
       } else {
         await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
       }
