@@ -44,6 +44,9 @@
     @apply bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] text-foreground min-h-screen;
     background-attachment: fixed;
   }
+  input, textarea {
+    @apply select-text;
+  }
 }
 
 .glass {

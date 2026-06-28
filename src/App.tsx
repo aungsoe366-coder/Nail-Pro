@@ -7500,7 +7500,7 @@ const ForcePasswordChangePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background p-4 sm:p-6 overflow-y-auto">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background p-4 sm:p-6 overflow-y-auto select-none">
       <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border/50 relative overflow-hidden my-auto shrink-0">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
         
@@ -7794,7 +7794,7 @@ const IdentityResetPage: React.FC = () => {
 
   if (success) {
     return (
-      <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto">
+      <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto select-none">
         <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border text-center my-auto shrink-0">
           <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/20">
             <CheckCircle2 className="w-10 h-10 text-green-500" />
@@ -7807,7 +7807,7 @@ const IdentityResetPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto">
+    <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto select-none">
       <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border relative overflow-hidden my-auto shrink-0">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
         
@@ -7973,7 +7973,7 @@ const PhoneSignUpPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto">
+    <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto select-none">
       <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border relative overflow-hidden my-auto shrink-0">
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
         
@@ -8123,7 +8123,7 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300">
+    <div className="fixed inset-0 bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300 select-none">
       <div className="bg-white p-8 rounded-3xl border border-border w-full max-w-[380px] text-center space-y-6 shadow-xl my-auto transition-colors duration-300">
         <div className="space-y-1">
           <h2 className="text-[#4A2E31] tracking-[0.25em] uppercase text-2xl font-black font-serif">Nail Pro</h2>
@@ -8281,7 +8281,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] overflow-hidden overscroll-none bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] transition-colors duration-500 ease-in-out text-foreground">
+    <div className="fixed inset-0 z-[99999] overflow-hidden overscroll-none bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] transition-colors duration-500 ease-in-out text-foreground select-none">
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
         <div className="relative w-full max-w-[400px] flex flex-col justify-center z-10 shrink-0 h-full max-h-[800px]">
         <AnimatePresence mode="wait">
@@ -8341,7 +8341,7 @@ const LoginPage: React.FC = () => {
             </button>
             
             <div className="text-center mb-6 mt-4">
-              <h2 className="text-xl font-black text-primary tracking-tighter">WELCOME BACK</h2>
+              <h2 className="text-xl font-black text-[#4A2E31] tracking-widest uppercase font-serif">Welcome Back</h2>
             </div>
 
             {error && (
@@ -8504,8 +8504,8 @@ const LoginPage: React.FC = () => {
             </button>
             
             <div className="text-center mb-6 mt-4">
-              <h2 className="text-xl font-black text-primary tracking-tighter">CREATE ACCOUNT</h2>
-              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Join Nail Pro Studio</p>
+              <h2 className="text-xl font-black text-[#4A2E31] tracking-widest uppercase font-serif">Create Account</h2>
+              <p className="text-[9px] text-[#4A2E31]/70 font-bold uppercase tracking-[0.2em] mt-1">Join Nail Pro Studio</p>
             </div>
 
             {error && (
@@ -8667,65 +8667,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, profile, loading, isCustomer, isSuperAdmin, isOwner, isCashier } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  useEffect(() => {
-    if (!loading && user && profile) {
-      const hasRedirected = sessionStorage.getItem('initial_redirect_done');
-      if (!hasRedirected) {
-        if (isCustomer) {
-          navigate('/appointments');
-        } else if (isSuperAdmin || isOwner || isCashier) {
-          navigate('/');
-        } else {
-          navigate('/appointments');
-        }
-        sessionStorage.setItem('initial_redirect_done', 'true');
-      }
-    }
-  }, [user, profile, loading, navigate]);
-
-  if (loading) return (
-    <div className="fixed inset-0 flex items-center justify-center bg-background transition-colors duration-300">
-      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
-
-  if (!user) {
-    if (location.pathname === '/reset-password') {
-      return <ResetPasswordPage />;
-    }
-    if (location.pathname === '/identity-reset') {
-      return <IdentityResetPage />;
-    }
-    return <LoginPage />;
-  }
-
-  if (profile?.mustChangePassword && location.pathname !== '/force-password-change') {
-    return <Navigate to="/force-password-change" />;
-  }
-
-  return (
-    <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300">
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <Header onMenuClick={() => setIsSidebarOpen(true)} />
-      <main className="max-w-md mx-auto px-4 pt-4">
-        {children}
-      </main>
-    </div>
-  );
-};
-
-const AppRoutes = () => {
-  const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   useEffect(() => {
     let listener: any = null;
     
     const handleBackButton = () => {
-      if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/appointments') {
-        CapApp.exitApp();
+      // If we are not logged in, or on main pages, confirm exit instead of going back.
+      if (!user || location.pathname === '/' || location.pathname === '/login' || location.pathname === '/appointments') {
+        setShowExitConfirm(true);
       } else {
         navigate(-1);
       }
@@ -8748,8 +8698,88 @@ const AppRoutes = () => {
         }
       }
     };
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, user]);
 
+  useEffect(() => {
+    if (!loading && user && profile) {
+      const hasRedirected = sessionStorage.getItem('initial_redirect_done');
+      if (!hasRedirected) {
+        if (isCustomer) {
+          navigate('/appointments');
+        } else if (isSuperAdmin || isOwner || isCashier) {
+          navigate('/');
+        } else {
+          navigate('/appointments');
+        }
+        sessionStorage.setItem('initial_redirect_done', 'true');
+      }
+    }
+  }, [user, profile, loading, navigate]);
+
+  const renderExitConfirm = () => {
+    if (!showExitConfirm) return null;
+    return (
+      <div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300 select-none">
+        <div className="bg-white p-6 rounded-3xl border border-border w-full max-w-[320px] text-center space-y-6 shadow-xl">
+          <h3 className="text-xl font-black text-[#4A2E31] uppercase tracking-widest font-serif">Exit App</h3>
+          <p className="text-muted-foreground text-sm">Are you sure you want to exit the app?</p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowExitConfirm(false)}
+              className="flex-1 bg-muted text-[#4A2E31] font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
+            >
+              NO
+            </button>
+            <button
+              onClick={() => {
+                setShowExitConfirm(false);
+                CapApp.exitApp();
+              }}
+              className="flex-1 bg-[#4A2E31] text-white font-bold py-3 rounded-xl hover:bg-[#4A2E31]/90 transition-all text-xs tracking-wider shadow-md"
+            >
+              YES
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) return (
+    <div className="fixed inset-0 flex items-center justify-center bg-background transition-colors duration-300 select-none">
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!user) {
+    if (location.pathname === '/reset-password') {
+      return <>{renderExitConfirm()}<ResetPasswordPage /></>;
+    }
+    if (location.pathname === '/identity-reset') {
+      return <>{renderExitConfirm()}<IdentityResetPage /></>;
+    }
+    return <>{renderExitConfirm()}<LoginPage /></>;
+  }
+
+  if (profile?.mustChangePassword && location.pathname !== '/force-password-change') {
+    return <Navigate to="/force-password-change" />;
+  }
+
+  return (
+    <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300 select-none">
+      {renderExitConfirm()}
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Header onMenuClick={() => setIsSidebarOpen(true)} />
+      <main className="max-w-md mx-auto px-4 pt-4">
+        {children}
+      </main>
+    </div>
+  );
+};
+
+const AppRoutes = () => {
+  const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
+  
   return (
     <Routes>
       <Route path="/" element={isCustomer ? <Navigate to="/appointments" /> : <DashboardPage />} />
