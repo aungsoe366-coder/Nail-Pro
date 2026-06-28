@@ -12,6 +12,8 @@
     "start": "node server.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/app": "^8.1.0",
     "@capacitor/core": "^8.4.0",
     "@capgo/capacitor-printer": "^8.0.15",
     "@codetrix-studio/capacitor-google-auth": "^3.4.0-rc.4",
@@ -36,6 +38,7 @@
     "vite": "^6.2.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.14",

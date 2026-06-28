@@ -8,7 +8,9 @@ import {
   useLocation 
 } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
+import { App as CapApp } from '@capacitor/app';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { CustomSelect } from './components/CustomSelect';
 import { Printer as CapPrinter } from '@capgo/capacitor-printer';
 import { 
   onAuthStateChanged,
@@ -116,11 +118,13 @@ import {
   CheckCircle2,
   Activity,
   CalendarHeart,
-  MessageCircle
+  MessageCircle,
+  Download,
+  ArrowLeft
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
@@ -236,7 +240,7 @@ const CustomDatePicker: React.FC<{
   
   return (
     <div className={cn(
-      "relative group flex items-center gap-3 px-4 py-3 hover:bg-black/5 dark:hover:bg-input transition-colors cursor-pointer h-full",
+      "relative group flex items-center gap-3 px-4 py-3 hover:bg-black/5  transition-colors cursor-pointer h-full",
       disabled && "opacity-50 cursor-not-allowed pointer-events-none",
       className
     )}>
@@ -290,14 +294,21 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
     headerLines.forEach(l => text += center(l.trim(), 32) + "\n");
   }
 
-  text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\n";
+  if (!settings?.hideShopNameOnReceipt) {
+    text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\n";
+  }
   const address = settings?.addr || "";
   const addrLines = address.match(/.{1,32}/g) || [address];
   addrLines.forEach(l => text += center(l.trim(), 32) + "\n");
   text += center("Ph: " + (settings?.ph || ""), 32) + "\n";
   text += "-".repeat(32) + "\n";
-  text += `Date   : ${new Date(sale.dateTime).toLocaleString()}\n`;
-  text += `Staff  : ${sale.staff}\n`;
+  
+  if (!settings?.hideDateTimeOnReceipt) {
+    text += `Date   : ${new Date(sale.dateTime).toLocaleString()}\n`;
+  }
+  if (!settings?.hideStaffNameOnReceipt) {
+    text += `Staff  : ${sale.staff}\n`;
+  }
   
   text += "-".repeat(32) + "\n";
   text += "Item           Qty Price  Total\n";
@@ -317,7 +328,7 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
   text += "-".repeat(32) + "\n";
   text += pad("NET TOTAL", 18) + padL(sale.total.toLocaleString() + " Ks", 14) + "\n";
 
-  if (sale.pointsEarned || sale.pointsRedeemed) {
+  if (!settings?.hideLoyaltyPointsOnReceipt && (sale.pointsEarned || sale.pointsRedeemed)) {
     text += "-".repeat(32) + "\n";
     if (sale.pointsEarned) text += pad("Points Earned", 18) + padL("+" + sale.pointsEarned, 14) + "\n";
     if (sale.pointsRedeemed) text += pad("Points Redeemed", 18) + padL("-" + sale.pointsRedeemed, 14) + "\n";
@@ -349,7 +360,9 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
     headerLines.forEach(l => text += center(l.trim(), 32) + "\n");
   }
 
-  text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\n";
+  if (!settings?.hideShopNameOnReceipt) {
+    text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\n";
+  }
   text += center("CONSOLIDATED SALES REPORT", 32) + "\n";
   text += center(`From: ${from}`, 32) + "\n";
   text += center(`To  : ${to}`, 32) + "\n";
@@ -357,8 +370,14 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
 
   let grandTotal = 0;
   sales.forEach((sale, idx) => {
-    text += `Sale #${idx + 1} | ${sale.staff}\n`;
-    text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\n`;
+    if (!settings?.hideStaffNameOnReceipt) {
+      text += `Sale #${idx + 1} | ${sale.staff}\n`;
+    } else {
+      text += `Sale #${idx + 1}\n`;
+    }
+    if (!settings?.hideDateTimeOnReceipt) {
+      text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\n`;
+    }
     text += "-".repeat(32) + "\n";
     text += "Item           Qty Price  Total\n";
     
@@ -1198,61 +1217,6 @@ const useAuth = () => {
   return context;
 };
 
-// --- Theme Context ---
-type Theme = 'light' | 'dark';
-
-interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextType | null>(null);
-
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('app-theme');
-    if (saved) return saved as Theme;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('app-theme', theme);
-    const root = window.document.documentElement;
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
-  }, [theme]);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('app-theme')) {
-        setTheme(e.matches ? 'dark' : 'light');
-      }
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  const toggleTheme = () => {
-    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
-  };
-
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-};
-
-const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) throw new Error("useTheme must be used within ThemeProvider");
-  return context;
-};
-
 // --- Components ---
 
 const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
@@ -1279,7 +1243,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
     <>
       <div 
         className={cn(
-          "fixed inset-0 bg-black/60 backdrop-blur-sm z-[10000] transition-opacity duration-500",
+          "fixed inset-0 bg-black/60  z-[10000] transition-opacity duration-500",
           isOpen ? "opacity-100 visible" : "opacity-0 invisible"
         )}
         onClick={onClose}
@@ -1334,7 +1298,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
         <div className="p-6 border-t border-border/50 bg-muted/5">
           <button 
             onClick={logout}
-            className="w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-red-500 font-black text-xs tracking-[0.2em] border border-red-500/20 hover:bg-red-500 hover:text-white transition-all duration-300 shadow-lg hover:shadow-red-500/20 active:scale-95"
+            className="w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-red-500 font-black text-xs tracking-[0.2em] border border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all duration-300 shadow-lg hover:shadow-red-500/20 active:scale-95"
           >
             <LogOut size={18} />
             LOGOUT
@@ -1347,10 +1311,9 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
 
 const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
   
   return (
-    <header className="sticky top-0 z-[1000] flex justify-between items-center px-6 py-4 bg-card/80 backdrop-blur-xl border-b border-border/50 transition-all duration-500">
+    <header className="sticky top-0 z-[1000] flex justify-between items-center px-6 py-4 bg-card/80  border-b border-border/50 transition-all duration-500">
       <div className="flex items-center gap-6">
         <button 
           onClick={onMenuClick} 
@@ -1367,20 +1330,6 @@ const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <button 
-          onClick={toggleTheme}
-          className="p-2.5 text-muted-foreground hover:text-primary transition-all rounded-xl hover:bg-primary/5 border border-transparent hover:border-primary/10 active:scale-90"
-          title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
-        >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-        </button>
-        <div className="h-8 w-[1px] bg-border/50 mx-1" />
-        <img 
-          src="https://i.postimg.cc/vB8xGp2h/Logo.png" 
-          alt="Logo" 
-          className="w-10 h-10 object-contain cursor-pointer hover:scale-110 active:scale-95 transition-all drop-shadow-xl"
-          onClick={() => navigate('/')}
-        />
       </div>
     </header>
   );
@@ -1616,15 +1565,15 @@ const DashboardPage: React.FC = () => {
           </div>
 
           <div className="relative z-10 space-y-4">
-            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 flex justify-between items-center">
+            <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
               <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Sales Count</span>
               <span className="text-lg font-black">{sales.length}</span>
             </div>
-            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 flex justify-between items-center">
+            <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
               <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Avg. Ticket</span>
               <span className="text-lg font-black">{sales.length > 0 ? Math.floor(totalSales / sales.length).toLocaleString() : 0} Ks</span>
             </div>
-            <div className="bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 flex justify-between items-center">
+            <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
               <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Expense Ratio</span>
               <span className="text-lg font-black">{totalSales > 0 ? Math.floor((totalExpenses / totalSales) * 100) : 0}%</span>
             </div>
@@ -2086,7 +2035,7 @@ const POSPage: React.FC = () => {
     <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-73px)] overflow-y-auto lg:overflow-hidden bg-background">
       {/* Left Side: Services Selection */}
       <div className="flex-none lg:flex-1 flex flex-col min-w-0 border-r border-border/50">
-        <div className="p-4 space-y-4 bg-card/30 backdrop-blur-sm border-b border-border/50">
+        <div className="p-4 space-y-4 bg-card  border-b border-border/50">
           <div className="relative z-50">
             <div className="relative">
               <FloatingInput 
@@ -2205,7 +2154,7 @@ const POSPage: React.FC = () => {
       </div>
 
       {/* Right Side: Cart & Checkout */}
-      <div className="w-full lg:w-[400px] xl:w-[450px] bg-card/50 backdrop-blur-xl flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.05)] border-t lg:border-t-0 border-border/50">
+      <div className="w-full lg:w-[400px] xl:w-[450px] bg-card/50  flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.05)] border-t lg:border-t-0 border-border/50">
         <div className="p-6 border-b border-border/50 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
@@ -2257,7 +2206,7 @@ const POSPage: React.FC = () => {
                               -{item.disP}%
                             </span>
                             {isLoyaltyDiscountActive && item.disP >= LOYALTY_DISCOUNT && (
-                              <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest border border-primary/20">
+                              <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest border border-border">
                                 Loyalty
                               </span>
                             )}
@@ -2322,24 +2271,20 @@ const POSPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Assigned Staff</label>
-              <div className="relative">
-                <select 
-                  value={selectedStaffEmail}
-                  onChange={(e) => setSelectedStaffEmail(e.target.value)}
-                  disabled={isStaffMember}
-                  className="w-full bg-input border border-border/50 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground focus:border-primary outline-none appearance-none transition-all disabled:opacity-50"
-                >
-                  <option value="">Any Staff (Auto-assign)</option>
-                  {staff.map(s => {
+              <CustomSelect
+                value={selectedStaffEmail}
+                onChange={(val) => setSelectedStaffEmail(val)}
+                disabled={isStaffMember}
+                placeholder="Any Staff (Auto-assign)"
+                options={[
+                  { value: '', label: 'Any Staff (Auto-assign)' },
+                  ...staff.filter(s => {
                     const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-                    const isWorking = !s.workingDays || s.workingDays.includes(todayName);
-                    return isWorking ? (
-                      <option key={s.email} value={s.email}>{s.name}</option>
-                    ) : null;
-                  })}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={14} />
-              </div>
+                    return !s.workingDays || s.workingDays.includes(todayName);
+                  }).map(s => ({ value: s.email, label: s.name }))
+                ]}
+                buttonClassName="px-3 py-2.5 text-xs font-bold"
+              />
             </div>
             <div className="space-y-1.5">
               <div className="flex justify-between items-center ml-1">
@@ -2354,17 +2299,13 @@ const POSPage: React.FC = () => {
               <div className="space-y-2">
                 {payments.map((p, idx) => (
                   <div key={idx} className="flex gap-2 items-center">
-                    <div className="relative flex-1">
-                      <select 
+                    <div className="flex-1">
+                      <CustomSelect
                         value={p.method}
-                        onChange={(e) => updatePayment(idx, { method: e.target.value as any })}
-                        className="w-full bg-input border border-border/50 rounded-xl px-3 py-2 text-[10px] font-bold text-foreground focus:border-primary outline-none appearance-none transition-all"
-                      >
-                        {paymentMethods.map(m => (
-                          <option key={m.id} value={m.id}>{m.label}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={10} />
+                        onChange={(val) => updatePayment(idx, { method: val as any })}
+                        options={paymentMethods.map(m => ({ value: m.id, label: m.label }))}
+                        buttonClassName="px-3 py-2 text-[10px] font-bold"
+                      />
                     </div>
                     <div className="relative w-24">
                       <input 
@@ -2578,7 +2519,7 @@ const POSPage: React.FC = () => {
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black text-muted-foreground uppercase tracking-widest">PTS</span>
                   </div>
-                  <div className="bg-red-500 text-white px-3 py-2.5 rounded-xl text-[10px] font-black shadow-lg shadow-red-500/20">
+                  <div className="bg-red-500 text-foreground px-3 py-2.5 rounded-xl text-[10px] font-black shadow-lg shadow-red-500/20">
                     -{ (pointsToRedeem * 10).toLocaleString() } Ks
                   </div>
                 </div>
@@ -2666,7 +2607,7 @@ const POSPage: React.FC = () => {
 
       {/* Loyalty Discount Prompt Modal */}
       {showLoyaltyPrompt && (
-        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px] bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px] bg-black/60  animate-in fade-in duration-300">
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -2777,13 +2718,11 @@ const MonthlySummaryPage: React.FC = () => {
         <div className="flex items-center gap-4 bg-card/50 p-2 rounded-2xl border border-border shadow-sm">
           <div className="flex flex-col px-3">
             <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Fiscal Year</label>
-            <select 
+            <CustomSelect
               value={year}
-              onChange={(e) => setYear(e.target.value)}
-              className="bg-transparent text-foreground text-sm font-bold focus:outline-none cursor-pointer hover:text-primary transition-colors"
-            >
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
+              onChange={setYear}
+              options={years.map(y => ({ value: y, label: y }))}
+            />
           </div>
         </div>
       </div>
@@ -2927,6 +2866,33 @@ const ExpenseListPage: React.FC = () => {
     return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
   }, [filteredExpenses]);
 
+  const handleExportCSV = () => {
+    if (filteredExpenses.length === 0) return;
+    
+    const headers = ['Date', 'Description', 'Category', 'Amount (Ks)'];
+    
+    const csvData = filteredExpenses.map(e => [
+      e.date,
+      e.desc,
+      e.category || 'General',
+      e.amount
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Expense_Report_${dateFrom}_to_${dateTo}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handleAddExpense = async () => {
     if (!expDesc || !expAmt) return;
     const now = new Date();
@@ -3001,17 +2967,18 @@ const ExpenseListPage: React.FC = () => {
             />
             <div className="space-y-1.5">
               <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
-              <select 
+              <CustomSelect
                 value={expCategory}
-                onChange={(e) => setExpCategory(e.target.value)}
-                className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-red-500 outline-none transition-all"
-              >
-                <option value="">General</option>
-                {expenseCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-              </select>
+                onChange={setExpCategory}
+                options={[
+                  { value: '', label: 'General' },
+                  ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
+                ]}
+                buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-red-500"
+              />
             </div>
           </div>
-          <button onClick={handleAddExpense} className="w-full bg-red-500 text-white font-bold py-4 rounded-2xl mt-2 hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-red-500/20 uppercase tracking-widest">Add Expense</button>
+          <button onClick={handleAddExpense} className="w-full bg-red-500 text-foreground font-bold py-4 rounded-2xl mt-2 hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-red-500/20 uppercase tracking-widest">Add Expense</button>
         </div>
       </Modal>
 
@@ -3029,9 +2996,9 @@ const ExpenseListPage: React.FC = () => {
               onFocusClear
             />
             {editingExpenseCategory ? (
-              <button onClick={handleUpdateExpenseCategory} className="w-full bg-red-500 text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl">Update Category</button>
+              <button onClick={handleUpdateExpenseCategory} className="w-full bg-red-500 text-foreground py-4 mt-2 uppercase tracking-widest font-black rounded-xl">Update Category</button>
             ) : (
-              <button onClick={handleAddExpenseCategory} className="w-full bg-red-500 text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl">Add Category</button>
+              <button onClick={handleAddExpenseCategory} className="w-full bg-red-500 text-foreground py-4 mt-2 uppercase tracking-widest font-black rounded-xl">Add Category</button>
             )}
           </div>
 
@@ -3059,7 +3026,7 @@ const ExpenseListPage: React.FC = () => {
           <div className="flex items-center gap-3 mt-4">
             <button 
               onClick={() => setShowExpForm(true)}
-              className="bg-red-500 text-white px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors"
+              className="bg-red-500 text-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors"
             >
               <Plus size={14} /> ADD EXPENSE
             </button>
@@ -3072,7 +3039,7 @@ const ExpenseListPage: React.FC = () => {
           </div>
         </div>
         
-        <div className="bg-card/50 rounded-[2rem] border border-border shadow-2xl overflow-hidden backdrop-blur-md min-w-[320px]">
+        <div className="bg-card rounded-[2rem] border border-border shadow-2xl z-50 relative min-w-[320px]">
           <div className="grid grid-cols-1 md:grid-cols-3">
             <CustomDatePicker 
               label="FROM" 
@@ -3092,15 +3059,16 @@ const ExpenseListPage: React.FC = () => {
                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
                  <Settings size={12} className="text-red-500" /> CATEGORY
                </label>
-               <select 
+               <CustomSelect
                  value={expFilterCat}
-                 onChange={(e) => setExpFilterCat(e.target.value)}
-                 className="w-full bg-transparent border-none text-foreground font-medium text-sm outline-none px-0"
-               >
-                 <option value="">All Categories</option>
-                 <option value="General">General</option>
-                 {expenseCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-               </select>
+                 onChange={setExpFilterCat}
+                 placeholder="All Categories"
+                 options={[
+                   { value: '', label: 'All Categories' },
+                   { value: 'General', label: 'General' },
+                   ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
+                 ]}
+               />
             </div>
           </div>
         </div>
@@ -3118,6 +3086,15 @@ const ExpenseListPage: React.FC = () => {
           </div>
           <div className="h-1 bg-red-500/20 w-24 mx-auto rounded-full" />
         </div>
+        {filteredExpenses.length > 0 && (
+          <button 
+            onClick={handleExportCSV}
+            className="absolute right-6 top-6 p-3 bg-card text-muted-foreground rounded-2xl border border-border shadow-xl hover:text-red-500 transition-all active:scale-90 group/btn"
+            title="Export to CSV"
+          >
+            <Download size={22} className="group-hover/btn:scale-110 transition-transform" />
+          </button>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -3128,7 +3105,7 @@ const ExpenseListPage: React.FC = () => {
 
         <div className="space-y-12">
           {groupedExpenses.length === 0 ? (
-            <div className="text-center py-20 bg-card/30 rounded-[2rem] border border-dashed border-border">
+            <div className="text-center py-20 bg-card rounded-[2rem] border border-dashed border-border">
               <div className="flex flex-col items-center gap-3 opacity-30">
                 <Receipt size={48} />
                 <p className="text-sm font-medium italic text-muted-foreground">No expense records found for this period.</p>
@@ -3137,7 +3114,7 @@ const ExpenseListPage: React.FC = () => {
           ) : (
             groupedExpenses.map(([date, expenses]) => (
               <div key={date} className="space-y-4">
-                <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background/90 backdrop-blur-md border-b border-border/30">
+                <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background/90  border-b border-border/30">
                   <div className="flex items-center gap-3 px-5 py-2 bg-red-500/10 border border-red-500/20 rounded-2xl shadow-sm shadow-red-500/5">
                     <CalendarIcon size={14} className="text-red-500" />
                     <span className="text-xs font-black uppercase tracking-[0.15em] text-red-500">
@@ -3213,7 +3190,7 @@ const ExpenseListPage: React.FC = () => {
             </button>
             <button 
               onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)}
-              className="bg-red-500 text-white font-black py-3 rounded-xl shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs"
+              className="bg-red-500 text-foreground font-black py-3 rounded-xl shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs"
             >
               DELETE
             </button>
@@ -3279,6 +3256,36 @@ const HistoryPage: React.FC = () => {
   const totalIncome = filteredSales.reduce((sum, s) => sum + s.total, 0);
   const totalComm = filteredSales.reduce((sum, s) => sum + s.commission, 0);
 
+  const handleExportCSV = () => {
+    if (filteredSales.length === 0) return;
+    
+    const headers = ['Date', 'Time', 'Receipt No', 'Total (Ks)', 'Commission (Ks)', 'Method', 'Staff'];
+    
+    const csvData = filteredSales.map(s => [
+      s.date,
+      s.time,
+      s.receiptNo,
+      s.total,
+      s.commission,
+      s.method,
+      s.staff
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Sales_Report_${dateFrom}_to_${dateTo}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const handlePrintAll = () => {
     if (filteredSales.length === 0) return;
     setShowPrintPreview(true);
@@ -3318,60 +3325,52 @@ const HistoryPage: React.FC = () => {
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
         </div>
         
-        <div className="bg-card/50 rounded-[2rem] border border-border shadow-2xl overflow-hidden backdrop-blur-md min-w-[320px]">
-          <div className="grid grid-cols-1 md:grid-cols-2">
+        <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full z-50 relative">
+          <div className="flex flex-col md:flex-row md:items-center">
             <CustomDatePicker 
               label="FROM" 
               value={dateFrom} 
               onChange={setDateFrom} 
-              className="border-b md:border-r border-border/50"
+              className="border-b md:border-b-0 md:border-r border-border/50 flex-1"
             />
             <CustomDatePicker 
               label="TO" 
               value={dateTo} 
               onChange={setDateTo} 
-              className="border-b border-border/50"
+              className="border-b md:border-b-0 md:border-r border-border/50 flex-1"
             />
-            <div className="relative group flex items-center gap-4 px-6 py-4 hover:bg-input transition-colors cursor-pointer border-b md:border-b-0 md:border-r border-border/50">
-              <UserIcon size={20} className="text-primary" />
-              <div className="flex flex-col flex-1">
-                <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none mb-1.5">STAFF</label>
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-black text-foreground tracking-tight">{staffFilter || 'All Staff'}</span>
-                  <ChevronDown size={14} className="text-muted-foreground ml-4 opacity-30 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </div>
-              <select 
-                value={staffFilter} 
-                onChange={(e) => setStaffFilter(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              >
-                <option value="">All Staff</option>
-                {staffList.map(name => <option key={name} value={name}>{name}</option>)}
-              </select>
+            <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
+               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+                 <UserIcon size={12} className="text-primary" /> STAFF
+               </label>
+               <CustomSelect
+                 value={staffFilter} 
+                 onChange={setStaffFilter}
+                 placeholder="All Staff"
+                 options={[
+                   { value: '', label: 'All Staff' },
+                   ...staffList.map(name => ({ value: name, label: name }))
+                 ]}
+               />
             </div>
-            <div className="relative group flex items-center gap-4 px-6 py-4 hover:bg-input transition-colors cursor-pointer">
-              <CreditCard size={20} className="text-primary" />
-              <div className="flex flex-col flex-1">
-                <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest leading-none mb-1.5">PAYMENT</label>
-                <div className="flex items-center justify-between">
-                  <span className="text-base font-black text-foreground tracking-tight">{paymentFilter || 'All'}</span>
-                  <ChevronDown size={14} className="text-muted-foreground ml-4 opacity-30 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </div>
-              <select 
-                value={paymentFilter} 
-                onChange={(e) => setPaymentFilter(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              >
-                <option value="">All</option>
-                <option value="Cash">Cash</option>
-                <option value="KBZPay">KBZPay</option>
-                <option value="WavePay">WavePay</option>
-                <option value="AYA Pay">AYA Pay</option>
-                <option value="CB PAY">CB PAY</option>
-                <option value="OK$">OK$</option>
-              </select>
+            <div className="flex flex-col p-4 flex-1">
+               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+                 <CreditCard size={12} className="text-primary" /> PAYMENT
+               </label>
+               <CustomSelect
+                 value={paymentFilter} 
+                 onChange={setPaymentFilter}
+                 placeholder="All Payments"
+                 options={[
+                   { value: '', label: 'All Payments' },
+                   { value: 'Cash', label: 'Cash' },
+                   { value: 'KBZPay', label: 'KBZPay' },
+                   { value: 'WavePay', label: 'WavePay' },
+                   { value: 'AYA Pay', label: 'AYA Pay' },
+                   { value: 'CB PAY', label: 'CB PAY' },
+                   { value: 'OK$', label: 'OK$' }
+                 ]}
+               />
             </div>
           </div>
         </div>
@@ -3388,13 +3387,22 @@ const HistoryPage: React.FC = () => {
             <div className="h-1 bg-primary/20 w-16 mx-auto rounded-full" />
           </div>
           {filteredSales.length > 0 && (
-            <button 
-              onClick={handlePrintAll}
-              className="absolute right-6 top-6 p-3 bg-primary/10 text-primary rounded-2xl border border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all shadow-xl active:scale-90 group/btn"
-              title="Print Consolidated Report"
-            >
-              <Printer size={22} className="group-hover/btn:scale-110 transition-transform" />
-            </button>
+            <div className="absolute right-6 top-6 flex items-center gap-2">
+              <button 
+                onClick={handleExportCSV}
+                className="p-3 bg-card text-muted-foreground rounded-2xl border border-border shadow-xl hover:text-primary transition-all active:scale-90 group/btn"
+                title="Export to CSV"
+              >
+                <Download size={22} className="group-hover/btn:scale-110 transition-transform" />
+              </button>
+              <button 
+                onClick={handlePrintAll}
+                className="p-3 bg-primary/10 text-primary rounded-2xl border border-border hover:bg-primary hover:text-primary-foreground transition-all shadow-xl active:scale-90 group/btn"
+                title="Print Consolidated Report"
+              >
+                <Printer size={22} className="group-hover/btn:scale-110 transition-transform" />
+              </button>
+            </div>
           )}
         </div>
 
@@ -3427,7 +3435,7 @@ const HistoryPage: React.FC = () => {
 
         <div className="space-y-12">
           {groupedSales.length === 0 ? (
-            <div className="text-center py-24 bg-card/30 rounded-[2.5rem] border border-dashed border-border">
+            <div className="text-center py-24 bg-card rounded-[2.5rem] border border-dashed border-border">
               <div className="flex flex-col items-center gap-4 opacity-20">
                 <HistoryIcon size={64} />
                 <p className="text-base font-medium italic">No transaction history found for this period.</p>
@@ -3436,8 +3444,8 @@ const HistoryPage: React.FC = () => {
           ) : (
             groupedSales.map(([date, sales]) => (
               <div key={date} className="space-y-4">
-                <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background/90 backdrop-blur-md border-b border-border/30">
-                  <div className="flex items-center gap-3 px-5 py-2 bg-primary/10 border border-primary/20 rounded-2xl shadow-sm shadow-primary/5">
+                <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background/90  border-b border-border/30">
+                  <div className="flex items-center gap-3 px-5 py-2 bg-primary/10 border border-border rounded-2xl shadow-sm shadow-primary/5">
                     <CalendarIcon size={14} className="text-primary" />
                     <span className="text-xs font-black uppercase tracking-[0.15em] text-primary">
                       {formatDisplayDate(date)}
@@ -3657,37 +3665,37 @@ const StaffCommissionsPage: React.FC = () => {
     <div className="p-4 space-y-6">
       <h3 className="text-primary text-2xl font-bold tracking-tight">Staff Commissions</h3>
       
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">From</label>
-            <input 
-              type="date" 
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full bg-input border border-border rounded-xl p-2.5 text-foreground text-sm focus:border-primary outline-none transition-all"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">To</label>
-            <input 
-              type="date" 
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-full bg-input border border-border rounded-xl p-2.5 text-foreground text-sm focus:border-primary outline-none transition-all"
-            />
-          </div>
+      <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative">
+        <div className="flex flex-col md:flex-row md:items-center">
+          <CustomDatePicker 
+            label="FROM" 
+            value={dateFrom} 
+            onChange={setDateFrom} 
+            className="border-b md:border-b-0 md:border-r border-border/50 flex-1"
+          />
+          <CustomDatePicker 
+            label="TO" 
+            value={dateTo} 
+            onChange={setDateTo} 
+            className="border-b md:border-b-0 md:border-r border-border/50 flex-1"
+          />
+          {!isStaff && (
+            <div className="flex flex-col p-4 flex-1">
+               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+                 <UserIcon size={12} className="text-primary" /> STAFF
+               </label>
+               <CustomSelect
+                 value={staffFilter} 
+                 onChange={setStaffFilter}
+                 placeholder="All Staff"
+                 options={[
+                   { value: '', label: 'All Staff' },
+                   ...staffList.map(name => ({ value: name, label: name }))
+                 ]}
+               />
+            </div>
+          )}
         </div>
-        {!isStaff && (
-          <select 
-            value={staffFilter}
-            onChange={(e) => setStaffFilter(e.target.value)}
-            className="w-full bg-input border border-border rounded-xl p-2.5 text-foreground text-sm focus:border-primary outline-none transition-all"
-          >
-            <option value="">All Staff</option>
-            {staffList.map(name => <option key={name} value={name}>{name}</option>)}
-          </select>
-        )}
       </div>
 
       <div className="bg-card p-6 rounded-2xl border border-green-500/20 text-center shadow-xl group relative overflow-hidden">
@@ -3799,15 +3807,17 @@ const SalesReportPage: React.FC = () => {
     <div className="p-4 space-y-6">
       <h3 className="text-primary text-2xl font-bold tracking-tight">Sales Report</h3>
       
-      <div className="flex items-center gap-3">
-        <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Select Year</label>
-        <select 
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-          className="flex-1 bg-input border border-border rounded-xl p-2.5 text-foreground text-sm focus:border-primary outline-none transition-all"
-        >
-          {years.map(y => <option key={y} value={y}>{y}</option>)}
-        </select>
+      <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative">
+        <div className="flex flex-col p-4">
+           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+             <Settings size={12} className="text-primary" /> YEAR
+           </label>
+           <CustomSelect
+             value={year}
+             onChange={setYear}
+             options={years.map(y => ({ value: y, label: y }))}
+           />
+        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
@@ -4522,7 +4532,7 @@ const AppointmentsPage: React.FC = () => {
           {toolbar.label}
         </div>
 
-        <div className="flex bg-muted p-1 rounded-xl border border-white/5 shadow-xl backdrop-blur-xl">
+        <div className="flex bg-muted p-1 rounded-xl border border-white/5 shadow-xl ">
           {['month', 'week', 'day'].map((view) => (
             <button
               key={view}
@@ -4559,7 +4569,7 @@ const AppointmentsPage: React.FC = () => {
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
-          <div className="flex bg-muted p-1 rounded-xl border border-border shadow-xl backdrop-blur-xl">
+          <div className="flex bg-muted p-1 rounded-xl border border-border shadow-xl ">
             <button
               onClick={() => setViewMode('list')}
               className={cn(
@@ -4620,121 +4630,80 @@ const AppointmentsPage: React.FC = () => {
       {activeTab === 'appointments' ? (
         <div className="space-y-4">
           {/* Filter Card */}
-          <div className="max-w-xl bg-card p-6 rounded-[32px] border border-border shadow-2xl space-y-4 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-            
-            {/* Search bar */}
-            <div className="relative group z-10">
+          <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative">
+            <div className="p-4 border-b border-border/50 relative group">
               <input
                 type="text"
                 placeholder="Search customer or service..."
                 value={apptSearch}
                 onChange={(e) => setApptSearch(e.target.value)}
-                className="w-full p-4 pl-12 border border-border rounded-2xl outline-none bg-input text-foreground font-bold text-sm transition-all focus:ring-2 focus:ring-primary/30 group-hover:border-primary/20 placeholder:text-muted-foreground/50"
+                className="w-full p-2 pl-10 border-none outline-none bg-transparent text-foreground font-bold text-sm transition-all placeholder:text-muted-foreground/50"
               />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary group-hover:scale-110 transition-transform" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={16} />
             </div>
-
-            {/* Date Picker Row */}
-            <div className="z-10 relative">
-              <motion.div 
-                whileHover={{ scale: 1.005, borderColor: 'rgba(var(--primary), 0.3)' }}
-                className="w-full bg-input border border-border rounded-2xl overflow-hidden group hover:border-primary/20 transition-all h-[72px] shadow-inner relative"
-              >
-                {/* Scanning line effect */}
-                <motion.div 
-                  initial={{ top: '-100%' }}
-                  animate={{ top: '200%' }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                  className="absolute left-0 right-0 h-[2px] bg-primary/10 blur-[1px] pointer-events-none z-0 opacity-0 group-hover:opacity-100"
-                />
-                
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                <CustomDatePicker 
-                  label="FILTER DATE" 
-                  value={filterDate} 
-                  onChange={(val) => {
-                    setFilterDate(val);
-                    setShowAllDates(false);
-                  }}
-                  disabled={showAllDates}
-                  className={cn(
-                    "w-full h-full bg-transparent border-none hover:bg-black/5 dark:hover:bg-input px-6 py-0 gap-4 relative z-10",
-                    showAllDates && "opacity-30 grayscale cursor-not-allowed"
-                  )}
-                />
-              </motion.div>
-            </div>
-            
-            {/* Staff Filter */}
-            {profile?.role !== 'customer' && (
-              <div className="relative group z-10 bg-input border border-border rounded-2xl shadow-inner hover:border-primary/20 transition-all h-[72px]">
-                <div className="absolute left-5 top-1/2 -translate-y-1/2 text-primary group-hover:scale-110 transition-transform">
-                  <UserIcon size={20} />
+            <div className="flex flex-col md:flex-row md:items-center">
+              <CustomDatePicker 
+                label="FILTER DATE" 
+                value={filterDate} 
+                onChange={(val) => {
+                  setFilterDate(val);
+                  setShowAllDates(false);
+                }}
+                disabled={showAllDates}
+                className={cn("border-b md:border-b-0 md:border-r border-border/50 flex-1", showAllDates && "opacity-50")}
+              />
+              {profile?.role !== 'customer' && (
+                <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
+                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+                     <UserIcon size={12} className="text-primary" /> STAFF
+                   </label>
+                   <CustomSelect
+                     value={selectedStaffFilter} 
+                     onChange={setSelectedStaffFilter}
+                     placeholder="All Staff"
+                     options={[
+                       { value: 'all', label: 'All Staff' },
+                       ...staff.map(s => ({ value: s.email, label: s.name }))
+                     ]}
+                   />
                 </div>
-                <div className="pl-14 pr-12 h-full flex flex-col justify-center">
-                  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-[0.2em] leading-none mb-1.5">STAFF</label>
-                  <span className="text-base font-black text-foreground truncate tracking-tight">
-                    {staff.find(s => s.email === selectedStaffFilter)?.name || 'All Staff'}
-                  </span>
-                </div>
-                <select
-                  value={selectedStaffFilter}
-                  onChange={(e) => setSelectedStaffFilter(e.target.value)}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full"
-                >
-                  <option value="all">All Staff</option>
-                  {staff.map(s => <option key={s.email} value={s.email}>{s.name}</option>)}
-                </select>
-                <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" size={16} />
+              )}
+              <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
+                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+                   <Activity size={12} className="text-primary" /> STATUS
+                 </label>
+                 <CustomSelect
+                   value={statusFilter} 
+                   onChange={setStatusFilter}
+                   placeholder="All Status"
+                   options={[
+                     { value: 'all', label: 'All Status' },
+                     { value: 'pending', label: 'Pending' },
+                     { value: 'confirmed', label: 'Confirmed' },
+                     { value: 'completed', label: 'Completed' },
+                     { value: 'cancelled', label: 'Cancelled' }
+                   ]}
+                 />
               </div>
-            )}
-
-            {/* Show All Button */}
-            <div className="z-10 relative">
-              <button
-                onClick={() => setShowAllDates(!showAllDates)}
-                className={cn(
-                  "px-8 py-4 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all shadow-lg border active:scale-95",
-                  showAllDates 
-                    ? "bg-primary text-primary-foreground border-primary shadow-primary/20" 
-                    : "bg-muted/10 text-muted-foreground hover:text-foreground border border-border hover:bg-muted/20"
-                )}
-              >
-                {showAllDates ? 'All Dates' : 'Show All'}
-              </button>
-            </div>
-
-            {/* Status & Sort Row */}
-            <div className="flex items-center gap-3 z-10 relative">
-              <div className="relative flex-1">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full appearance-none p-4 pr-12 border border-border rounded-2xl outline-none bg-input text-foreground font-bold text-sm shadow-inner cursor-pointer focus:ring-2 focus:ring-primary/30"
-                >
-                  <option value="all" className="dark:bg-input">All Status</option>
-                  <option value="pending" className="dark:bg-input">Pending</option>
-                  <option value="confirmed" className="dark:bg-input">Confirmed</option>
-                  <option value="completed" className="dark:bg-input">Completed</option>
-                  <option value="cancelled" className="dark:bg-input">Cancelled</option>
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" size={18} />
+              <div className="flex flex-col p-4 flex-1">
+                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+                   <Settings size={12} className="text-primary" /> OPTIONS
+                 </label>
+                 <div className="flex items-center gap-2">
+                   <button
+                     onClick={() => setShowAllDates(!showAllDates)}
+                     className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80")}
+                   >
+                     {showAllDates ? 'All Dates' : 'Show All'}
+                   </button>
+                   <button
+                     onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
+                     className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-muted-foreground hover:bg-muted/80"
+                   >
+                     Sort: {sortBy}
+                   </button>
+                 </div>
               </div>
-
-              <button
-                onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
-                className="flex-1 p-4 rounded-2xl bg-muted/5 text-muted-foreground font-black text-[10px] uppercase tracking-widest hover:text-foreground transition-all shadow-inner border border-border active:scale-95"
-              >
-                SORT BY {sortBy.toUpperCase()}
-              </button>
-            </div>
-
-            {/* Appts Count Pill */}
-            <div className="flex justify-end pt-2 z-10 relative">
-              <span className="text-[10px] font-black text-primary bg-primary/10 px-5 py-2.5 rounded-full border border-primary/20 whitespace-nowrap shadow-xl uppercase tracking-[0.2em]">
-                {filteredAppts.length} Appts
-              </span>
             </div>
           </div>
 
@@ -4845,11 +4814,11 @@ const AppointmentsPage: React.FC = () => {
                           </div>
                         </div>
                         <div className={cn(
-                          "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border backdrop-blur-sm transition-all",
-                          appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
-                          appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
-                          appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-white border-transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
-                          appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 dark:text-red-400 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                          "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border  transition-all",
+                          appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600  border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+                          appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600  border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+                          appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-foreground border-transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
+                          appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600  border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
                         )}>
                           {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
                           {appt.status === 'confirmed' && <Check size={12} strokeWidth={3} />}
@@ -4877,7 +4846,7 @@ const AppointmentsPage: React.FC = () => {
                           </div>
                           <div className="flex flex-col gap-2">
                             {appt.isHomeService && (
-                              <div className="p-2.5 bg-green-600 text-white rounded-xl shadow-lg shadow-green-900/10 transition-transform group-hover:scale-110" title="At Home Service">
+                              <div className="p-2.5 bg-green-600 text-foreground rounded-xl shadow-lg shadow-green-900/10 transition-transform group-hover:scale-110" title="At Home Service">
                                 <Car size={18} strokeWidth={2.5} />
                               </div>
                             )}
@@ -4945,24 +4914,24 @@ const AppointmentsPage: React.FC = () => {
                           <div className="flex gap-2">
                             {profile?.role !== 'customer' && (
                               <div className="relative">
-                                <select
+                                <CustomSelect
                                   disabled={!isAdmin && (appt.status === 'completed' || appt.status === 'cancelled')}
                                   value={appt.status}
-                                  onClick={(e) => e.stopPropagation()}
-                                  onChange={(e) => handleQuickStatusUpdate(appt.id, e.target.value as any)}
-                                  className={cn(
-                                    "appearance-none text-[9px] font-black uppercase tracking-widest border rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-primary/10 transition-all cursor-pointer pr-8 backdrop-blur-sm",
-                                    appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
-                                    appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
-                                    appt.status === 'completed' && "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600 dark:text-green-400 border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
-                                    appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 dark:text-red-400 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+                                  onChange={(val) => handleQuickStatusUpdate(appt.id, val as any)}
+                                  options={[
+                                    { value: 'pending', label: 'Pending' },
+                                    { value: 'confirmed', label: 'Confirmed' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'cancelled', label: 'Cancelled' }
+                                  ]}
+                                  buttonClassName={cn(
+                                    "text-[9px] font-black uppercase tracking-widest border rounded-xl px-4 py-2 pr-8 ",
+                                    appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600  border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+                                    appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600  border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+                                    appt.status === 'completed' && "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600  border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
+                                    appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600  border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
                                   )}
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="confirmed">Confirmed</option>
-                                  <option value="completed">Completed</option>
-                                  <option value="cancelled">Cancelled</option>
-                                </select>
+                                />
                                 <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={12} />
                               </div>
                             )}
@@ -5010,8 +4979,8 @@ const AppointmentsPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <div className="bg-green-500/10 p-5 rounded-2xl border border-green-500/20">
-                <div className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">Total Earned</div>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                <div className="text-[10px] font-bold text-green-600  uppercase tracking-widest mb-1">Total Earned</div>
+                <div className="text-2xl font-bold text-green-700 ">
                   +{
                     sales.filter(s => s.customerPhone === profile?.phone).reduce((sum, s) => sum + (s.pointsEarned || 0), 0) +
                     appointments.filter(a => a.customerPhone === profile?.phone && a.pointsProcessed).reduce((sum, a) => sum + (a.willEarnPoints || 0), 0)
@@ -5019,15 +4988,15 @@ const AppointmentsPage: React.FC = () => {
                 </div>
               </div>
               <div className="bg-red-500/10 p-5 rounded-2xl border border-red-500/20">
-                <div className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-1">Total Redeemed</div>
-                <div className="text-2xl font-bold text-red-700 dark:text-red-300">
+                <div className="text-[10px] font-bold text-red-600  uppercase tracking-widest mb-1">Total Redeemed</div>
+                <div className="text-2xl font-bold text-red-700 ">
                   -{
                     sales.filter(s => s.customerPhone === profile?.phone).reduce((sum, s) => sum + (s.pointsRedeemed || 0), 0) +
                     appointments.filter(a => a.customerPhone === profile?.phone && a.pointsProcessed).reduce((sum, a) => sum + (a.pointsToRedeem || 0), 0)
                   }
                 </div>
               </div>
-              <div className="bg-primary/10 p-5 rounded-2xl border border-primary/20">
+              <div className="bg-primary/10 p-5 rounded-2xl border border-border">
                 <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Next Reward</div>
                 <div className="text-2xl font-bold text-primary">500 pts</div>
               </div>
@@ -5105,7 +5074,7 @@ const AppointmentsPage: React.FC = () => {
                           </td>
                           <td className={cn(
                             "px-4 py-3 text-right text-xs font-bold",
-                            item.type === 'earned' ? "text-green-600 dark:text-green-400" : "text-red-500 dark:text-red-400"
+                            item.type === 'earned' ? "text-green-600 " : "text-red-500 "
                           )}>
                             {item.points > 0 ? `+${item.points}` : item.points}
                           </td>
@@ -5121,7 +5090,7 @@ const AppointmentsPage: React.FC = () => {
       )}
 
       {viewingCustomerHistory && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] backdrop-blur-md">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] ">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -5146,7 +5115,7 @@ const AppointmentsPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-3 mt-1">
                   <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
-                  <span className="text-[10px] bg-primary/10 text-primary px-3 py-1 rounded-full font-bold uppercase tracking-widest border border-primary/20">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
+                  <span className="text-[10px] bg-primary/10 text-primary px-3 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
                 </div>
               </div>
               <button 
@@ -5161,8 +5130,8 @@ const AppointmentsPage: React.FC = () => {
                 {/* Points Summary for Admin */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-green-500/5 p-4 rounded-2xl border border-green-500/10">
-                    <div className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-widest mb-1">Total Earned</div>
-                    <div className="text-xl font-bold text-green-700 dark:text-green-300">
+                    <div className="text-[10px] font-bold text-green-600  uppercase tracking-widest mb-1">Total Earned</div>
+                    <div className="text-xl font-bold text-green-700 ">
                       +{
                         sales.filter(s => s.customerPhone === viewingCustomerHistory.phone).reduce((sum, s) => sum + (s.pointsEarned || 0), 0) +
                         appointments.filter(a => (a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone) && a.pointsProcessed).reduce((sum, a) => sum + (a.willEarnPoints || 0), 0)
@@ -5170,8 +5139,8 @@ const AppointmentsPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="bg-red-500/5 p-4 rounded-2xl border border-red-500/10">
-                    <div className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-1">Total Redeemed</div>
-                    <div className="text-xl font-bold text-red-700 dark:text-red-300">
+                    <div className="text-[10px] font-bold text-red-600  uppercase tracking-widest mb-1">Total Redeemed</div>
+                    <div className="text-xl font-bold text-red-700 ">
                       -{
                         sales.filter(s => s.customerPhone === viewingCustomerHistory.phone).reduce((sum, s) => sum + (s.pointsRedeemed || 0), 0) +
                         appointments.filter(a => (a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone) && a.pointsProcessed).reduce((sum, a) => sum + (a.pointsToRedeem || 0), 0)
@@ -5199,8 +5168,8 @@ const AppointmentsPage: React.FC = () => {
                           </div>
                           <div className="text-right">
                             <div className="font-black text-primary text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
-                            {s.pointsEarned > 0 && <div className="text-[10px] text-green-600 dark:text-green-400 font-bold uppercase tracking-widest">+{s.pointsEarned} pts</div>}
-                            {s.pointsRedeemed > 0 && <div className="text-[10px] text-red-500 dark:text-red-400 font-bold uppercase tracking-widest">-{s.pointsRedeemed} pts</div>}
+                            {s.pointsEarned > 0 && <div className="text-[10px] text-green-600  font-bold uppercase tracking-widest">+{s.pointsEarned} pts</div>}
+                            {s.pointsRedeemed > 0 && <div className="text-[10px] text-red-500  font-bold uppercase tracking-widest">-{s.pointsRedeemed} pts</div>}
                           </div>
                         </div>
                       ))
@@ -5229,8 +5198,8 @@ const AppointmentsPage: React.FC = () => {
                             <div className="flex flex-col items-end gap-2">
                               <div className={cn(
                                 "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
-                                a.status === 'completed' ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20" : 
-                                a.status === 'cancelled' ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" :
+                                a.status === 'completed' ? "bg-green-500/10 text-green-600  border-green-500/20" : 
+                                a.status === 'cancelled' ? "bg-red-500/10 text-red-600  border-red-500/20" :
                                 "bg-muted/10 text-muted-foreground border-border"
                               )}>
                                 {a.status}
@@ -5254,7 +5223,7 @@ const AppointmentsPage: React.FC = () => {
       )}
 
       {isAdding && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] ">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -5298,30 +5267,27 @@ const AppointmentsPage: React.FC = () => {
                   
                   {profile?.role !== 'customer' ? (
                     <div className="space-y-3">
-                      <div className="relative">
-                        <select
-                          value={selectedCustId}
-                          onChange={(e) => {
-                            setSelectedCustId(e.target.value);
-                            if (e.target.value !== 'manual') {
-                              const c = customers.find(c => c.id === e.target.value);
-                              if (c) {
-                                setManualCustName(c.name);
-                                setManualCustPhone(c.phone);
-                              }
+                      <CustomSelect
+                        value={selectedCustId}
+                        onChange={(val) => {
+                          setSelectedCustId(val);
+                          if (val !== 'manual') {
+                            const c = customers.find(c => c.id === val);
+                            if (c) {
+                              setManualCustName(c.name);
+                              setManualCustPhone(c.phone);
                             }
-                          }}
-                          className="w-full p-3 pl-10 border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-bold text-sm transition-all appearance-none"
-                        >
-                          <option value="">Select Customer...</option>
-                          <option value="manual">New Customer (Manual Entry)</option>
-                          {customers.map(c => (
-                            <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
-                          ))}
-                        </select>
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
-                      </div>
+                          }
+                        }}
+                        placeholder="Select Customer..."
+                        options={[
+                          { value: '', label: 'Select Customer...' },
+                          { value: 'manual', label: 'New Customer (Manual Entry)' },
+                          ...customers.map(c => ({ value: c.id, label: `${c.name} (${c.phone})` }))
+                        ]}
+                        icon={<Search size={18} />}
+                        buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground shadow-inner font-bold text-sm"
+                      />
 
                       {selectedCustId === 'manual' && (
                         <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -5357,27 +5323,23 @@ const AppointmentsPage: React.FC = () => {
                   </label>
                   
                   <div className="space-y-3">
-                    <div className="relative">
-                      <select
-                        value={selectedSvcId}
-                        onChange={(e) => {
-                          setSelectedSvcId(e.target.value);
-                          if (e.target.value !== 'manual') {
-                            const s = services.find(s => s.id === e.target.value);
-                            if (s) setManualSvcName(s.name);
-                          }
-                        }}
-                        required
-                        className="w-full p-3 border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-bold text-sm transition-all appearance-none"
-                      >
-                        <option value="">Select Service...</option>
-                        <option value="manual">Other Service (Manual Entry)</option>
-                        {services.map(s => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
-                    </div>
+                    <CustomSelect
+                      value={selectedSvcId}
+                      onChange={(val) => {
+                        setSelectedSvcId(val);
+                        if (val !== 'manual') {
+                          const s = services.find(s => s.id === val);
+                          if (s) setManualSvcName(s.name);
+                        }
+                      }}
+                      placeholder="Select Service..."
+                      options={[
+                        { value: '', label: 'Select Service...' },
+                        { value: 'manual', label: 'Other Service (Manual Entry)' },
+                        ...services.map(s => ({ value: s.id, label: s.name }))
+                      ]}
+                      buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground shadow-inner font-bold text-sm"
+                    />
 
                     {selectedSvcId === 'manual' && (
                       <FloatingInput
@@ -5388,25 +5350,21 @@ const AppointmentsPage: React.FC = () => {
                       />
                     )}
 
-                    <div className="relative">
-                      <select
-                        value={selectedStaffEmail}
-                        onChange={(e) => setSelectedStaffEmail(e.target.value)}
-                        className="w-full p-3 border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-bold text-sm transition-all appearance-none"
-                      >
-                        <option value="">Any Staff (Auto-assign)</option>
-                        {staff.map(s => {
+                    <CustomSelect
+                      value={selectedStaffEmail}
+                      onChange={setSelectedStaffEmail}
+                      placeholder="Any Staff (Auto-assign)"
+                      options={[
+                        { value: '', label: 'Any Staff (Auto-assign)' },
+                        ...staff.filter(s => {
                           const [year, month, day] = (apptDate || getLocalISODate()).split('-');
                           const apptDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
                           const apptDayName = apptDateObj.toLocaleDateString('en-US', { weekday: 'long' });
-                          const isWorking = !s.workingDays || s.workingDays.includes(apptDayName);
-                          return isWorking ? (
-                            <option key={s.email} value={s.email}>{s.name}</option>
-                          ) : null;
-                        })}
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
-                    </div>
+                          return !s.workingDays || s.workingDays.includes(apptDayName);
+                        }).map(s => ({ value: s.email, label: s.name }))
+                      ]}
+                      buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground shadow-inner font-bold text-sm"
+                    />
                   </div>
                 </div>
 
@@ -5470,19 +5428,17 @@ const AppointmentsPage: React.FC = () => {
                   
                   <div className="space-y-3">
                     {profile?.role !== 'customer' && (
-                      <div className="relative">
-                        <select
-                          value={apptStatus}
-                          onChange={(e) => setApptStatus(e.target.value as any)}
-                          className="w-full p-3 border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-bold text-sm transition-all appearance-none"
-                        >
-                          <option value="pending">Pending</option>
-                          <option value="confirmed">Confirmed</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={16} />
-                      </div>
+                      <CustomSelect
+                        value={apptStatus}
+                        onChange={(val) => setApptStatus(val as any)}
+                        options={[
+                          { value: 'pending', label: 'Pending' },
+                          { value: 'confirmed', label: 'Confirmed' },
+                          { value: 'completed', label: 'Completed' },
+                          { value: 'cancelled', label: 'Cancelled' }
+                        ]}
+                        buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground shadow-inner font-bold text-sm"
+                      />
                     )}
 
                     <div className="flex items-center justify-between p-4 bg-green-500/5 rounded-2xl border border-green-500/10 shadow-inner">
@@ -5568,7 +5524,7 @@ const AppointmentsPage: React.FC = () => {
               <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 space-y-6 shadow-inner">
                   <div className="flex items-center gap-4">
-                    <div className="p-4 bg-primary/10 rounded-2xl text-primary shadow-sm border border-primary/20">
+                    <div className="p-4 bg-primary/10 rounded-2xl text-primary shadow-sm border border-border">
                       <Check size={32} strokeWidth={3} />
                     </div>
                     <div>
@@ -5634,7 +5590,7 @@ const AppointmentsPage: React.FC = () => {
 
                     {isHomeService && (
                       <div className="col-span-full bg-green-500/10 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm">
-                        <div className="p-3 bg-green-600 text-white rounded-xl shadow-lg">
+                        <div className="p-3 bg-green-600 text-foreground rounded-xl shadow-lg">
                           <Car size={20} strokeWidth={2.5} />
                         </div>
                         <div className="flex flex-col">
@@ -5714,7 +5670,7 @@ const AppointmentsPage: React.FC = () => {
       )}
 
       {confirmDeleteAppt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] ">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -5736,7 +5692,7 @@ const AppointmentsPage: React.FC = () => {
               </button>
               <button
                 onClick={handleDeleteAppointment}
-                className="flex-1 px-6 py-4 bg-red-600 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-600/20 active:scale-95"
+                className="flex-1 px-6 py-4 bg-red-600 text-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-600/20 active:scale-95"
               >
                 Delete
               </button>
@@ -5747,7 +5703,7 @@ const AppointmentsPage: React.FC = () => {
 
       {/* Overlap Alert Popup */}
       {showOverlapPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] ">
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -5787,7 +5743,7 @@ const PrintPreviewModal: React.FC<{
 }> = ({ isOpen, onClose, text, onPrint, onSkipPrint, title = "Print Preview", printLabel = "Process & Print", skipLabel = "Complete Without Printing" }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[30000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[30000] flex items-center justify-center p-4 bg-black/60 ">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -5841,7 +5797,7 @@ const Modal: React.FC<{
 }> = ({ isOpen, onClose, title, children, maxWidth = "max-w-sm" }) => {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px]">
+    <div className="fixed inset-0 bg-black/60  z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px]">
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -5863,7 +5819,6 @@ const Modal: React.FC<{
 const ManagePage: React.FC = () => {
   const { user, profile, isAdmin, isSuperAdmin, isCashier, loading } = useAuth();
   const location = useLocation();
-  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'shop' | 'categories' | 'services' | 'staff' | 'customers'>('shop');
   const [shopSettings, setShopSettings] = useState<ShopSettings>({ name: '', addr: '', ph: '', receiptHeader: '', receiptFooter: '' });
   const [services, setServices] = useState<Service[]>([]);
@@ -6469,7 +6424,7 @@ const ManagePage: React.FC = () => {
         {activeTab === 'shop' && (
           <div className="space-y-8">
             {isSuperAdmin && profile?.role !== 'super_admin' && (
-              <div className="bg-primary/10 p-6 rounded-[2rem] border border-primary/20 flex items-center justify-between gap-4">
+              <div className="bg-primary/10 p-6 rounded-[2rem] border border-border flex items-center justify-between gap-4">
                 <div>
                   <h4 className="text-primary font-black text-sm uppercase tracking-widest">First Time Setup</h4>
                   <p className="text-[10px] text-muted-foreground font-bold mt-1">Assign your account the Super Admin role in Firestore.</p>
@@ -6521,30 +6476,90 @@ const ManagePage: React.FC = () => {
                 onFocusClear
               />
 
-              <div className="flex items-center justify-between p-5 bg-background rounded-2xl border border-border transition-colors duration-300">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-primary/10 rounded-xl text-primary">
-                    {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
-                  </div>
+              <div className="space-y-4 pt-4 border-t border-border">
+                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Printer size={14} className="text-primary" /> Receipt Settings
+                </h4>
+                
+                <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
                   <div>
-                    <span className="block text-sm font-bold text-foreground">Theme Mode</span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Switch between light and dark</span>
+                    <span className="block text-sm font-bold text-foreground">Hide Shop Name</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Do not print shop name on receipts</span>
                   </div>
+                  <button 
+                    type="button"
+                    onClick={() => setShopSettings({ ...shopSettings, hideShopNameOnReceipt: !shopSettings.hideShopNameOnReceipt })}
+                    className={cn(
+                      "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                      shopSettings.hideShopNameOnReceipt ? "bg-primary" : "bg-muted/30"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
+                      shopSettings.hideShopNameOnReceipt ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
                 </div>
-                <button 
-                  onClick={toggleTheme}
-                  className={cn(
-                    "w-14 h-7 rounded-full p-1 transition-all duration-500 relative",
-                    theme === 'dark' ? "bg-primary" : "bg-muted/30"
-                  )}
-                >
-                  <div className={cn(
-                    "w-5 h-5 bg-white rounded-full shadow-lg transition-all duration-500 flex items-center justify-center",
-                    theme === 'dark' ? "translate-x-7" : "translate-x-0"
-                  )}>
-                    {theme === 'dark' ? <Moon size={10} className="text-primary" /> : <Sun size={10} className="text-yellow-500" />}
+
+                <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
+                  <div>
+                    <span className="block text-sm font-bold text-foreground">Hide Date & Time</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Do not print date and time on receipts</span>
                   </div>
-                </button>
+                  <button 
+                    type="button"
+                    onClick={() => setShopSettings({ ...shopSettings, hideDateTimeOnReceipt: !shopSettings.hideDateTimeOnReceipt })}
+                    className={cn(
+                      "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                      shopSettings.hideDateTimeOnReceipt ? "bg-primary" : "bg-muted/30"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
+                      shopSettings.hideDateTimeOnReceipt ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
+                  <div>
+                    <span className="block text-sm font-bold text-foreground">Hide Staff Name</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Do not print staff name on receipts</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setShopSettings({ ...shopSettings, hideStaffNameOnReceipt: !shopSettings.hideStaffNameOnReceipt })}
+                    className={cn(
+                      "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                      shopSettings.hideStaffNameOnReceipt ? "bg-primary" : "bg-muted/30"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
+                      shopSettings.hideStaffNameOnReceipt ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
+                  <div>
+                    <span className="block text-sm font-bold text-foreground">Hide Loyalty Points</span>
+                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Do not print points on receipts</span>
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => setShopSettings({ ...shopSettings, hideLoyaltyPointsOnReceipt: !shopSettings.hideLoyaltyPointsOnReceipt })}
+                    className={cn(
+                      "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                      shopSettings.hideLoyaltyPointsOnReceipt ? "bg-primary" : "bg-muted/30"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
+                      shopSettings.hideLoyaltyPointsOnReceipt ? "translate-x-6" : "translate-x-0"
+                    )} />
+                  </button>
+                </div>
               </div>
 
               <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Settings</button>
@@ -6736,14 +6751,16 @@ const ManagePage: React.FC = () => {
               />
               <div className="space-y-1.5">
                 <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
-                <select 
+                <CustomSelect
                   value={svcCategory}
-                  onChange={(e) => setSvcCategory(e.target.value)}
-                  className="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary outline-none transition-all"
-                >
-                  <option value="">Select Category</option>
-                  {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                </select>
+                  onChange={setSvcCategory}
+                  placeholder="Select Category"
+                  options={[
+                    { value: '', label: 'Select Category' },
+                    ...categories.map(c => ({ value: c.name, label: c.name }))
+                  ]}
+                  buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary"
+                />
               </div>
               {editingService ? (
                 <button onClick={handleUpdateService} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Update Service</button>
@@ -6837,7 +6854,7 @@ const ManagePage: React.FC = () => {
                 {/* Profile Photo Section */}
                 <div className="flex flex-col items-center gap-3 pb-6 border-b border-border/50">
                   <div className="relative group">
-                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 border-background shadow-xl group-hover:border-primary/20 transition-all">
+                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 border-background shadow-xl group-hover:border-border transition-all">
                       {stfPhotoURL ? (
                         <img src={stfPhotoURL} alt="Staff" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
@@ -6930,20 +6947,21 @@ const ManagePage: React.FC = () => {
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
                       <Activity size={18} />
                     </div>
-                    <select 
+                    <CustomSelect
                       value={stfStatus}
-                      onChange={(e) => setStfStatus(e.target.value as any)}
-                      className={cn(
-                        "w-full bg-background border rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all appearance-none font-bold uppercase tracking-widest text-xs",
-                        stfStatus === 'active' ? "border-green-500/30 text-green-500 focus:border-green-500" :
-                        stfStatus === 'on_leave' ? "border-yellow-500/30 text-yellow-500 focus:border-yellow-500" :
-                        "border-red-500/30 text-red-500 focus:border-red-500"
+                      onChange={(val) => setStfStatus(val as any)}
+                      options={[
+                        { value: 'active', label: '🟢 Active' },
+                        { value: 'inactive', label: '🔴 Inactive' },
+                        { value: 'on_leave', label: '🟡 On Leave' }
+                      ]}
+                      buttonClassName={cn(
+                        "w-full bg-background border rounded-2xl py-4 pl-12 pr-4 text-xs font-bold uppercase tracking-widest",
+                        stfStatus === 'active' ? "border-green-500/30 text-green-500" :
+                        stfStatus === 'on_leave' ? "border-yellow-500/30 text-yellow-500" :
+                        "border-red-500/30 text-red-500"
                       )}
-                    >
-                      <option value="active">🟢 Active</option>
-                      <option value="inactive">🔴 Inactive</option>
-                      <option value="on_leave">🟡 On Leave</option>
-                    </select>
+                    />
                   </div>
                 </div>
 
@@ -7137,7 +7155,7 @@ const ManagePage: React.FC = () => {
                   {s.specialties && s.specialties.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {s.specialties.map(spec => (
-                        <span key={spec} className="text-[9px] font-bold bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        <span key={spec} className="text-[9px] font-bold bg-primary/10 text-primary border border-border px-2 py-0.5 rounded-full uppercase tracking-wider">
                           {spec}
                         </span>
                       ))}
@@ -7205,7 +7223,7 @@ const ManagePage: React.FC = () => {
                         <div className="flex items-center gap-3 mt-1">
                           <p className="text-primary text-sm font-bold">{c.phone}</p>
                           <div className="flex items-center gap-1">
-                            <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-primary/20">{(c.points || 0).toLocaleString()} pts</span>
+                            <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(c.points || 0).toLocaleString()} pts</span>
                             <button 
                               onClick={() => {
                                 setQuickEditingPoints(c);
@@ -7230,7 +7248,7 @@ const ManagePage: React.FC = () => {
                             setCustNotes(c.notes || '');
                             setCustPoints(String(c.points || 0));
                           }}
-                          className="p-2.5 bg-primary/10 text-primary rounded-xl border border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all"
+                          className="p-2.5 bg-primary/10 text-primary rounded-xl border border-border hover:bg-primary hover:text-primary-foreground transition-all"
                           title="Edit Customer"
                         >
                           <Settings size={18} />
@@ -7312,13 +7330,13 @@ const ManagePage: React.FC = () => {
 
       {/* Customer History Modal */}
       {viewingCustomerHistory && (
-        <div className="fixed inset-0 bg-background/95 backdrop-blur-md z-[25000] flex flex-col p-4">
+        <div className="fixed inset-0 bg-background/95  z-[25000] flex flex-col p-4">
           <div className="flex justify-between items-center mb-8 max-w-2xl mx-auto w-full">
             <div>
               <h3 className="text-primary font-bold text-2xl tracking-tight">{viewingCustomerHistory.name}</h3>
               <div className="flex items-center gap-3 mt-1">
                 <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
-                <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-primary/20">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
+                <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
               </div>
             </div>
             <button onClick={() => setViewingCustomerHistory(null)} className="p-3 bg-card rounded-2xl text-foreground border border-border hover:border-primary transition-all"><X size={24} /></button>
@@ -7377,7 +7395,7 @@ const ManagePage: React.FC = () => {
           >
             {statusMsg.type === 'success' ? <div className="p-1 bg-white/20 rounded-full"><Check size={16} /></div> : <div className="p-1 bg-white/20 rounded-full"><X size={16} /></div>}
             <span className="font-bold text-sm tracking-tight">{statusMsg.text}</span>
-            <button onClick={() => setStatusMsg(null)} className="ml-2 p-1 hover:bg-white/10 rounded-full transition-colors"><X size={16} /></button>
+            <button onClick={() => setStatusMsg(null)} className="ml-2 p-1 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
           </motion.div>
         </div>
       )}
@@ -7398,7 +7416,7 @@ const ManagePage: React.FC = () => {
             <button 
               disabled={isClearing}
               onClick={handleClearHistory}
-              className="w-full bg-red-500 text-white font-black py-4 rounded-2xl shadow-lg shadow-red-500/20 disabled:opacity-50 uppercase tracking-widest"
+              className="w-full bg-red-500 text-foreground font-black py-4 rounded-2xl shadow-lg shadow-red-500/20 disabled:opacity-50 uppercase tracking-widest"
             >
               {isClearing ? "CLEARING..." : "YES, DELETE EVERYTHING"}
             </button>
@@ -7435,7 +7453,7 @@ const ManagePage: React.FC = () => {
             <button 
               disabled={isDeleting}
               onClick={() => handleDelete(showConfirm!.coll, showConfirm!.id)}
-              className="bg-red-500 text-white font-black py-3 rounded-xl shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs disabled:opacity-50"
+              className="bg-red-500 text-foreground font-black py-3 rounded-xl shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs disabled:opacity-50"
             >
               {isDeleting ? "DELETING..." : "DELETE"}
             </button>
@@ -7488,7 +7506,7 @@ const ForcePasswordChangePage: React.FC = () => {
         
         <div className="relative z-10">
           <div className="flex items-center gap-4 mb-8">
-            <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+            <div className="p-3 bg-primary/10 rounded-2xl border border-border">
               <AlertTriangle className="w-6 h-6 text-primary" />
             </div>
             <div>
@@ -7616,7 +7634,7 @@ const ChangePasswordPage: React.FC = () => {
       
       <div className="relative z-10">
         <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-primary/10 rounded-2xl border border-primary/20">
+          <div className="p-3 bg-primary/10 rounded-2xl border border-border">
             <Lock className="w-6 h-6 text-primary" />
           </div>
           <div>
@@ -7795,7 +7813,7 @@ const IdentityResetPage: React.FC = () => {
         
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-primary/20">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-border">
               <Lock className="w-8 h-8 text-primary" />
             </div>
             <h2 className="text-3xl font-black text-foreground tracking-tighter">
@@ -7961,7 +7979,7 @@ const PhoneSignUpPage: React.FC = () => {
         
         <div className="relative z-10">
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-primary/20">
+            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-border">
               <Phone className="w-8 h-8 text-primary" />
             </div>
             <h2 className="text-3xl font-black text-foreground tracking-tighter">Join Us</h2>
@@ -7982,7 +8000,7 @@ const PhoneSignUpPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => navigate('/')}
-                  className="text-[10px] uppercase tracking-widest bg-red-500 text-white py-2 px-4 rounded-xl hover:bg-red-600 transition-colors self-start"
+                  className="text-[10px] uppercase tracking-widest bg-red-500 text-foreground py-2 px-4 rounded-xl hover:bg-red-600 transition-colors self-start"
                 >
                   Login Now
                 </button>
@@ -8105,12 +8123,11 @@ const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300">
-      <div className="bg-card p-8 rounded-3xl border border-border  w-full max-w-[380px] text-center space-y-6 shadow-2xl my-auto transition-colors duration-300">
-        <img src="https://i.postimg.cc/vB8xGp2h/Logo.png" alt="Logo" className="w-20 mx-auto" />
+    <div className="fixed inset-0 bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300">
+      <div className="bg-white p-8 rounded-3xl border border-border w-full max-w-[380px] text-center space-y-6 shadow-xl my-auto transition-colors duration-300">
         <div className="space-y-1">
-          <h2 className="text-primary text-2xl font-bold">Reset Password</h2>
-          <p className="text-muted-foreground text-sm">Enter your email to receive a reset link</p>
+          <h2 className="text-[#4A2E31] tracking-[0.25em] uppercase text-2xl font-black font-serif">Nail Pro</h2>
+          <p className="text-muted-foreground text-xs uppercase tracking-widest mt-2">Reset Password</p>
         </div>
 
         {error && (
@@ -8140,7 +8157,7 @@ const ResetPasswordPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter email"
-                className="w-full bg-white dark:bg-input border border-border border-border rounded-xl p-3 text-foreground text-foreground text-sm focus:border-primary outline-none transition-colors duration-300"
+                className="w-full bg-input border border-border rounded-xl p-3 text-foreground text-sm focus:border-primary outline-none transition-colors duration-300"
               />
             </div>
             <button 
@@ -8167,17 +8184,24 @@ const ResetPasswordPage: React.FC = () => {
 const LoginPage: React.FC = () => {
   const { user, profile, login, loginWithEmail, loginWithPhone, signUp, signUpWithPhone, loading, error, setError, isCustomer } = useAuth();
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
-  const [isSignUp, setIsSignUp] = useState(false);
+  
+  const [viewState, setViewState] = useState<'welcome' | 'login' | 'signup'>('welcome');
+  
   const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [dob, setDob] = useState('');
-  const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+
+  // Sign up state
+  const [signUpMethod, setSignUpMethod] = useState<'phone' | 'email'>('phone');
+  const [signUpIdentifier, setSignUpIdentifier] = useState('');
+  const [signUpName, setSignUpName] = useState('');
+  const [signUpPassword, setSignUpPassword] = useState('');
+  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [signUpDob, setSignUpDob] = useState('');
+  const [signUpShowPassword, setSignUpShowPassword] = useState(false);
 
   useEffect(() => {
     if (user && profile) {
@@ -8191,19 +8215,40 @@ const LoginPage: React.FC = () => {
   
   if (loading) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!identifier || !password || (isSignUp && !name)) {
+    if (!identifier || !password) {
       setError("Please fill in all required fields.");
       return;
     }
 
-    if (isSignUp && loginMethod === 'phone') {
-      if (password !== confirmPassword) {
+    setIsSubmitting(true);
+    try {
+      if (loginMethod === 'phone') {
+        await loginWithPhone(identifier, password);
+      } else {
+        await loginWithEmail(identifier, password);
+      }
+    } catch (err) {
+      // Error is already handled and set in AuthProvider
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSignUpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signUpIdentifier || !signUpPassword || !signUpName) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+
+    if (signUpMethod === 'phone') {
+      if (signUpPassword !== signUpConfirmPassword) {
         setError("Passwords do not match.");
         return;
       }
-      if (!dob) {
+      if (!signUpDob) {
         setError("Date of Birth is required for phone sign up.");
         return;
       }
@@ -8211,18 +8256,10 @@ const LoginPage: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      if (isSignUp) {
-        if (loginMethod === 'phone') {
-          await signUpWithPhone(identifier, password, dob, name);
-        } else {
-          await signUp(identifier, password, name);
-        }
+      if (signUpMethod === 'phone') {
+        await signUpWithPhone(signUpIdentifier, signUpPassword, signUpDob, signUpName);
       } else {
-        if (loginMethod === 'phone') {
-          await loginWithPhone(identifier, password);
-        } else {
-          await loginWithEmail(identifier, password);
-        }
+        await signUp(signUpIdentifier, signUpPassword, signUpName);
       }
     } catch (err) {
       // Error is already handled and set in AuthProvider
@@ -8244,216 +8281,188 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background z-[99999] overflow-y-auto overscroll-none transition-colors duration-500 ease-in-out">
-      <div className="absolute top-6 right-6 z-50">
-        <button 
-          onClick={toggleTheme} 
-          className="text-primary hover:scale-110 active:scale-90 transition-all p-3 bg-primary/5 rounded-xl border border-primary/10"
-        >
-          {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
-        </button>
-      </div>
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center p-4 sm:p-6 pb-20">
-        {/* Background Decorative Elements */}
-        <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px]" />
-          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/5 rounded-full blur-[120px]" />
-        </div>
-
-        <div className="relative w-full max-w-[400px] space-y-8 z-10 shrink-0 py-8 my-auto">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+    <div className="fixed inset-0 z-[99999] overflow-hidden overscroll-none bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] transition-colors duration-500 ease-in-out text-foreground">
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
+        <div className="relative w-full max-w-[400px] flex flex-col justify-center z-10 shrink-0 h-full max-h-[800px]">
+        <AnimatePresence mode="wait">
+        {viewState === 'welcome' && (
+          <motion.div 
+            key="welcome"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="w-full flex flex-col items-center justify-center space-y-8 bg-card p-10 sm:p-12 rounded-[2.5rem] shadow-2xl shadow-[#4A2E31]/10 border border-border"
           >
-            <img src="https://i.postimg.cc/vB8xGp2h/Logo.png" alt="Logo" className="w-24 mx-auto mb-4 drop-shadow-[0_0_15px_rgba(212,175,55,0.3)]" />
-            <h1 className="text-4xl font-black text-primary tracking-tighter leading-none">NAIL PRO</h1>
-            <p className="text-[10px] font-black text-primary/60 uppercase tracking-[0.4em] mt-1">Beauty Studio Management</p>
+            {/* Header */}
+            <div className="text-center shrink-0 w-full flex flex-col items-center">
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="flex flex-col items-center w-full"
+              >
+                <h1 className="text-4xl sm:text-5xl font-serif text-[#4A2E31] tracking-[0.25em] leading-none mb-4 uppercase ml-4">NAIL PRO</h1>
+                <p className="text-[10px] sm:text-[11px] font-medium text-[#4A2E31]/80 uppercase tracking-[0.5em] ml-2 font-serif">Beauty Studio Management</p>
+              </motion.div>
+            </div>
+
+            <div className="w-full space-y-4 pt-8">
+              <button
+                onClick={() => { setViewState('login'); setError(null); }}
+                className="w-full bg-[#4A2E31] text-white font-black py-4 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] tracking-[0.2em]"
+              >
+                SIGN IN
+              </button>
+              <button
+                onClick={() => { setViewState('signup'); setError(null); }}
+                className="w-full bg-white border border-[#4A2E31]/20 text-[#4A2E31] font-black py-4 rounded-xl shadow-sm hover:bg-[#F9EFEF] hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] tracking-[0.2em]"
+              >
+                CREATE ACCOUNT
+              </button>
+            </div>
           </motion.div>
-        </div>
+        )}
 
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.4, delay: 0.2 }}
-          className="bg-card p-8 rounded-[2.5rem] border border-primary/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl"
-        >
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-2xl font-bold flex items-center gap-3"
-            >
-              <AlertCircle size={16} className="shrink-0" />
-              {error}
-            </motion.div>
-          )}
-
-          {/* Auth Method Selector */}
-          <div className="flex p-1.5 bg-input rounded-2xl mb-8 border border-primary/10">
+        {viewState === 'login' && (
+          <motion.div 
+            key="login"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="bg-card p-5 sm:p-6 rounded-[2rem] border border-border shadow-2xl shadow-[#4A2E31]/10 shrink-0 relative"
+          >
             <button
-              type="button"
-              onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
-              className={cn(
-                "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                loginMethod === 'phone' ? "text-foreground" : "text-muted-foreground hover:text-primary"
-              )}
+              onClick={() => setViewState('welcome')}
+              className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
             >
-              {loginMethod === 'phone' && (
-                <motion.div layoutId="activeTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
-              )}
-              <span className="relative z-10">Phone Number</span>
+              <ArrowLeft size={14} /> Back
             </button>
-            <button
-              type="button"
-              onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
-              className={cn(
-                "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                loginMethod === 'email' ? "text-foreground" : "text-muted-foreground hover:text-primary"
-              )}
-            >
-              {loginMethod === 'email' && (
-                <motion.div layoutId="activeTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
-              )}
-              <span className="relative z-10">Email Address</span>
-            </button>
-          </div>
+            
+            <div className="text-center mb-6 mt-4">
+              <h2 className="text-xl font-black text-primary tracking-tighter">WELCOME BACK</h2>
+            </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {isSignUp && (
-              <div className="space-y-2">
-                <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest ml-1">Full Name</label>
+            {error && (
+              <motion.div 
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3"
+              >
+                <AlertCircle size={16} className="shrink-0" />
+                {error}
+              </motion.div>
+            )}
+
+            {/* Auth Method Selector */}
+            <div className="flex p-1 bg-input rounded-xl mb-5 border border-border shadow-sm">
+              <button
+                type="button"
+                onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
+                className={cn(
+                  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+                  loginMethod === 'phone' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {loginMethod === 'phone' && (
+                  <motion.div layoutId="activeTabLogin" className="absolute inset-0 bg-primary rounded-xl z-0" />
+                )}
+                <span className="relative z-10">Phone</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
+                className={cn(
+                  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+                  loginMethod === 'email' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {loginMethod === 'email' && (
+                  <motion.div layoutId="activeTabLogin" className="absolute inset-0 bg-primary rounded-xl z-0" />
+                )}
+                <span className="relative z-10">Email</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleLoginSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">
+                  {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
+                </label>
                 <div className="relative">
-                  <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
+                  {loginMethod === 'email' ? (
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  ) : (
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  )}
                   <input 
-                    type="text" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your Name"
-                    className="w-full bg-input border border-primary/10 rounded-2xl p-4 pl-12 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                    type={loginMethod === 'email' ? "email" : "tel"} 
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder={loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
-            )}
 
-            <div className="space-y-2">
-              <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest ml-1">
-                {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
-              </label>
-              <div className="relative">
-                {loginMethod === 'email' ? (
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
-                ) : (
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
-                )}
-                <input 
-                  type={loginMethod === 'email' ? "email" : "tel"} 
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder={loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
-                  className="w-full bg-input border border-primary/10 rounded-2xl p-4 pl-12 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
-                />
-              </div>
-            </div>
-
-            {isSignUp && loginMethod === 'phone' && (
-              <div className="space-y-2">
-                <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest ml-1">Date of Birth</label>
-                <input 
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  className="w-full bg-input border border-primary/10 rounded-2xl p-4 text-foreground text-sm focus:border-primary outline-none transition-all"
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <div className="flex justify-between items-center px-1">
-                <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest">Password</label>
-                {!isSignUp && (
+              <div className="space-y-1">
+                <div className="flex justify-between items-center px-1">
+                  <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest">Password</label>
                   <button 
                     type="button"
                     onClick={() => navigate('/identity-reset')}
-                    className="text-[10px] text-primary font-bold hover:underline"
+                    className="text-[9px] text-primary font-bold hover:underline"
                   >
                     Forgot?
                   </button>
-                )}
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
-                <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full bg-input border border-primary/10 rounded-2xl p-4 pl-12 pr-12 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary transition-colors"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            {isSignUp && loginMethod === 'phone' && (
-              <div className="space-y-2">
-                <label className="text-[10px] text-primary/60 font-black uppercase tracking-widest ml-1">Confirm Password</label>
+                </div>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-primary/40" size={18} />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
                   <input 
                     type={showPassword ? "text" : "password"} 
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-input border border-primary/10 rounded-2xl p-4 pl-12 pr-12 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
                   />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary transition-colors"
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
-            )}
 
-            <button 
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-primary text-foreground font-black py-4 rounded-2xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-xs tracking-[0.2em]"
-            >
-              {isSubmitting ? "PROCESSING..." : (isSignUp ? "CREATE ACCOUNT" : "SIGN IN")}
-            </button>
-          </form>
+              <button 
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-primary text-foreground font-black py-3 mt-2 rounded-xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
+              >
+                {isSubmitting ? "PROCESSING..." : "SIGN IN"}
+              </button>
+            </form>
 
-          <div className="mt-8 space-y-4">
-            <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-primary/10"></div>
+            <div className="mt-5 space-y-4">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-card">Or continue with</span>
               </div>
-              <span className="relative px-4 bg-input text-[9px] font-black text-muted-foreground uppercase tracking-widest">Or continue with</span>
+
+              <button 
+                onClick={handleGoogleLogin}
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center gap-3 bg-input border border-border text-foreground font-bold py-3 rounded-xl hover:bg-muted transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+              >
+                <span className="text-xs tracking-wider">Continue with Google</span>
+              </button>
             </div>
-
-            <button 
-              onClick={handleGoogleLogin}
-              disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-3 bg-input border border-primary/10 text-foreground font-bold py-4 rounded-2xl hover:bg-white/10 transition-all active:scale-[0.98] disabled:opacity-50"
-            >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
-              <span className="text-xs tracking-wider">Google</span>
-            </button>
-          </div>
-
-          <div className="mt-8 text-center space-y-4">
-            <button 
-              onClick={() => { setIsSignUp(!isSignUp); setError(null); }}
-              className="text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isSignUp ? "Already have an account? Sign In" : "Don't have an account? Create One"}
-            </button>
-
-            <div className="pt-4">
+            
+            <div className="pt-6 text-center">
               <button 
                 onClick={() => setShowHelp(!showHelp)}
                 className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto"
@@ -8475,9 +8484,179 @@ const LoginPage: React.FC = () => {
                 </motion.div>
               )}
             </div>
-          </div>
-        </motion.div>
-      </div>
+          </motion.div>
+        )}
+
+        {viewState === 'signup' && (
+          <motion.div
+            key="signup"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+            className="bg-card p-5 sm:p-6 rounded-[2rem] border border-border shadow-2xl  shrink-0 relative w-full overflow-y-auto max-h-[80vh]"
+          >
+            <button
+              onClick={() => setViewState('welcome')}
+              className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
+            >
+              <ArrowLeft size={14} /> Back
+            </button>
+            
+            <div className="text-center mb-6 mt-4">
+              <h2 className="text-xl font-black text-primary tracking-tighter">CREATE ACCOUNT</h2>
+              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mt-1">Join Nail Pro Studio</p>
+            </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3">
+                <AlertCircle size={16} className="shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <div className="flex p-1 bg-input rounded-xl mb-5 border border-border shadow-sm">
+              <button
+                type="button"
+                onClick={() => { setSignUpMethod('phone'); setSignUpIdentifier(''); setError(null); }}
+                className={cn(
+                  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+                  signUpMethod === 'phone' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {signUpMethod === 'phone' && (
+                  <motion.div layoutId="signUpActiveTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
+                )}
+                <span className="relative z-10">Phone</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSignUpMethod('email'); setSignUpIdentifier(''); setError(null); }}
+                className={cn(
+                  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+                  signUpMethod === 'email' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {signUpMethod === 'email' && (
+                  <motion.div layoutId="signUpActiveTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
+                )}
+                <span className="relative z-10">Email</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSignUpSubmit} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">Full Name</label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  <input 
+                    type="text" 
+                    value={signUpName}
+                    onChange={(e) => setSignUpName(e.target.value)}
+                    placeholder="Your Name"
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">
+                  {signUpMethod === 'phone' ? 'Phone Number' : 'Email Address'}
+                </label>
+                <div className="relative">
+                  {signUpMethod === 'email' ? (
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  ) : (
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  )}
+                  <input 
+                    type={signUpMethod === 'email' ? "email" : "tel"} 
+                    value={signUpIdentifier}
+                    onChange={(e) => setSignUpIdentifier(e.target.value)}
+                    placeholder={signUpMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                  />
+                </div>
+              </div>
+
+              {signUpMethod === 'phone' && (
+                <div className="space-y-1">
+                  <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">Date of Birth</label>
+                  <input 
+                    type="date"
+                    value={signUpDob}
+                    onChange={(e) => setSignUpDob(e.target.value)}
+                    className="w-full bg-input border border-border rounded-xl p-3 text-foreground text-sm focus:border-primary outline-none transition-all"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  <input 
+                    type={signUpShowPassword ? "text" : "password"} 
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setSignUpShowPassword(!signUpShowPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary transition-colors"
+                  >
+                    {signUpShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {signUpMethod === 'phone' && (
+                <div className="space-y-1">
+                  <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">Confirm Password</label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                    <input 
+                      type={signUpShowPassword ? "text" : "password"} 
+                      value={signUpConfirmPassword}
+                      onChange={(e) => setSignUpConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-primary text-foreground font-black py-3 mt-4 rounded-xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
+              >
+                {isSubmitting ? "PROCESSING..." : "CREATE ACCOUNT"}
+              </button>
+            </form>
+
+            <div className="mt-5 space-y-4">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-card">Or continue with</span>
+              </div>
+
+              <button 
+                onClick={handleGoogleLogin}
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center gap-3 bg-input border border-border text-foreground font-bold py-3 rounded-xl hover:bg-muted transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+              >
+                <span className="text-xs tracking-wider">Continue with Google</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+        </AnimatePresence>
+        </div>
       </div>
     </div>
   );
@@ -8486,7 +8665,6 @@ const LoginPage: React.FC = () => {
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user, profile, loading, isCustomer, isSuperAdmin, isOwner, isCashier } = useAuth();
-  const { theme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -8539,6 +8717,38 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const AppRoutes = () => {
   const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    let listener: any = null;
+    
+    const handleBackButton = () => {
+      if (location.pathname === '/' || location.pathname === '/login' || location.pathname === '/appointments') {
+        CapApp.exitApp();
+      } else {
+        navigate(-1);
+      }
+    };
+
+    if (Capacitor.isNativePlatform()) {
+      CapApp.addListener('backButton', handleBackButton).then(handle => {
+        listener = handle;
+      }).catch(() => {
+        listener = CapApp.addListener('backButton', handleBackButton);
+      });
+    }
+
+    return () => {
+      if (listener) {
+        if (typeof listener.remove === 'function') {
+          listener.remove();
+        } else if (listener.then) {
+          listener.then((l: any) => l?.remove?.());
+        }
+      }
+    };
+  }, [location.pathname, navigate]);
 
   return (
     <Routes>
@@ -8566,13 +8776,11 @@ export default function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <ThemeProvider>
-          <Router>
-            <Layout>
-              <AppRoutes />
-            </Layout>
-          </Router>
-        </ThemeProvider>
+        <Router>
+          <Layout>
+            <AppRoutes />
+          </Layout>
+        </Router>
       </AuthProvider>
     </ErrorBoundary>
   );

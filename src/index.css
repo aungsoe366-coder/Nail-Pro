@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   
   --color-primary: #d4af37;
-  --color-primary-foreground: #000000;
+  --color-primary-foreground: #140809;
   
   --color-background: var(--bg);
   --color-foreground: var(--fg);
@@ -21,30 +23,16 @@
 }
 
 :root {
-  --bg: #f8f9fa;
-  --fg: #1a1a1a;
+  --bg: transparent;
+  --fg: #4A2E31;
   --card: #ffffff;
-  --card-fg: #1a1a1a;
-  --border-color: #e9ecef;
-  --input-bg: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --accent: #d4af37;
-}
-
-.dark {
-  --bg: #0f0f0f;
-  --fg: #f8f9fa;
-  --card: #1a1a1a;
-  --card-fg: #f8f9fa;
-  --border-color: #2d2d2d;
-  --input-bg: #1a1a1a;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
+  --card-fg: #4A2E31;
+  --border-color: rgba(74, 46, 49, 0.15);
+  --input-bg: #FFFDFD;
+  --muted: #F9EFEF;
+  --muted-foreground: #8A7074;
+  --secondary: #FFF5F5;
+  --secondary-foreground: #4A2E31;
   --accent: #d4af37;
 }
 
@@ -53,20 +41,17 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground transition-colors duration-500 ease-in-out;
-  }
-  /* Apply transition to common elements for smoother theme switching */
-  div, header, footer, nav, section, aside, main, button, input, select, textarea, span, p, h1, h2, h3, h4, h5, h6 {
-    @apply transition-colors duration-500 ease-in-out;
+    @apply bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] text-foreground min-h-screen;
+    background-attachment: fixed;
   }
 }
 
 .glass {
-  @apply bg-white/80 dark:bg-black/80 backdrop-blur-md border border-white/20 dark:border-white/10;
+  @apply bg-white border border-[#E8BEB9]/30 shadow-xl;
 }
 
 .card-shadow {
-  @apply shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)];
+  @apply shadow-[0_8px_30px_rgb(74,46,49,0.08)];
 }
 
 .btn-primary {

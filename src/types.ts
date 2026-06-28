@@ -105,6 +105,10 @@ export interface ShopSettings {
   ph: string;
   receiptHeader?: string;
   receiptFooter?: string;
+  hideShopNameOnReceipt?: boolean;
+  hideDateTimeOnReceipt?: boolean;
+  hideStaffNameOnReceipt?: boolean;
+  hideLoyaltyPointsOnReceipt?: boolean;
 }
 
 export interface Customer {
