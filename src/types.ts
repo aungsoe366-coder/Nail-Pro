@@ -10,6 +10,7 @@ export interface Service {
   price: number;
   category?: string;
   duration?: number; // duration in minutes
+  allowCommission?: boolean;
 }
 
 export interface CartItem extends Service {

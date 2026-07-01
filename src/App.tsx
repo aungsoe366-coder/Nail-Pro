@@ -1932,7 +1932,15 @@ const POSPage: React.FC = () => {
       return;
     }
 
-    const commissionAmt = Math.round(netTotal * (selectedStaff.commission / 100));
+    const commissionableSubtotal = cart
+      .filter(item => item.allowCommission !== false)
+      .reduce((sum, item) => sum + (item.price * item.qty * (1 - item.disP / 100)), 0);
+    
+    // Proportionally reduce commissionable total by any points redeemed
+    const effectivePointsDiscount = subTotal > 0 ? pointsDiscount * (commissionableSubtotal / subTotal) : 0;
+    const commissionableTotal = Math.max(0, commissionableSubtotal - effectivePointsDiscount);
+    
+    const commissionAmt = Math.round(commissionableTotal * (selectedStaff.commission / 100));
 
     const sale: Omit<Sale, 'id'> = {
       date: localDateStr,
@@ -5848,6 +5856,7 @@ const ManagePage: React.FC = () => {
   const [svcPrice, setSvcPrice] = useState('');
   const [svcDuration, setSvcDuration] = useState('');
   const [svcCategory, setSvcCategory] = useState('');
+  const [svcAllowCommission, setSvcAllowCommission] = useState(true);
   const [catName, setCatName] = useState('');
   const [catIcon, setCatIcon] = useState('LayoutGrid');
   const [stfName, setStfName] = useState('');
@@ -5949,9 +5958,10 @@ const ManagePage: React.FC = () => {
         name: svcName, 
         price: Number(svcPrice),
         duration: Number(svcDuration) || 30,
-        category: svcCategory || 'General'
+        category: svcCategory || 'General',
+        allowCommission: svcAllowCommission
       });
-      setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory('');
+      setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true);
       setShowSvcForm(false);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'services');
@@ -5965,10 +5975,11 @@ const ManagePage: React.FC = () => {
         name: svcName,
         price: Number(svcPrice),
         duration: Number(svcDuration) || 30,
-        category: svcCategory || 'General'
+        category: svcCategory || 'General',
+        allowCommission: svcAllowCommission
       });
       setEditingService(null);
-      setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory('');
+      setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true);
       setShowSvcForm(false);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `services/${editingService.id}`);
@@ -6726,7 +6737,7 @@ const ManagePage: React.FC = () => {
 
             <Modal 
               isOpen={showSvcForm} 
-              onClose={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); }} 
+              onClose={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true); }} 
               title={editingService ? "Edit Service" : "Add New Service"}
             >
               <FloatingInput 
@@ -6762,6 +6773,25 @@ const ManagePage: React.FC = () => {
                   buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary"
                 />
               </div>
+              <div className="flex items-center justify-between p-4 bg-background border border-border rounded-xl mt-4">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-foreground">Enable Staff Commission</span>
+                  <span className="text-[10px] text-muted-foreground">Calculate commission for this service</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSvcAllowCommission(!svcAllowCommission)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    svcAllowCommission ? 'bg-primary' : 'bg-muted'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      svcAllowCommission ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
               {editingService ? (
                 <button onClick={handleUpdateService} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Update Service</button>
               ) : (
@@ -6795,6 +6825,7 @@ const ManagePage: React.FC = () => {
                             setSvcPrice(s.price.toString()); 
                             setSvcDuration(s.duration?.toString() || '30');
                             setSvcCategory(s.category || '');
+                            setSvcAllowCommission(s.allowCommission !== false);
                             setShowSvcForm(true);
                           }} 
                           className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
