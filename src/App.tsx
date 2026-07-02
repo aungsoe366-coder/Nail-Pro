@@ -129,6 +129,7 @@ import { Calendar as BigCalendar, dateFnsLocalizer, Views } from 'react-big-cale
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { exportToCSVAndShare } from './exportUtils';
 
 import { 
   ResponsiveContainer, 
@@ -1351,6 +1352,140 @@ const CATEGORY_ICONS = [
   { name: 'LayoutGrid', icon: LayoutGrid },
 ];
 
+const ScrollToTop = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    // Scroll window to top
+    window.scrollTo(0, 0);
+    // Attempt to reset any custom scrollable containers if needed
+    const scrollContainers = document.querySelectorAll('.overflow-y-auto');
+    scrollContainers.forEach(container => {
+      container.scrollTop = 0;
+    });
+  }, [pathname]);
+
+  return null;
+};
+
+const PullToRefresh: React.FC<{ children: React.ReactNode; onRefresh: () => Promise<void> }> = ({ children, onRefresh }) => {
+  const [startY, setStartY] = useState(0);
+  const [currentY, setCurrentY] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  
+  const MAX_PULL = 80;
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.scrollY === 0) {
+      setStartY(e.touches[0].clientY);
+      setIsPulling(true);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isPulling) return;
+    const y = e.touches[0].clientY;
+    const dy = y - startY;
+    if (dy > 0 && window.scrollY === 0) {
+      setCurrentY(Math.min(dy, MAX_PULL));
+      if (e.cancelable) e.preventDefault();
+    } else {
+      setIsPulling(false);
+      setCurrentY(0);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (!isPulling) return;
+    setIsPulling(false);
+    if (currentY >= MAX_PULL * 0.8) {
+      setIsRefreshing(true);
+      try {
+        await onRefresh();
+      } finally {
+        setIsRefreshing(false);
+      }
+    }
+    setCurrentY(0);
+  };
+
+  return (
+    <div 
+      className="relative w-full h-full"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div 
+        className="absolute left-0 w-full flex justify-center items-center overflow-visible transition-all duration-300 z-50 pointer-events-none"
+        style={{ 
+          top: `${isRefreshing ? 20 : Math.max(-40, currentY - 40)}px`,
+          opacity: isRefreshing ? 1 : currentY / MAX_PULL 
+        }}
+      >
+        <div className={`w-8 h-8 bg-card border border-border shadow-lg text-primary flex items-center justify-center rounded-full ${isRefreshing ? 'animate-spin' : ''}`} 
+             style={{ transform: `rotate(${currentY * 3}deg)` }}
+        >
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
+        </div>
+      </div>
+      <div 
+        ref={contentRef}
+        className="w-full h-full"
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
+
+const CustomerDashboardPage: React.FC = () => {
+  const { profile } = useAuth();
+  const navigate = useNavigate();
+
+  return (
+    <div className="p-4 space-y-6 max-w-4xl mx-auto animate-in fade-in zoom-in duration-500">
+      <div className="bg-[#4A2E31] text-white p-8 rounded-3xl shadow-2xl relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="relative z-10 space-y-2">
+          <h2 className="text-3xl font-serif">Welcome back, {profile?.name || 'Beautiful'}!</h2>
+          <p className="text-white/80">Ready for your next salon experience?</p>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col items-center text-center space-y-4">
+           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+             <Calendar size={32} />
+           </div>
+           <div className="space-y-1">
+             <h3 className="font-bold text-lg">Book an Appointment</h3>
+             <p className="text-sm text-muted-foreground">Schedule your next visit easily with our online booking system.</p>
+           </div>
+           <button 
+             onClick={() => navigate('/appointments')}
+             className="mt-4 px-8 py-3 bg-primary text-primary-foreground font-bold rounded-full hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg w-full md:w-auto"
+           >
+             Book Now
+           </button>
+         </div>
+
+         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col items-center text-center space-y-4">
+           <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
+             <Star size={32} />
+           </div>
+           <div className="space-y-1">
+             <h3 className="font-bold text-lg">Loyalty Points</h3>
+             <p className="text-sm text-muted-foreground">You currently have <strong className="text-green-500 text-xl">{profile?.points || 0}</strong> points.</p>
+           </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
 const DashboardPage: React.FC = () => {
   const { profile, isAdmin, isCustomer } = useAuth();
   const navigate = useNavigate();
@@ -2129,25 +2264,25 @@ const POSPage: React.FC = () => {
               ))
             ) : filteredServices.length > 0 ? (
               filteredServices.map(s => (
-                <motion.button 
-                  whileHover={{ scale: 1.02, translateY: -2 }}
-                  whileTap={{ scale: 0.98 }}
+                <button
                   key={s.id}
                   onClick={() => addToCart(s)}
-                  className="bg-card border border-border/50 rounded-2xl p-4 text-left shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between min-h-[100px]"
+                  className={cn(
+                    "border rounded-2xl p-4 text-left shadow-sm group relative overflow-hidden flex flex-col justify-between min-h-[100px]",
+                    "bg-card border-border/50",
+                    "hover:shadow-xl hover:border-primary/30",
+                    "active:scale-95 active:bg-amber-500/5 transition-transform duration-75 ease-out"
+                  )}
                 >
                   <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -mr-8 -mt-8 blur-2xl group-hover:bg-primary/10 transition-colors" />
                   <div className="relative z-10">
                     <span className="text-[8px] text-primary font-black uppercase tracking-[0.2em] block mb-1 opacity-60">{s.category}</span>
                     <b className="block text-foreground text-sm font-black tracking-tight leading-tight line-clamp-2 group-hover:text-primary transition-colors">{s.name}</b>
                   </div>
-                  <div className="mt-4 flex justify-between items-end relative z-10">
+                  <div className="mt-4 relative z-10">
                     <span className="text-xs text-muted-foreground font-bold">{s.price.toLocaleString()} Ks</span>
-                    <div className="w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
-                      <Plus size={14} />
-                    </div>
                   </div>
-                </motion.button>
+                </button>
               ))
             ) : (
               <div className="col-span-full py-20 text-center space-y-4">
@@ -2716,6 +2851,35 @@ const MonthlySummaryPage: React.FC = () => {
   const gExp = monthlyData.reduce((sum, d) => sum + d.totalExp, 0);
   const gProfit = gIncome - gExp;
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCSV = async () => {
+    if (monthlyData.length === 0) return;
+    setIsExporting(true);
+    
+    try {
+      const headers = ['Month', 'Gross Revenue (Ks)', 'Expenses (Ks)', 'Net Profit (Ks)'];
+      
+      const csvData = monthlyData.map(d => [
+        d.mName,
+        d.income,
+        d.totalExp,
+        d.profit
+      ]);
+      
+      await exportToCSVAndShare(
+        `Monthly_Summary_${year}.csv`,
+        headers,
+        csvData
+      );
+    } catch (error) {
+      console.error('Error exporting monthly summary:', error);
+      alert('Failed to export. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
@@ -2732,6 +2896,26 @@ const MonthlySummaryPage: React.FC = () => {
               options={years.map(y => ({ value: y, label: y }))}
             />
           </div>
+          {monthlyData.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
+            <button 
+              onClick={handleExportCSV}
+              disabled={isExporting}
+              className="px-4 py-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 z-20 mr-2"
+              title="Export to CSV"
+            >
+              {isExporting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                  <span className="text-[10px] uppercase tracking-widest">Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={16} />
+                  <span className="text-[10px] uppercase tracking-widest">Export Excel</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -2839,6 +3023,7 @@ const ExpenseListPage: React.FC = () => {
   const [expAmt, setExpAmt] = useState('');
   const [expCategory, setExpCategory] = useState('');
   const [editingExpenseCategory, setEditingExpenseCategory] = useState<ExpenseCategory | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   
   const [showConfirm, setShowConfirm] = useState<{coll: string, id: string} | null>(null);
 
@@ -2874,31 +3059,31 @@ const ExpenseListPage: React.FC = () => {
     return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
   }, [filteredExpenses]);
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (filteredExpenses.length === 0) return;
+    setIsExporting(true);
     
-    const headers = ['Date', 'Description', 'Category', 'Amount (Ks)'];
-    
-    const csvData = filteredExpenses.map(e => [
-      e.date,
-      e.desc,
-      e.category || 'General',
-      e.amount
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Expense_Report_${dateFrom}_to_${dateTo}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const headers = ['Date', 'Description', 'Category', 'Amount (Ks)'];
+      
+      const csvData = filteredExpenses.map(e => [
+        e.date,
+        e.desc,
+        e.category || 'General',
+        e.amount
+      ]);
+      
+      await exportToCSVAndShare(
+        `Expense_Report_${dateFrom}_to_${dateTo}.csv`,
+        headers,
+        csvData
+      );
+    } catch (error) {
+      console.error('Error exporting expenses:', error);
+      alert('Failed to export. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleAddExpense = async () => {
@@ -3082,7 +3267,7 @@ const ExpenseListPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-4 relative overflow-hidden group">
+      <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-6 relative overflow-hidden group">
         <div className="absolute inset-0 bg-red-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative z-10 space-y-2">
           <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Total Operating Expenditure</span>
@@ -3094,14 +3279,27 @@ const ExpenseListPage: React.FC = () => {
           </div>
           <div className="h-1 bg-red-500/20 w-24 mx-auto rounded-full" />
         </div>
-        {filteredExpenses.length > 0 && (
-          <button 
-            onClick={handleExportCSV}
-            className="absolute right-6 top-6 p-3 bg-card text-muted-foreground rounded-2xl border border-border shadow-xl hover:text-red-500 transition-all active:scale-90 group/btn"
-            title="Export to CSV"
-          >
-            <Download size={22} className="group-hover/btn:scale-110 transition-transform" />
-          </button>
+        {filteredExpenses.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
+          <div className="relative z-10 flex justify-center mt-4">
+            <button 
+              onClick={handleExportCSV}
+              disabled={isExporting}
+              className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              title="Export to CSV"
+            >
+              {isExporting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={18} />
+                  <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
+                </>
+              )}
+            </button>
+          </div>
         )}
       </div>
 
@@ -3225,6 +3423,7 @@ const HistoryPage: React.FC = () => {
   const [paymentFilter, setPaymentFilter] = useState('');
   const [staffList, setStaffList] = useState<string[]>([]);
   const [showPrintPreview, setShowPrintPreview] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -3257,41 +3456,64 @@ const HistoryPage: React.FC = () => {
       (!dateFrom || s.date >= dateFrom) && 
       (!dateTo || s.date <= dateTo) && 
       (!staffFilter || s.staff === staffFilter) &&
-      (!paymentFilter || s.method === paymentFilter)
+      (!paymentFilter || (paymentFilter === 'Split' ? (s.payments?.length > 1 || (s.method && s.method.includes(','))) : s.method === paymentFilter))
     )
     .sort((a, b) => (b.dateTime || '').localeCompare(a.dateTime || ''));
 
   const totalIncome = filteredSales.reduce((sum, s) => sum + s.total, 0);
   const totalComm = filteredSales.reduce((sum, s) => sum + s.commission, 0);
 
-  const handleExportCSV = () => {
+  const totalCash = filteredSales.reduce((sum, s) => {
+    if (s.payments && s.payments.length > 0) {
+      return sum + s.payments.filter(p => p.method === 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
+    }
+    return sum + ((s.method === 'Cash' || !s.method) ? s.total : 0);
+  }, 0);
+
+  const totalDigital = filteredSales.reduce((sum, s) => {
+    if (s.payments && s.payments.length > 0) {
+      return sum + s.payments.filter(p => p.method !== 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
+    }
+    return sum + (s.method && s.method !== 'Cash' ? s.total : 0);
+  }, 0);
+
+  const handleExportCSV = async () => {
     if (filteredSales.length === 0) return;
+    setIsExporting(true);
     
-    const headers = ['Date', 'Time', 'Receipt No', 'Total (Ks)', 'Commission (Ks)', 'Method', 'Staff'];
-    
-    const csvData = filteredSales.map(s => [
-      s.date,
-      s.time,
-      s.receiptNo,
-      s.total,
-      s.commission,
-      s.method,
-      s.staff
-    ]);
-    
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Sales_Report_${dateFrom}_to_${dateTo}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    try {
+      const headers = ['Date', 'Time', 'Receipt No', 'Total (Ks)', 'Commission (Ks)', 'Method', 'Staff'];
+      
+      const csvData = filteredSales.map(s => {
+        let timeStr = '';
+        try {
+          if (s.dateTime) {
+             timeStr = new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          }
+        } catch (e) {}
+
+        return [
+          s.date,
+          timeStr,
+          s.id.slice(0, 8).toUpperCase(),
+          s.total,
+          s.commission,
+          s.payments && s.payments.length > 1 ? s.payments.map(p => `${p.method}: ${p.amount}`).join(' | ') : (s.method || 'Cash'),
+          s.staff
+        ];
+      });
+      
+      await exportToCSVAndShare(
+        `Sales_Report_${dateFrom}_to_${dateTo}.csv`,
+        headers,
+        csvData
+      );
+    } catch (error) {
+      console.error('Error exporting sales:', error);
+      alert('Failed to export. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handlePrintAll = () => {
@@ -3376,7 +3598,8 @@ const HistoryPage: React.FC = () => {
                    { value: 'WavePay', label: 'WavePay' },
                    { value: 'AYA Pay', label: 'AYA Pay' },
                    { value: 'CB PAY', label: 'CB PAY' },
-                   { value: 'OK$', label: 'OK$' }
+                   { value: 'OK$', label: 'OK$' },
+                   { value: 'Split', label: 'Split / Mixed' }
                  ]}
                />
             </div>
@@ -3385,30 +3608,54 @@ const HistoryPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-2 relative overflow-hidden group">
+        <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-4 relative overflow-hidden group">
           <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative z-10 space-y-1">
             <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Gross Revenue</span>
             <h1 className="text-5xl font-mono tracking-tighter text-primary drop-shadow-sm">
               {totalIncome.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span>
             </h1>
-            <div className="h-1 bg-primary/20 w-16 mx-auto rounded-full" />
+          </div>
+          <div className="relative z-10 flex items-center justify-center gap-6 pt-2 border-t border-border/50 max-w-xs mx-auto">
+            <div className="text-center">
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Total Cash</span>
+              <span className="text-sm font-mono font-bold text-green-600">{totalCash.toLocaleString()} Ks</span>
+            </div>
+            <div className="w-px h-6 bg-border/50"></div>
+            <div className="text-center">
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Total KPay/Digital</span>
+              <span className="text-sm font-mono font-bold text-blue-600">{totalDigital.toLocaleString()} Ks</span>
+            </div>
           </div>
           {filteredSales.length > 0 && (
-            <div className="absolute right-6 top-6 flex items-center gap-2">
-              <button 
-                onClick={handleExportCSV}
-                className="p-3 bg-card text-muted-foreground rounded-2xl border border-border shadow-xl hover:text-primary transition-all active:scale-90 group/btn"
-                title="Export to CSV"
-              >
-                <Download size={22} className="group-hover/btn:scale-110 transition-transform" />
-              </button>
+            <div className="relative z-10 mt-6 pt-2 flex flex-wrap items-center justify-center gap-3">
+              {['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
+                <button 
+                  onClick={handleExportCSV}
+                  disabled={isExporting}
+                  className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  title="Export to CSV"
+                >
+                  {isExporting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={18} />
+                      <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
+                    </>
+                  )}
+                </button>
+              )}
               <button 
                 onClick={handlePrintAll}
-                className="p-3 bg-primary/10 text-primary rounded-2xl border border-border hover:bg-primary hover:text-primary-foreground transition-all shadow-xl active:scale-90 group/btn"
+                className="px-6 py-2.5 bg-primary/10 text-primary font-semibold rounded-full border border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                 title="Print Consolidated Report"
               >
-                <Printer size={22} className="group-hover/btn:scale-110 transition-transform" />
+                <Printer size={18} />
+                <span className="text-xs uppercase tracking-widest font-bold">Print Report</span>
               </button>
             </div>
           )}
@@ -3488,8 +3735,10 @@ const HistoryPage: React.FC = () => {
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
                         <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">{s.staff}</span>
-                        <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                          {s.method}
+                        <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
+                          {s.payments && s.payments.length > 1 
+                            ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+                            : (s.method || 'Cash')}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
@@ -3561,7 +3810,11 @@ const HistoryPage: React.FC = () => {
                             </div>
                             <div className="text-right space-y-1">
                               <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Payment Method</span>
-                              <span className="text-sm font-medium text-foreground">{s.method}</span>
+                              <span className="text-sm font-medium text-foreground">
+                                {s.payments && s.payments.length > 1 
+                                  ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+                                  : (s.method || 'Cash')}
+                              </span>
                             </div>
                             <div className="space-y-1">
                               <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Transaction ID</span>
@@ -3614,6 +3867,8 @@ const StaffCommissionsPage: React.FC = () => {
   const [dateTo, setDateTo] = useState(today);
   const [staffFilter, setStaffFilter] = useState(isStaff ? profile.name : '');
   const [staffList, setStaffList] = useState<string[]>([]);
+
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -3669,6 +3924,33 @@ const StaffCommissionsPage: React.FC = () => {
 
   const grandTotalComm = staffAggregates.reduce((sum, a) => sum + a.totalComm, 0);
 
+  const handleExportCSV = async () => {
+    if (staffAggregates.length === 0) return;
+    setIsExporting(true);
+    
+    try {
+      const headers = ['Staff Name', 'Total Sales (Ks)', 'Total Commission (Ks)', 'Services Performed'];
+      
+      const csvData = staffAggregates.map(a => [
+        a.name,
+        a.totalSales,
+        a.totalComm,
+        a.count
+      ]);
+      
+      await exportToCSVAndShare(
+        `Staff_Commissions_${dateFrom}_to_${dateTo}.csv`,
+        headers,
+        csvData
+      );
+    } catch (error) {
+      console.error('Error exporting staff commissions:', error);
+      alert('Failed to export. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="p-4 space-y-6">
       <h3 className="text-primary text-2xl font-bold tracking-tight">Staff Commissions</h3>
@@ -3706,10 +3988,34 @@ const StaffCommissionsPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-card p-6 rounded-2xl border border-green-500/20 text-center shadow-xl group relative overflow-hidden">
+      <div className="bg-card p-8 rounded-[2.5rem] border border-green-500/20 text-center shadow-xl group relative overflow-hidden space-y-4">
         <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block mb-1 relative z-10">Total Commissions (Period)</span>
-        <b className="text-green-500 text-3xl font-bold relative z-10">{grandTotalComm.toLocaleString()} Ks</b>
+        <div className="relative z-10 space-y-1">
+          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.3em] block mb-1">Total Commissions (Period)</span>
+          <b className="text-green-500 text-5xl font-mono tracking-tighter drop-shadow-sm block">{grandTotalComm.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span></b>
+        </div>
+        {staffAggregates.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
+          <div className="relative z-10 flex justify-center mt-4 pt-2">
+            <button 
+              onClick={handleExportCSV}
+              disabled={isExporting}
+              className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              title="Export to CSV"
+            >
+              {isExporting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Download size={18} />
+                  <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -3758,7 +4064,9 @@ const StaffCommissionsPage: React.FC = () => {
                     <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                    {s.method}
+                    {s.payments && s.payments.length > 1 
+                      ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+                      : (s.method || 'Cash')}
                   </div>
                 </div>
                 <div className="text-right">
@@ -3811,20 +4119,75 @@ const SalesReportPage: React.FC = () => {
   const grandComm = reportData.reduce((sum, d) => sum + d.totalComm, 0);
   const totalCount = reportData.reduce((sum, d) => sum + d.count, 0);
 
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCSV = async () => {
+    if (reportData.length === 0) return;
+    setIsExporting(true);
+    
+    try {
+      const headers = ['Month', 'Transactions Count', 'Sales (Ks)', 'Commission (Ks)'];
+      
+      const csvData = reportData.map(d => [
+        d.mName,
+        d.count,
+        d.totalSales,
+        d.totalComm
+      ]);
+      
+      await exportToCSVAndShare(
+        `Sales_Report_${year}.csv`,
+        headers,
+        csvData
+      );
+    } catch (error) {
+      console.error('Error exporting sales report:', error);
+      alert('Failed to export. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-4 space-y-6 relative">
       <h3 className="text-primary text-2xl font-bold tracking-tight">Sales Report</h3>
       
-      <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative">
-        <div className="flex flex-col p-4">
-           <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-             <Settings size={12} className="text-primary" /> YEAR
-           </label>
-           <CustomSelect
-             value={year}
-             onChange={setYear}
-             options={years.map(y => ({ value: y, label: y }))}
-           />
+      <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative overflow-hidden group">
+        <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="flex flex-col p-6 space-y-4">
+           <div className="flex flex-col max-w-[200px]">
+             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+               <Settings size={12} className="text-primary" /> YEAR
+             </label>
+             <CustomSelect
+               value={year}
+               onChange={setYear}
+               options={years.map(y => ({ value: y, label: y }))}
+             />
+           </div>
+           
+           {reportData.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
+            <div className="relative z-10 flex pt-2">
+              <button 
+                onClick={handleExportCSV}
+                disabled={isExporting}
+                className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                title="Export to CSV"
+              >
+                {isExporting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={18} />
+                    <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -7402,7 +7765,11 @@ const ManagePage: React.FC = () => {
                       <UserIcon size={10} className="text-primary" />
                       Staff: {s.staff}
                     </span>
-                    <span className="bg-muted/10 px-2 py-0.5 rounded-md">{s.method}</span>
+                    <span className="bg-muted/10 px-2 py-0.5 rounded-md">
+                      {s.payments && s.payments.length > 1 
+                        ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+                        : (s.method || 'Cash')}
+                    </span>
                   </div>
                 </div>
               ))
@@ -8735,13 +9102,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (!loading && user && profile) {
       const hasRedirected = sessionStorage.getItem('initial_redirect_done');
       if (!hasRedirected) {
-        if (isCustomer) {
-          navigate('/appointments');
-        } else if (isSuperAdmin || isOwner || isCashier) {
-          navigate('/');
-        } else {
-          navigate('/appointments');
-        }
+        navigate('/');
         sessionStorage.setItem('initial_redirect_done', 'true');
       }
     }
@@ -8796,13 +9157,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return <Navigate to="/force-password-change" />;
   }
 
+  const handleRefresh = async () => {
+    // Dispatch event for components to optionally re-fetch
+    window.dispatchEvent(new CustomEvent('app:refresh'));
+    // Await for a brief duration for the spinner to show, mimicking data sync over live sockets
+    await new Promise(resolve => setTimeout(resolve, 1500));
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300 select-none">
       {renderExitConfirm()}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <Header onMenuClick={() => setIsSidebarOpen(true)} />
-      <main className="max-w-md mx-auto px-4 pt-4">
-        {children}
+      <main className="max-w-md mx-auto px-4 pt-4 h-full">
+        <PullToRefresh onRefresh={handleRefresh}>
+          {children}
+        </PullToRefresh>
       </main>
     </div>
   );
@@ -8813,7 +9183,7 @@ const AppRoutes = () => {
   
   return (
     <Routes>
-      <Route path="/" element={isCustomer ? <Navigate to="/appointments" /> : <DashboardPage />} />
+      <Route path="/" element={isCustomer ? <CustomerDashboardPage /> : <DashboardPage />} />
       <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <POSPage />} />
       <Route path="/appointments" element={<AppointmentsPage />} />
       <Route path="/history" element={!isStaff ? <Navigate to="/appointments" /> : <HistoryPage />} />
@@ -8838,6 +9208,7 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <Layout>
             <AppRoutes />
           </Layout>
