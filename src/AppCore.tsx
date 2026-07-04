@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
 import { 
-  BrowserRouter as Router, 
+  HashRouter as Router, 
   Routes, 
   Route, 
   Navigate, 
@@ -12,6 +12,7 @@ import { App as CapApp } from '@capacitor/app';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { CustomSelect } from './components/CustomSelect';
 import { Printer as CapPrinter } from '@capgo/capacitor-printer';
+import { NativeBiometric, BiometryType } from '@capgo/capacitor-native-biometric';
 import { 
   onAuthStateChanged,
   GoogleAuthProvider,
@@ -121,7 +122,9 @@ import {
   MessageCircle,
   Download,
   ArrowLeft,
-  Palette
+  Palette,
+  Fingerprint,
+  ScanFace
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -8652,6 +8655,21 @@ const LoginPage: React.FC = () => {
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
   const [signUpDob, setSignUpDob] = useState('');
   const [signUpShowPassword, setSignUpShowPassword] = useState(false);
+  const [hasBiometric, setHasBiometric] = useState(false);
+  const [biometryType, setBiometryType] = useState<any>(null);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      NativeBiometric.isAvailable().then(avail => {
+        if (avail.isAvailable) {
+          setBiometryType(avail.biometryType);
+          NativeBiometric.isCredentialsSaved({ server: 'nail-pro-pos' }).then(res => {
+            if (res.isSaved) setHasBiometric(true);
+          }).catch(console.warn);
+        }
+      }).catch(console.warn);
+    }
+  }, []);
 
   useEffect(() => {
     if (user && profile) {
@@ -8679,8 +8697,41 @@ const LoginPage: React.FC = () => {
       } else {
         await loginWithEmail(identifier, password);
       }
+      
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const avail = await NativeBiometric.isAvailable();
+          if (avail.isAvailable) {
+            await NativeBiometric.setCredentials({
+              username: identifier,
+              password,
+              server: 'nail-pro-pos',
+            });
+          }
+        } catch (biometricErr) {
+          console.warn("Failed to set biometric credentials:", biometricErr);
+        }
+      }
     } catch (err) {
       // Error is already handled and set in AuthProvider
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      const cred = await NativeBiometric.getCredentials({ server: 'nail-pro-pos' });
+      if (cred && cred.username && cred.password) {
+        setIsSubmitting(true);
+        if (cred.username.includes('@')) {
+          await loginWithEmail(cred.username, cred.password);
+        } else {
+          await loginWithPhone(cred.username, cred.password);
+        }
+      }
+    } catch (err) {
+      console.warn("Biometric login failed:", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -8894,6 +8945,21 @@ const LoginPage: React.FC = () => {
                 {isSubmitting ? "PROCESSING..." : "SIGN IN"}
               </button>
             </form>
+
+            {hasBiometric && (
+              <button 
+                onClick={handleBiometricLogin}
+                disabled={isSubmitting}
+                className="w-full flex items-center justify-center gap-3 bg-primary/10 border border-primary/20 text-primary font-bold py-3 mt-4 rounded-xl hover:bg-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+              >
+                {biometryType === BiometryType.FACE_ID || biometryType === BiometryType.FACE_AUTHENTICATION ? (
+                  <ScanFace size={18} />
+                ) : (
+                  <Fingerprint size={18} />
+                )}
+                <span className="text-[10px] font-black uppercase tracking-widest">Use Biometrics</span>
+              </button>
+            )}
 
             <div className="mt-5 space-y-4">
               <div className="relative flex items-center justify-center">
