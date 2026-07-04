@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
+import { SplashScreen } from '@capacitor/splash-screen';
 import { 
-  HashRouter as Router, 
   Routes, 
   Route, 
   Navigate, 
@@ -311,9 +311,6 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
   if (!settings?.hideDateTimeOnReceipt) {
     text += `Date   : ${new Date(sale.dateTime).toLocaleString()}\n`;
   }
-  if (!settings?.hideStaffNameOnReceipt) {
-    text += `Staff  : ${sale.staff}\n`;
-  }
   
   text += "-".repeat(32) + "\n";
   text += "Item           Qty Price  Total\n";
@@ -323,6 +320,9 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
     const sub = item.price * item.qty;
     const netSub = sub - (sub * (item.disP / 100));
     let fullItemName = item.name + (item.disP > 0 ? `(-${item.disP}%)` : "");
+    if (!settings?.hideStaffNameOnReceipt && (item.staffName || sale.staff)) {
+      fullItemName += ` [${item.staffName || sale.staff}]`;
+    }
     let nameChunks = fullItemName.match(/.{1,14}/g) || [fullItemName];
     text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\n";
     if (nameChunks.length > 1) {
@@ -390,6 +390,9 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
       const sub = item.price * item.qty;
       const netSub = sub - (sub * (item.disP / 100));
       let fullItemName = item.name + (item.disP > 0 ? `(-${item.disP}%)` : "");
+      if (!settings?.hideStaffNameOnReceipt && (item.staffName || sale.staff)) {
+        fullItemName += ` [${item.staffName || sale.staff}]`;
+      }
       let nameChunks = fullItemName.match(/.{1,14}/g) || [fullItemName];
       text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\n";
       if (nameChunks.length > 1) {
@@ -1205,6 +1208,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isCustomer = profile?.role === 'customer';
   const isAdmin = isSuperAdmin || isOwner;
   const isStaff = isSuperAdmin || isOwner || isCashier || isStaffMember;
+
+  useEffect(() => {
+    if (!loading) {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          import('@capacitor/splash-screen').then(({ SplashScreen }) => {
+            SplashScreen.hide().catch(() => {});
+          });
+        } catch (e) {}
+      }
+    }
+  }, [loading]);
 
   return (
     <AuthContext.Provider value={{ 
@@ -2055,8 +2070,14 @@ export const POSPage: React.FC = () => {
 
   const handleCheckout = (overridePayments?: typeof payments) => {
     if (cart.length === 0) return;
-    const selectedStaff = staff.find(s => s.email === selectedStaffEmail);
-    if (!selectedStaff) return;
+    
+    // Determine the global fallback staff
+    // If 'Any Staff' is selected, fallback to an owner. If no owner, fallback to first staff.
+    let globalStaff = staff.find(s => s.email === selectedStaffEmail);
+    if (!globalStaff) {
+      globalStaff = staff.find(s => s.role === 'owner') || staff[0];
+    }
+    if (!globalStaff) return; // Should not happen in practice
 
     const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
 
@@ -2071,35 +2092,52 @@ export const POSPage: React.FC = () => {
       return;
     }
 
-    const commissionableSubtotal = cart
-      .filter(item => item.allowCommission !== false)
-      .reduce((sum, item) => sum + (item.price * item.qty * (1 - item.disP / 100)), 0);
-    
-    // Proportionally reduce commissionable total by any points redeemed
-    const effectivePointsDiscount = subTotal > 0 ? pointsDiscount * (commissionableSubtotal / subTotal) : 0;
-    const commissionableTotal = Math.max(0, commissionableSubtotal - effectivePointsDiscount);
-    
-    const commissionAmt = Math.round(commissionableTotal * (selectedStaff.commission / 100));
+    let totalSaleCommission = 0;
+
+    const mappedItems = cart.map(item => {
+      // Determine staff for this specific item
+      const itemStaffEmail = item.staffEmail || globalStaff.email;
+      const itemStaffName = item.staffName || globalStaff.name;
+      const itemStaff = staff.find(s => s.email === itemStaffEmail) || globalStaff;
+
+      const itemSubtotal = item.price * item.qty * (1 - item.disP / 100);
+      let itemCommission = 0;
+      
+      if (item.allowCommission !== false) {
+        const proportion = subTotal > 0 ? (itemSubtotal / subTotal) : 0;
+        const effectivePointsDiscount = pointsDiscount * proportion;
+        const commissionableValue = Math.max(0, itemSubtotal - effectivePointsDiscount);
+        itemCommission = Math.round(commissionableValue * ((itemStaff.commission || 0) / 100));
+        totalSaleCommission += itemCommission;
+      }
+
+      return {
+        id: item.id,
+        serviceId: item.id,
+        name: item.name,
+        qty: item.qty,
+        price: item.price,
+        disP: item.disP,
+        staffId: itemStaffEmail,
+        staffName: itemStaffName,
+        commission: itemCommission
+      };
+    });
 
     const sale: Omit<Sale, 'id'> = {
       date: localDateStr,
       dateTime: now.toISOString(),
-      staff: selectedStaff.name,
-      staffEmail: selectedStaff.email,
+      staff: globalStaff.name,
+      staffEmail: globalStaff.email,
       customerName: selectedCustomer?.name || '',
       customerPhone: selectedCustomer?.phone || '',
       total: netTotal,
       payments: finalPayments,
       method: finalPayments.map(p => p.method).join(', '),
-      commission: commissionAmt,
+      commission: totalSaleCommission,
       pointsEarned,
       pointsRedeemed: pointsToRedeem,
-      items: cart.map(item => ({
-        name: item.name,
-        qty: item.qty,
-        price: item.price,
-        disP: item.disP
-      }))
+      items: mappedItems
     };
 
     setPendingSaleParams({ sale, overridePayments });
@@ -2378,7 +2416,7 @@ export const POSPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t border-border/30 flex justify-between items-center">
+                  <div className="mt-4 pt-4 border-t border-border/30 flex justify-between items-center flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Discount %</span>
                       <input 
@@ -2393,7 +2431,27 @@ export const POSPage: React.FC = () => {
                         className="w-12 bg-input border border-border/50 rounded-lg px-2 py-1 text-[10px] font-black text-center focus:border-primary outline-none transition-all"
                       />
                     </div>
-                    <span className="font-black text-primary">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Staff</span>
+                      <select
+                        value={item.staffEmail || ''}
+                        onChange={(e) => {
+                          const selected = staff.find(s => s.email === e.target.value);
+                          if (selected) {
+                            updateCartItem(i, { staffEmail: selected.email, staffName: selected.name });
+                          } else {
+                            updateCartItem(i, { staffEmail: '', staffName: '' });
+                          }
+                        }}
+                        className="bg-input border border-border/50 rounded-lg px-2 py-1 text-[10px] font-black focus:border-primary outline-none transition-all text-foreground"
+                      >
+                        <option value="">Auto (Main Staff)</option>
+                        {staff.filter(s => ['staff', 'owner', 'cashier'].includes(s.role || '')).map(s => (
+                          <option key={s.email} value={s.email}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <span className="font-black text-primary w-full text-right mt-1">
                       {(item.price * item.qty * (1 - item.disP / 100)).toLocaleString()} Ks
                     </span>
                   </div>
@@ -3442,7 +3500,12 @@ export const HistoryPage: React.FC = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
       setSales(data);
-      setStaffList([...new Set(data.map(s => s.staff))]);
+      const allStaff = data.flatMap(s => {
+        const names = [s.staff];
+        if (s.items) s.items.forEach(i => { if (i.staffName) names.push(i.staffName); });
+        return names;
+      });
+      setStaffList([...new Set(allStaff.filter(Boolean))]);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
     return unsubscribe;
   }, [profile, isStaff]);
@@ -3459,26 +3522,78 @@ export const HistoryPage: React.FC = () => {
     .filter(s => 
       (!dateFrom || s.date >= dateFrom) && 
       (!dateTo || s.date <= dateTo) && 
-      (!staffFilter || s.staff === staffFilter) &&
+      (!staffFilter || s.staff === staffFilter || (s.items && s.items.some(i => i.staffName === staffFilter))) &&
       (!paymentFilter || (paymentFilter === 'Split' ? (s.payments?.length > 1 || (s.method && s.method.includes(','))) : s.method === paymentFilter))
     )
     .sort((a, b) => (b.dateTime || '').localeCompare(a.dateTime || ''));
 
-  const totalIncome = filteredSales.reduce((sum, s) => sum + s.total, 0);
-  const totalComm = filteredSales.reduce((sum, s) => sum + s.commission, 0);
+  const totalIncome = filteredSales.reduce((sum, s) => {
+    if (staffFilter) {
+      const staffItems = s.items?.filter(item => item.staffName === staffFilter || (!item.staffName && s.staff === staffFilter)) || [];
+      if (staffItems.length > 0) {
+        return sum + staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
+      }
+      return sum;
+    }
+    return sum + s.total;
+  }, 0);
+
+  const totalComm = filteredSales.reduce((sum, s) => {
+    if (staffFilter) {
+      const staffItems = s.items?.filter(item => item.staffName === staffFilter || (!item.staffName && s.staff === staffFilter)) || [];
+      if (staffItems.length > 0) {
+        return sum + staffItems.reduce((itemSum, item) => {
+          if (item.commission !== undefined) return itemSum + item.commission;
+          // Fallback to proportional commission
+          const itemsTotal = item.price * item.qty * (1 - (item.disP || 0) / 100);
+          const invoiceSubtotal = s.items?.reduce((invSum, i) => invSum + (i.price * i.qty * (1 - (i.disP || 0) / 100)), 0) || 1;
+          const proportion = itemsTotal / invoiceSubtotal;
+          return itemSum + Math.round((s.commission || 0) * proportion);
+        }, 0);
+      }
+      return sum;
+    }
+    return sum + (s.commission || 0);
+  }, 0);
 
   const totalCash = filteredSales.reduce((sum, s) => {
+    let amt = 0;
     if (s.payments && s.payments.length > 0) {
-      return sum + s.payments.filter(p => p.method === 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
+      amt = s.payments.filter(p => p.method === 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
+    } else {
+      amt = (s.method === 'Cash' || !s.method) ? s.total : 0;
     }
-    return sum + ((s.method === 'Cash' || !s.method) ? s.total : 0);
+    if (staffFilter) {
+      const staffItems = s.items?.filter(item => item.staffName === staffFilter || (!item.staffName && s.staff === staffFilter)) || [];
+      if (staffItems.length > 0) {
+        const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
+        const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
+        const proportion = itemsTotal / invoiceSubtotal;
+        return sum + Math.round(amt * proportion);
+      }
+      return sum;
+    }
+    return sum + amt;
   }, 0);
 
   const totalDigital = filteredSales.reduce((sum, s) => {
+    let amt = 0;
     if (s.payments && s.payments.length > 0) {
-      return sum + s.payments.filter(p => p.method !== 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
+      amt = s.payments.filter(p => p.method !== 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
+    } else {
+      amt = (s.method && s.method !== 'Cash' ? s.total : 0);
     }
-    return sum + (s.method && s.method !== 'Cash' ? s.total : 0);
+    if (staffFilter) {
+      const staffItems = s.items?.filter(item => item.staffName === staffFilter || (!item.staffName && s.staff === staffFilter)) || [];
+      if (staffItems.length > 0) {
+        const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
+        const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
+        const proportion = itemsTotal / invoiceSubtotal;
+        return sum + Math.round(amt * proportion);
+      }
+      return sum;
+    }
+    return sum + amt;
   }, 0);
 
   const handleExportCSV = async () => {
@@ -3503,7 +3618,7 @@ export const HistoryPage: React.FC = () => {
           s.total,
           s.commission,
           s.payments && s.payments.length > 1 ? s.payments.map(p => `${p.method}: ${p.amount}`).join(' | ') : (s.method || 'Cash'),
-          s.staff
+          [...new Set(s.items?.map(i => i.staffName || s.staff) || [s.staff])].join(', ')
         ];
       });
       
@@ -3919,10 +4034,31 @@ export const StaffCommissionsPage: React.FC = () => {
   );
 
   const staffAggregates = staffList.map(name => {
-    const staffSales = filteredSales.filter(s => s.staff === name);
-    const totalSales = staffSales.reduce((sum, s) => sum + s.total, 0);
-    const totalComm = staffSales.reduce((sum, s) => sum + s.commission, 0);
-    const count = staffSales.length;
+    let totalSales = 0;
+    let totalComm = 0;
+    let count = 0;
+
+    filteredSales.forEach(s => {
+      const staffItems = s.items?.filter(item => item.staffName === name || (!item.staffName && s.staff === name)) || [];
+      
+      if (staffItems.length > 0) {
+        const itemsTotal = staffItems.reduce((sum, item) => sum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
+        totalSales += itemsTotal;
+        count += staffItems.reduce((sum, item) => sum + item.qty, 0);
+        
+        staffItems.forEach(item => {
+          if (item.commission !== undefined) {
+            totalComm += item.commission;
+          } else {
+            const itemSubtotal = item.price * item.qty * (1 - (item.disP || 0) / 100);
+            const invoiceSubtotal = s.items?.reduce((invSum, i) => invSum + (i.price * i.qty * (1 - (i.disP || 0) / 100)), 0) || 1;
+            const proportion = itemSubtotal / invoiceSubtotal;
+            totalComm += Math.round((s.commission || 0) * proportion);
+          }
+        });
+      }
+    });
+
     return { name, totalSales, totalComm, count };
   }).filter(a => !staffFilter || a.name === staffFilter).sort((a, b) => b.totalComm - a.totalComm);
 
@@ -4055,12 +4191,12 @@ export const StaffCommissionsPage: React.FC = () => {
           Sales Details
         </h4>
         <div className="space-y-2">
-          {filteredSales.filter(s => !staffFilter || s.staff === staffFilter).length === 0 ? (
+          {filteredSales.filter(s => !staffFilter || s.staff === staffFilter || (s.items && s.items.some(i => i.staffName === staffFilter))).length === 0 ? (
             <div className="text-center py-12 bg-card/50 rounded-3xl border border-dashed border-border">
               <p className="text-muted-foreground text-sm font-medium italic">No detailed sales found.</p>
             </div>
           ) : (
-            filteredSales.filter(s => !staffFilter || s.staff === staffFilter).map(s => (
+            filteredSales.filter(s => !staffFilter || s.staff === staffFilter || (s.items && s.items.some(i => i.staffName === staffFilter))).map(s => (
               <div key={s.id} className="bg-card p-4 rounded-2xl border border-border flex justify-between items-center shadow-sm hover:border-primary/30 transition-all group">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -8714,6 +8850,11 @@ const LoginPage: React.FC = () => {
         try {
           const avail = await NativeBiometric.isAvailable();
           if (avail.isAvailable) {
+            try {
+              await NativeBiometric.deleteCredentials({ server: 'nail-pro-pos' });
+            } catch (e) {
+              // Ignore if no credentials exist
+            }
             await NativeBiometric.setCredentials({
               username: identifier,
               password,
@@ -9354,15 +9495,30 @@ const AppRoutes = () => {
 // --- App ---
 
 export function AppCore() {
-return (
+  useEffect(() => {
+    // Listen for theme changes from other components
+    const handleThemeChange = (e: CustomEvent) => {
+      try {
+        const newTheme = e.detail;
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('luxury-theme', newTheme);
+      } catch (err) {
+        console.warn('Failed to apply theme:', err);
+      }
+    };
+    window.addEventListener('theme:change' as any, handleThemeChange);
+    return () => {
+      window.removeEventListener('theme:change' as any, handleThemeChange);
+    };
+  }, []);
+
+  return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
-          <ScrollToTop />
-          <Layout>
-            <AppRoutes />
-          </Layout>
-        </Router>
+        <ScrollToTop />
+        <Layout>
+          <AppRoutes />
+        </Layout>
       </AuthProvider>
     </ErrorBoundary>
   );

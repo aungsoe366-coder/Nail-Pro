@@ -16,6 +16,8 @@ export interface Service {
 export interface CartItem extends Service {
   qty: number;
   disP: number;
+  staffEmail?: string;
+  staffName?: string;
 }
 
 export interface Sale {
@@ -36,10 +38,15 @@ export interface Sale {
   pointsEarned?: number;
   pointsRedeemed?: number;
   items: {
+    id?: string;
+    serviceId?: string;
     name: string;
     qty: number;
     price: number;
     disP: number;
+    staffId?: string;
+    staffName?: string;
+    commission?: number;
   }[];
 }
 
