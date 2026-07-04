@@ -7,6 +7,7 @@ export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
 
   return {
+    base: './',
     plugins: [react(), tailwindcss()],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
@@ -20,25 +21,7 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
     build: {
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('firebase')) {
-                return 'firebase';
-              }
-              if (id.includes('@capacitor')) {
-                return 'capacitor';
-              }
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
-                return 'react-vendor';
-              }
-              return 'vendor';
-            }
-          }
-        }
-      },
-      chunkSizeWarningLimit: 1000
+      chunkSizeWarningLimit: 2000
     }
   };
 });

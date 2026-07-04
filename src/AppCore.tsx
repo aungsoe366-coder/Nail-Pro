@@ -8659,16 +8659,28 @@ const LoginPage: React.FC = () => {
   const [biometryType, setBiometryType] = useState<any>(null);
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      NativeBiometric.isAvailable().then(avail => {
-        if (avail.isAvailable) {
+    const checkBiometric = async () => {
+      try {
+        if (!Capacitor.isNativePlatform()) return;
+        const avail = await NativeBiometric.isAvailable();
+        if (avail && avail.isAvailable) {
           setBiometryType(avail.biometryType);
-          NativeBiometric.isCredentialsSaved({ server: 'nail-pro-pos' }).then(res => {
-            if (res.isSaved) setHasBiometric(true);
-          }).catch(console.warn);
+          const res = await NativeBiometric.isCredentialsSaved({ server: 'nail-pro-pos' });
+          if (res && res.isSaved) {
+            setHasBiometric(true);
+          }
         }
-      }).catch(console.warn);
-    }
+      } catch (err) {
+        console.warn('Biometric check failed:', err);
+      } finally {
+        try {
+          await SplashScreen.hide();
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+    checkBiometric();
   }, []);
 
   useEffect(() => {
@@ -9312,12 +9324,13 @@ const AppRoutes = () => {
   const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
   
   return (
-    <React.Suspense fallback={
-      <div className="flex-1 flex items-center justify-center p-10">
-        <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    }>
-      <Routes>
+    <ErrorBoundary>
+      <React.Suspense fallback={
+        <div style={{ display: 'flex', flex: '1 1 0%', alignItems: 'center', justifyContent: 'center', padding: '2.5rem' }}>
+          <div style={{ width: '40px', height: '40px', border: '4px solid #d4af37', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+        </div>
+      }>
+        <Routes>
         <Route path="/" element={isCustomer ? <LazyCustomerDashboardPage /> : <LazyDashboardPage />} />
         <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <LazyPOSPage />} />
         <Route path="/appointments" element={<LazyAppointmentsPage />} />
@@ -9333,7 +9346,8 @@ const AppRoutes = () => {
         <Route path="/manage" element={!isAdmin ? <Navigate to="/appointments" /> : <LazyManagePage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </React.Suspense>
+      </React.Suspense>
+    </ErrorBoundary>
   );
 };
 
