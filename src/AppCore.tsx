@@ -9217,7 +9217,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300 select-none">
+    <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300 select-none animate-in fade-in duration-500">
       {renderExitConfirm()}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <Header onMenuClick={() => setIsSidebarOpen(true)} />
