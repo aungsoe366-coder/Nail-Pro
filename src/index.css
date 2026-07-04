@@ -5,8 +5,8 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   
-  --color-primary: #d4af37;
-  --color-primary-foreground: #140809;
+  --color-primary: var(--theme-primary);
+  --color-primary-foreground: var(--theme-primary-foreground);
   
   --color-background: var(--bg);
   --color-foreground: var(--fg);
@@ -23,6 +23,8 @@
 }
 
 :root {
+  --theme-primary: #d4af37;
+  --theme-primary-foreground: #140809;
   --bg: transparent;
   --fg: #4A2E31;
   --card: #ffffff;
@@ -33,7 +35,32 @@
   --muted-foreground: #8A7074;
   --secondary: #FFF5F5;
   --secondary-foreground: #4A2E31;
-  --accent: #d4af37;
+  --accent: var(--theme-primary);
+  --body-bg-from: #FFF5F5;
+  --body-bg-via: #F4DCD9;
+  --body-bg-to: #E8BEB9;
+}
+
+:root[data-theme="rose-gold"] {
+  --theme-primary: #b76e79;
+  --theme-primary-foreground: #ffffff;
+  --fg: #4A2E31;
+  --border-color: rgba(183, 110, 121, 0.2);
+  --body-bg-from: #FFF5F6;
+  --body-bg-via: #F9E4E8;
+  --body-bg-to: #F1CED4;
+}
+
+:root[data-theme="midnight-blue"] {
+  --theme-primary: #192a56;
+  --theme-primary-foreground: #ffffff;
+  --fg: #1e272e;
+  --card-fg: #1e272e;
+  --border-color: rgba(25, 42, 86, 0.15);
+  --muted-foreground: #485460;
+  --body-bg-from: #f1f2f6;
+  --body-bg-via: #dfe4ea;
+  --body-bg-to: #ced6e0;
 }
 
 @layer base {
@@ -41,7 +68,9 @@
     @apply border-border;
   }
   body {
-    @apply bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] text-foreground min-h-screen;
+    background-image: linear-gradient(to bottom right, var(--body-bg-from), var(--body-bg-via), var(--body-bg-to));
+    color: var(--fg);
+    min-height: 100vh;
     background-attachment: fixed;
   }
   input, textarea {
@@ -50,7 +79,9 @@
 }
 
 .glass {
-  @apply bg-white border border-[#E8BEB9]/30 shadow-xl;
+  background-color: var(--card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
 .card-shadow {
