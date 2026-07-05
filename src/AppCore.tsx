@@ -312,6 +312,13 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
     text += `Date   : ${new Date(sale.dateTime).toLocaleString()}\n`;
   }
   
+  if (!settings?.hideStaffNameOnReceipt) {
+    const uniqueStaff = Array.from(new Set(sale.items.map(i => i.staffName || sale.staff).filter(Boolean)));
+    if (uniqueStaff.length > 0) {
+      text += `Staff  : ${uniqueStaff.join(' + ')}\n`;
+    }
+  }
+
   text += "-".repeat(32) + "\n";
   text += "Item           Qty Price  Total\n";
   text += "-".repeat(32) + "\n";
@@ -320,9 +327,6 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
     const sub = item.price * item.qty;
     const netSub = sub - (sub * (item.disP / 100));
     let fullItemName = item.name + (item.disP > 0 ? `(-${item.disP}%)` : "");
-    if (!settings?.hideStaffNameOnReceipt && (item.staffName || sale.staff)) {
-      fullItemName += ` [${item.staffName || sale.staff}]`;
-    }
     let nameChunks = fullItemName.match(/.{1,14}/g) || [fullItemName];
     text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\n";
     if (nameChunks.length > 1) {
@@ -375,14 +379,19 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
 
   let grandTotal = 0;
   sales.forEach((sale, idx) => {
-    if (!settings?.hideStaffNameOnReceipt) {
-      text += `Sale #${idx + 1} | ${sale.staff}\n`;
-    } else {
-      text += `Sale #${idx + 1}\n`;
-    }
+    text += `Sale #${idx + 1}\n`;
+    
     if (!settings?.hideDateTimeOnReceipt) {
       text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\n`;
     }
+
+    if (!settings?.hideStaffNameOnReceipt) {
+      const uniqueStaff = Array.from(new Set(sale.items.map(i => i.staffName || sale.staff).filter(Boolean)));
+      if (uniqueStaff.length > 0) {
+        text += `Staff: ${uniqueStaff.join(' + ')}\n`;
+      }
+    }
+
     text += "-".repeat(32) + "\n";
     text += "Item           Qty Price  Total\n";
     
@@ -390,9 +399,6 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
       const sub = item.price * item.qty;
       const netSub = sub - (sub * (item.disP / 100));
       let fullItemName = item.name + (item.disP > 0 ? `(-${item.disP}%)` : "");
-      if (!settings?.hideStaffNameOnReceipt && (item.staffName || sale.staff)) {
-        fullItemName += ` [${item.staffName || sale.staff}]`;
-      }
       let nameChunks = fullItemName.match(/.{1,14}/g) || [fullItemName];
       text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\n";
       if (nameChunks.length > 1) {
@@ -420,6 +426,60 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
 };
 
 // Removed redundant handleFirestoreError definition (moved to firebase.ts)
+
+// --- Theme Context ---
+type ThemeType = 'gold' | 'rose-gold' | 'midnight-blue';
+
+interface ThemeContextType {
+  theme: ThemeType;
+  setTheme: (theme: ThemeType) => void;
+}
+
+const ThemeContext = createContext<ThemeContextType | null>(null);
+
+export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [theme, setThemeState] = useState<ThemeType>('gold');
+
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem('luxury-theme') as ThemeType | null;
+      if (savedTheme && ['gold', 'rose-gold', 'midnight-blue'].includes(savedTheme)) {
+        setThemeState(savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } else {
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const systemTheme = isDark ? 'midnight-blue' : 'gold';
+        setThemeState(systemTheme);
+        document.documentElement.setAttribute('data-theme', systemTheme);
+        localStorage.setItem('luxury-theme', systemTheme);
+      }
+    } catch (err) {
+      console.warn('Failed to load initial theme:', err);
+    }
+  }, []);
+
+  const setTheme = (newTheme: ThemeType) => {
+    setThemeState(newTheme);
+    try {
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('luxury-theme', newTheme);
+    } catch (err) {
+      console.warn('Failed to save theme:', err);
+    }
+  };
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+};
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) throw new Error('useTheme must be used within ThemeProvider');
+  return context;
+};
 
 // --- Auth Context ---
 interface AuthContextType {
@@ -2433,23 +2493,23 @@ export const POSPage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Staff</span>
-                      <select
+                      <CustomSelect
                         value={item.staffEmail || ''}
-                        onChange={(e) => {
-                          const selected = staff.find(s => s.email === e.target.value);
+                        onChange={(val) => {
+                          const selected = staff.find(s => s.email === val);
                           if (selected) {
                             updateCartItem(i, { staffEmail: selected.email, staffName: selected.name });
                           } else {
                             updateCartItem(i, { staffEmail: '', staffName: '' });
                           }
                         }}
-                        className="bg-input border border-border/50 rounded-lg px-2 py-1 text-[10px] font-black focus:border-primary outline-none transition-all text-foreground"
-                      >
-                        <option value="">Auto (Main Staff)</option>
-                        {staff.filter(s => ['staff', 'owner', 'cashier'].includes(s.role || '')).map(s => (
-                          <option key={s.email} value={s.email}>{s.name}</option>
-                        ))}
-                      </select>
+                        placeholder="Auto (Main Staff)"
+                        options={[
+                          { value: '', label: 'Auto (Main Staff)' },
+                          ...staff.filter(s => ['staff', 'owner', 'cashier'].includes(s.role || '')).map(s => ({ value: s.email, label: s.name }))
+                        ]}
+                        buttonClassName="px-2 py-1 text-[10px] font-black min-w-[120px]"
+                      />
                     </div>
                     <span className="font-black text-primary w-full text-right mt-1">
                       {(item.price * item.qty * (1 - item.disP / 100)).toLocaleString()} Ks
@@ -3853,7 +3913,9 @@ export const HistoryPage: React.FC = () => {
                     </div>
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">{s.staff}</span>
+                        <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">
+                          {Array.from(new Set(s.items?.map(i => i.staffName || s.staff).filter(Boolean))).join(' + ') || s.staff}
+                        </span>
                         <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
                           {s.payments && s.payments.length > 1 
                             ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
@@ -4200,7 +4262,9 @@ export const StaffCommissionsPage: React.FC = () => {
               <div key={s.id} className="bg-card p-4 rounded-2xl border border-border flex justify-between items-center shadow-sm hover:border-primary/30 transition-all group">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-foreground font-bold text-sm group-hover:text-primary transition-colors">{s.staff}</span>
+                    <span className="text-foreground font-bold text-sm group-hover:text-primary transition-colors">
+                      {Array.from(new Set(s.items?.map(i => i.staffName || s.staff).filter(Boolean))).join(' + ') || s.staff}
+                    </span>
                     <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                   <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
@@ -6355,7 +6419,7 @@ export const ManagePage: React.FC = () => {
   const [showShopForm, setShowShopForm] = useState(false);
   
   // Theme state
-  const [localTheme, setLocalTheme] = useState(localStorage.getItem('luxury-theme') || 'gold');
+  const { theme: localTheme, setTheme: setLocalTheme } = useTheme();
 
   // Form states
   const [svcName, setSvcName] = useState('');
@@ -7006,10 +7070,7 @@ export const ManagePage: React.FC = () => {
                   
                   <div className="flex gap-4 mt-2">
                     <button 
-                      onClick={() => { 
-                        setLocalTheme('gold');
-                        window.dispatchEvent(new CustomEvent('theme:change', { detail: 'gold' })); 
-                      }}
+                      onClick={() => setLocalTheme('gold')}
                       className="flex flex-col items-center gap-2 group"
                     >
                       <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'gold' ? "border-[#d4af37] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#d4af37' }} />
@@ -7017,10 +7078,7 @@ export const ManagePage: React.FC = () => {
                     </button>
                     
                     <button 
-                      onClick={() => { 
-                        setLocalTheme('rose-gold');
-                        window.dispatchEvent(new CustomEvent('theme:change', { detail: 'rose-gold' })); 
-                      }}
+                      onClick={() => setLocalTheme('rose-gold')}
                       className="flex flex-col items-center gap-2 group"
                     >
                       <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'rose-gold' ? "border-[#b76e79] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#b76e79' }} />
@@ -7028,10 +7086,7 @@ export const ManagePage: React.FC = () => {
                     </button>
                     
                     <button 
-                      onClick={() => { 
-                        setLocalTheme('midnight-blue');
-                        window.dispatchEvent(new CustomEvent('theme:change', { detail: 'midnight-blue' })); 
-                      }}
+                      onClick={() => setLocalTheme('midnight-blue')}
                       className="flex flex-col items-center gap-2 group"
                     >
                       <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'midnight-blue' ? "border-[#192a56] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#192a56' }} />
@@ -9495,31 +9550,16 @@ const AppRoutes = () => {
 // --- App ---
 
 export function AppCore() {
-  useEffect(() => {
-    // Listen for theme changes from other components
-    const handleThemeChange = (e: CustomEvent) => {
-      try {
-        const newTheme = e.detail;
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('luxury-theme', newTheme);
-      } catch (err) {
-        console.warn('Failed to apply theme:', err);
-      }
-    };
-    window.addEventListener('theme:change' as any, handleThemeChange);
-    return () => {
-      window.removeEventListener('theme:change' as any, handleThemeChange);
-    };
-  }, []);
-
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <ScrollToTop />
-        <Layout>
-          <AppRoutes />
-        </Layout>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ScrollToTop />
+          <Layout>
+            <AppRoutes />
+          </Layout>
+        </AuthProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }
