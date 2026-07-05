@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
+import { Preferences } from '@capacitor/preferences';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { CustomSelect } from './components/CustomSelect';
 import { Printer as CapPrinter } from '@capgo/capacitor-printer';
@@ -441,28 +442,34 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [theme, setThemeState] = useState<ThemeType>('gold');
 
   useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem('luxury-theme') as ThemeType | null;
-      if (savedTheme && ['gold', 'rose-gold', 'midnight-blue'].includes(savedTheme)) {
-        setThemeState(savedTheme);
-        document.documentElement.setAttribute('data-theme', savedTheme);
-      } else {
-        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const systemTheme = isDark ? 'midnight-blue' : 'gold';
-        setThemeState(systemTheme);
-        document.documentElement.setAttribute('data-theme', systemTheme);
-        localStorage.setItem('luxury-theme', systemTheme);
+    const initializeTheme = async () => {
+      try {
+        const { value } = await Preferences.get({ key: 'theme_mode' });
+        const savedTheme = value as ThemeType | null;
+        
+        if (savedTheme && ['gold', 'rose-gold', 'midnight-blue'].includes(savedTheme)) {
+          setThemeState(savedTheme);
+          document.documentElement.setAttribute('data-theme', savedTheme);
+        } else {
+          const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const systemTheme = isDark ? 'midnight-blue' : 'gold';
+          setThemeState(systemTheme);
+          document.documentElement.setAttribute('data-theme', systemTheme);
+          await Preferences.set({ key: 'theme_mode', value: systemTheme });
+        }
+      } catch (err) {
+        console.warn('Failed to load initial theme:', err);
       }
-    } catch (err) {
-      console.warn('Failed to load initial theme:', err);
-    }
+    };
+    
+    initializeTheme();
   }, []);
 
-  const setTheme = (newTheme: ThemeType) => {
+  const setTheme = async (newTheme: ThemeType) => {
     setThemeState(newTheme);
     try {
       document.documentElement.setAttribute('data-theme', newTheme);
-      localStorage.setItem('luxury-theme', newTheme);
+      await Preferences.set({ key: 'theme_mode', value: newTheme });
     } catch (err) {
       console.warn('Failed to save theme:', err);
     }
