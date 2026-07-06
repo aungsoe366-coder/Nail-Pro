@@ -22,7 +22,7 @@
   --color-secondary-foreground: var(--secondary-foreground);
 }
 
-:root {
+:root, .gold {
   --theme-primary: #d4af37;
   --theme-primary-foreground: #140809;
   --bg: transparent;
@@ -41,7 +41,7 @@
   --body-bg-to: #E8BEB9;
 }
 
-:root[data-theme="rose-gold"] {
+.rose {
   --theme-primary: #b76e79;
   --theme-primary-foreground: #ffffff;
   --fg: #4A2E31;
@@ -51,7 +51,7 @@
   --body-bg-to: #F1CED4;
 }
 
-:root[data-theme="midnight-blue"] {
+.midnight {
   --theme-primary: #192a56;
   --theme-primary-foreground: #ffffff;
   --fg: #1e272e;

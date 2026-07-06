@@ -242,7 +242,7 @@ const CustomDatePicker: React.FC<{
   className?: string;
   disabled?: boolean;
 }> = ({ label, value, onChange, iconColor = "text-primary", className, disabled }) => {
-  const dayOfWeek = new Date(value).toLocaleDateString('en-US', { weekday: 'long' });
+  const dayOfWeek = value ? new Date(value).toLocaleDateString('en-US', { weekday: 'long' }) : 'All Time';
   
   return (
     <div className={cn(
@@ -266,7 +266,7 @@ const CustomDatePicker: React.FC<{
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm font-black text-foreground tracking-tight truncate">
-            {formatDateToMDY(value)}
+            {value ? formatDateToMDY(value) : "Select Date"}
           </span>
           <ChevronDown size={12} className="text-muted-foreground ml-2 opacity-30 group-hover:opacity-100 transition-opacity" />
         </div>
@@ -429,7 +429,7 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
 // Removed redundant handleFirestoreError definition (moved to firebase.ts)
 
 // --- Theme Context ---
-type ThemeType = 'gold' | 'rose-gold' | 'midnight-blue';
+type ThemeType = 'gold' | 'rose' | 'midnight';
 
 interface ThemeContextType {
   theme: ThemeType;
@@ -444,18 +444,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const initializeTheme = async () => {
       try {
-        const { value } = await Preferences.get({ key: 'theme_mode' });
+        const { value } = await Preferences.get({ key: 'app_theme' });
         const savedTheme = value as ThemeType | null;
         
-        if (savedTheme && ['gold', 'rose-gold', 'midnight-blue'].includes(savedTheme)) {
+        if (savedTheme && ['gold', 'rose', 'midnight'].includes(savedTheme)) {
           setThemeState(savedTheme);
-          document.documentElement.setAttribute('data-theme', savedTheme);
+          document.documentElement.className = ''; document.documentElement.classList.add(savedTheme || 'gold');
         } else {
           const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const systemTheme = isDark ? 'midnight-blue' : 'gold';
+          const systemTheme = isDark ? 'midnight' : 'gold';
           setThemeState(systemTheme);
-          document.documentElement.setAttribute('data-theme', systemTheme);
-          await Preferences.set({ key: 'theme_mode', value: systemTheme });
+          document.documentElement.className = ''; document.documentElement.classList.add(systemTheme || 'gold');
+          await Preferences.set({ key: 'app_theme', value: systemTheme });
         }
       } catch (err) {
         console.warn('Failed to load initial theme:', err);
@@ -468,8 +468,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setTheme = async (newTheme: ThemeType) => {
     setThemeState(newTheme);
     try {
-      document.documentElement.setAttribute('data-theme', newTheme);
-      await Preferences.set({ key: 'theme_mode', value: newTheme });
+      document.documentElement.className = ''; document.documentElement.classList.add(newTheme || 'gold');
+      await Preferences.set({ key: 'app_theme', value: newTheme });
     } catch (err) {
       console.warn('Failed to save theme:', err);
     }
@@ -1280,9 +1280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!loading) {
       if (Capacitor.isNativePlatform()) {
         try {
-          import('@capacitor/splash-screen').then(({ SplashScreen }) => {
-            SplashScreen.hide().catch(() => {});
-          });
+          SplashScreen.hide().catch(() => {});
         } catch (e) {}
       }
     }
@@ -3586,17 +3584,39 @@ export const HistoryPage: React.FC = () => {
   }, []);
 
   const filteredSales = sales
-    .filter(s => 
-      (!dateFrom || s.date >= dateFrom) && 
-      (!dateTo || s.date <= dateTo) && 
-      (!staffFilter || s.staff === staffFilter || (s.items && s.items.some(i => i.staffName === staffFilter))) &&
-      (!paymentFilter || (paymentFilter === 'Split' ? (s.payments?.length > 1 || (s.method && s.method.includes(','))) : s.method === paymentFilter))
-    )
+    .filter(s => {
+      if (dateFrom && s.date < dateFrom) return false;
+      if (dateTo && s.date > dateTo) return false;
+      
+      if (paymentFilter) {
+        if (paymentFilter === 'Split') {
+          if (!(s.payments?.length > 1 || (s.method && s.method.includes(',')))) return false;
+        } else {
+          if (s.method !== paymentFilter) return false;
+        }
+      }
+
+      if (staffFilter) {
+        const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+        if (itemStaffNames.length > 0) {
+          if (!itemStaffNames.includes(staffFilter)) return false;
+        } else {
+          if (s.staff !== staffFilter) return false;
+        }
+      }
+      
+      return true;
+    })
     .sort((a, b) => (b.dateTime || '').localeCompare(a.dateTime || ''));
 
   const totalIncome = filteredSales.reduce((sum, s) => {
     if (staffFilter) {
-      const staffItems = s.items?.filter(item => item.staffName === staffFilter || (!item.staffName && s.staff === staffFilter)) || [];
+      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const hasSpecificStaff = itemStaffNames.length > 0;
+      const staffItems = s.items?.filter(item => {
+        if (hasSpecificStaff) return item.staffName === staffFilter;
+        return s.staff === staffFilter;
+      }) || [];
       if (staffItems.length > 0) {
         return sum + staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
       }
@@ -3607,7 +3627,12 @@ export const HistoryPage: React.FC = () => {
 
   const totalComm = filteredSales.reduce((sum, s) => {
     if (staffFilter) {
-      const staffItems = s.items?.filter(item => item.staffName === staffFilter || (!item.staffName && s.staff === staffFilter)) || [];
+      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const hasSpecificStaff = itemStaffNames.length > 0;
+      const staffItems = s.items?.filter(item => {
+        if (hasSpecificStaff) return item.staffName === staffFilter;
+        return s.staff === staffFilter;
+      }) || [];
       if (staffItems.length > 0) {
         return sum + staffItems.reduce((itemSum, item) => {
           if (item.commission !== undefined) return itemSum + item.commission;
@@ -3631,7 +3656,12 @@ export const HistoryPage: React.FC = () => {
       amt = (s.method === 'Cash' || !s.method) ? s.total : 0;
     }
     if (staffFilter) {
-      const staffItems = s.items?.filter(item => item.staffName === staffFilter || (!item.staffName && s.staff === staffFilter)) || [];
+      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const hasSpecificStaff = itemStaffNames.length > 0;
+      const staffItems = s.items?.filter(item => {
+        if (hasSpecificStaff) return item.staffName === staffFilter;
+        return s.staff === staffFilter;
+      }) || [];
       if (staffItems.length > 0) {
         const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
         const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
@@ -3651,7 +3681,12 @@ export const HistoryPage: React.FC = () => {
       amt = (s.method && s.method !== 'Cash' ? s.total : 0);
     }
     if (staffFilter) {
-      const staffItems = s.items?.filter(item => item.staffName === staffFilter || (!item.staffName && s.staff === staffFilter)) || [];
+      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const hasSpecificStaff = itemStaffNames.length > 0;
+      const staffItems = s.items?.filter(item => {
+        if (hasSpecificStaff) return item.staffName === staffFilter;
+        return s.staff === staffFilter;
+      }) || [];
       if (staffItems.length > 0) {
         const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
         const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
@@ -4049,10 +4084,10 @@ export const StaffCommissionsPage: React.FC = () => {
   if (!isAdmin && !isCashier && !isStaff) return <Navigate to="/" />;
 
   const [sales, setSales] = useState<Sale[]>([]);
-  const now = new Date();
   const today = getLocalISODate();
-  const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo] = useState(today);
+  
+  const [dateFrom, setDateFrom] = useState<string>(today);
+  const [dateTo, setDateTo] = useState<string>(today);
   const [staffFilter, setStaffFilter] = useState(isStaff ? profile.name : '');
   const [staffList, setStaffList] = useState<string[]>([]);
 
@@ -4069,7 +4104,7 @@ export const StaffCommissionsPage: React.FC = () => {
           .map(doc => doc.data() as UserProfile)
           .filter(u => {
             const isExcluded = u.role === 'super_admin' || 
-                              (u.email && superAdminEmails.includes(u.email.toLowerCase().trim()));
+                               (u.email && superAdminEmails.includes(u.email.toLowerCase().trim()));
             return !isExcluded && ['owner', 'cashier', 'staff'].includes(u.role || '');
           })
           .map(u => u.name);
@@ -4108,12 +4143,21 @@ export const StaffCommissionsPage: React.FC = () => {
     let count = 0;
 
     filteredSales.forEach(s => {
-      const staffItems = s.items?.filter(item => item.staffName === name || (!item.staffName && s.staff === name)) || [];
+      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const hasSpecificStaff = itemStaffNames.length > 0;
+      
+      const staffItems = s.items?.filter(item => {
+        if (hasSpecificStaff) {
+          return item.staffName === name;
+        } else {
+          return s.staff === name;
+        }
+      }) || [];
       
       if (staffItems.length > 0) {
         const itemsTotal = staffItems.reduce((sum, item) => sum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
         totalSales += itemsTotal;
-        count += staffItems.reduce((sum, item) => sum + item.qty, 0);
+        count += 1; // Count the invoice/sale, not the item quantity
         
         staffItems.forEach(item => {
           if (item.commission !== undefined) {
@@ -4132,6 +4176,15 @@ export const StaffCommissionsPage: React.FC = () => {
   }).filter(a => !staffFilter || a.name === staffFilter).sort((a, b) => b.totalComm - a.totalComm);
 
   const grandTotalComm = staffAggregates.reduce((sum, a) => sum + a.totalComm, 0);
+
+  const displaySalesDetails = filteredSales.filter(s => {
+    if (!staffFilter) return true;
+    const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+    if (itemStaffNames.length > 0) {
+      return itemStaffNames.includes(staffFilter);
+    }
+    return s.staff === staffFilter;
+  });
 
   const handleExportCSV = async () => {
     if (staffAggregates.length === 0) return;
@@ -4260,12 +4313,12 @@ export const StaffCommissionsPage: React.FC = () => {
           Sales Details
         </h4>
         <div className="space-y-2">
-          {filteredSales.filter(s => !staffFilter || s.staff === staffFilter || (s.items && s.items.some(i => i.staffName === staffFilter))).length === 0 ? (
+          {displaySalesDetails.length === 0 ? (
             <div className="text-center py-12 bg-card/50 rounded-3xl border border-dashed border-border">
               <p className="text-muted-foreground text-sm font-medium italic">No detailed sales found.</p>
             </div>
           ) : (
-            filteredSales.filter(s => !staffFilter || s.staff === staffFilter || (s.items && s.items.some(i => i.staffName === staffFilter))).map(s => (
+            displaySalesDetails.map(s => (
               <div key={s.id} className="bg-card p-4 rounded-2xl border border-border flex justify-between items-center shadow-sm hover:border-primary/30 transition-all group">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -7085,18 +7138,18 @@ export const ManagePage: React.FC = () => {
                     </button>
                     
                     <button 
-                      onClick={() => setLocalTheme('rose-gold')}
+                      onClick={() => setLocalTheme('rose')}
                       className="flex flex-col items-center gap-2 group"
                     >
-                      <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'rose-gold' ? "border-[#b76e79] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#b76e79' }} />
+                      <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'rose' ? "border-[#b76e79] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#b76e79' }} />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Rose</span>
                     </button>
                     
                     <button 
-                      onClick={() => setLocalTheme('midnight-blue')}
+                      onClick={() => setLocalTheme('midnight')}
                       className="flex flex-col items-center gap-2 group"
                     >
-                      <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'midnight-blue' ? "border-[#192a56] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#192a56' }} />
+                      <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'midnight' ? "border-[#192a56] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#192a56' }} />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Midnight</span>
                     </button>
                   </div>
