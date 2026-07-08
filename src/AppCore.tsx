@@ -2236,6 +2236,7 @@ export const POSPage: React.FC = () => {
       dateTime: now.toISOString(),
       staff: finalSaleStaffName,
       staffNames: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
+      staffNamesArray: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
       staffEmail: globalStaff.email,
       customerName: selectedCustomer?.name || '',
       customerPhone: selectedCustomer?.phone || '',
@@ -3781,13 +3782,20 @@ export const HistoryPage: React.FC = () => {
       setStaffList([profile.name]);
     }
 
-    let q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
-    if (isStaff) {
-      q = query(collection(db, 'sales'), where('staffEmail', '==', profile.email), orderBy('dateTime', 'desc'));
-    }
+    const q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
     
     const unsubSales = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+      
+      if (isStaff && !isAdmin && !isCashier) {
+        data = data.filter(s => {
+          return (s.staffNamesArray && s.staffNamesArray.includes(profile.name)) || 
+                 
+                 (s.staffNames && s.staffNames.includes(profile.name)) ||
+                 (s.staff && s.staff.includes(profile.name));
+        });
+      }
+      
       setSales(data);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
     
@@ -4344,9 +4352,15 @@ export const StaffCommissionsPage: React.FC = () => {
       };
     } else if (isStaff) {
       setStaffList([profile.name]);
-      const q = query(collection(db, 'sales'), where('staffEmail', '==', profile.email), orderBy('dateTime', 'desc'));
+      const q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
       const unsubSales = onSnapshot(q, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+        let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+        data = data.filter(s => {
+          return (s.staffNamesArray && s.staffNamesArray.includes(profile.name)) || 
+                 
+                 (s.staffNames && s.staffNames.includes(profile.name)) ||
+                 (s.staff && s.staff.includes(profile.name));
+        });
         setSales(data);
       }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
       return unsubSales;
