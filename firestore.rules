@@ -1,143 +1,68 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
     
     function isAuthenticated() {
       return request.auth != null;
     }
 
     function getUserEmail() {
-      return ('email' in request.auth.token && request.auth.token.email != null) ? request.auth.token.email.lower() : "";
+      return (request.auth != null && request.auth.token.email != null) 
+             ? request.auth.token.email 
+             : "unknown";
     }
 
-    function hasRole(roleName) {
+    function hasRole(allowedRoles) {
+      if (!isAuthenticated()) return false;
       let email = getUserEmail();
-      if (!isAuthenticated() || email == "") return false;
+      if (email == "aungsoe366@gmail.com") return true;
+      if (email == "unknown") return false;
       
-      // Master emails are always super_admin
-      if (email == "aungsoe366@gmail.com") {
-        return true;
-      }
+      let userPath = /databases/$(database)/documents/users/$(email);
+      if (!exists(userPath)) return false;
       
-      let docPath = /databases/$(database)/documents/users/$(email);
-      let docData = exists(docPath) ? get(docPath).data : null;
-      if (docData == null) return false;
-      
-      let primaryRole = 'role' in docData ? docData.role : 'customer';
-      let isRoleList = ('roles' in docData) && (docData.roles is list);
-      
-      let hasPrimary = (primaryRole == roleName);
-      let hasInRoles = isRoleList && (roleName in docData.roles);
-      let userHasRole = hasPrimary || hasInRoles;
-      
-      if (roleName == 'staff') {
-        return userHasRole || 
-          primaryRole == 'cashier' || (isRoleList && 'cashier' in docData.roles) ||
-          primaryRole == 'owner' || (isRoleList && 'owner' in docData.roles) ||
-          primaryRole == 'super_admin' || (isRoleList && 'super_admin' in docData.roles);
-      }
-      if (roleName == 'cashier') {
-        return userHasRole || 
-          primaryRole == 'owner' || (isRoleList && 'owner' in docData.roles) ||
-          primaryRole == 'super_admin' || (isRoleList && 'super_admin' in docData.roles);
-      }
-      if (roleName == 'owner') {
-        return userHasRole || 
-          primaryRole == 'super_admin' || (isRoleList && 'super_admin' in docData.roles);
-      }
-      
-      return userHasRole;
+      let userDoc = get(userPath).data;
+      return userDoc.role in allowedRoles;
     }
 
-    function isSuperAdmin() {
-      return hasRole('super_admin');
-    }
+    function isSuperAdmin() { return hasRole(['super_admin']); }
+    function isOwner() { return hasRole(['owner', 'super_admin']); }
+    function isCashier() { return hasRole(['cashier', 'owner', 'super_admin']); }
+    function isStaff() { return hasRole(['staff', 'cashier', 'owner', 'super_admin']); }
 
-    function isMasterAccount() {
-      return isAuthenticated() && getUserEmail() == "aungsoe366@gmail.com";
-    }
-
-    function isOwner() {
-      return hasRole('owner');
-    }
-
-    function isCashier() {
-      return hasRole('cashier');
-    }
-
-    function isStaff() {
-      return hasRole('staff');
-    }
-
-    function isDocOwner(emailId) {
-      let email = getUserEmail();
-      return isAuthenticated() && (
-        (email != "" && email == emailId.lower()) ||
-        (request.resource != null && 'uid' in request.resource.data && request.resource.data.uid == request.auth.uid) ||
-        (resource != null && 'uid' in resource.data && resource.data.uid == request.auth.uid)
-      );
-    }
-
-    function isValidString(val, maxLen) {
-      return val is string && val.size() <= maxLen;
-    }
-
-    function isValidEmail(email) {
-      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-    }
-
-    function isValidRole(role) {
-      return role in ['super_admin', 'owner', 'cashier', 'staff', 'customer'];
-    }
-
-    function isValidStatus(status) {
-      return status in ['active', 'deleted', 'inactive', 'on_leave'];
-    }
-
-    function isValidUser(data) {
-      return isValidString(data.name, 100) &&
-             isValidEmail(data.email) &&
-             isValidRole(data.role) &&
-             isValidStatus(data.status);
-    }
-
-    // ===============================================================
-    // Rules
-    // ===============================================================
-
-    // Master Access for Super Admin and Owner
     match /{document=**} {
       allow read, write: if isSuperAdmin() || isOwner();
     }
 
     match /users/{email} {
-      allow get: if true; 
-      allow list: if true;
-      
-      allow create: if isMasterAccount() || 
-                      ((isOwner() || isDocOwner(email)) && 
-                       isValidUser(request.resource.data) &&
-                       (request.resource.data.role != 'super_admin'));
-      
-      allow update: if isMasterAccount() || 
-                      ((isOwner() || isDocOwner(email)) && 
-                       isValidUser(request.resource.data) &&
-                       (resource.data.role != 'owner' && resource.data.role != 'super_admin' &&
-                        request.resource.data.role != 'owner' && request.resource.data.role != 'super_admin')) ||
-                      (isStaff() && resource.data.role == 'customer' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['points']));
-      
-      allow delete: if isSuperAdmin() && resource.data.role != 'owner';
+      allow get: if isAuthenticated();
+      allow list: if isStaff();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (getUserEmail() == email || isStaff());
+      allow delete: if isSuperAdmin();
     }
 
     match /customers/{id} {
-      allow read: if isStaff() || isAuthenticated() || true;
-      allow create: if isStaff() || isAuthenticated() || true;
-      allow update: if isStaff() || (isAuthenticated() && (
-        ('email' in resource.data && resource.data.email == request.auth.token.email)
-      ));
+      allow read: if isStaff() || (isAuthenticated() && resource.data.email == getUserEmail());
+      allow create: if isStaff() || isAuthenticated();
+      allow update: if isStaff() || (isAuthenticated() && resource.data.email == getUserEmail());
+      allow delete: if isStaff();
+    }
+
+    match /sales/{id} {
+      allow read, create: if isStaff();
+      allow update: if isOwner();
+      allow delete: if isSuperAdmin();
+    }
+
+    match /expenses/{id} {
+      allow read, write: if isCashier();
+    }
+
+    match /appointments/{id} {
+      allow read: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail()));
+      allow create: if isAuthenticated();
+      allow update: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail()));
       allow delete: if isStaff();
     }
 
@@ -159,36 +84,6 @@ service cloud.firestore {
     match /settings/{id} {
       allow read: if isAuthenticated();
       allow write: if isOwner();
-    }
-
-    match /sales/{id} {
-      allow read: if isStaff();
-      allow create: if isStaff();
-      allow update: if isOwner();
-      allow delete: if isSuperAdmin();
-    }
-
-    match /expenses/{id} {
-      allow read: if isOwner() || isCashier();
-      allow write: if isOwner() || isCashier();
-    }
-
-    match /appointments/{id} {
-      allow read: if isStaff() || (isAuthenticated() && (request.auth.token.email == resource.data.customerEmail || request.auth.token.email == resource.data.creatorEmail));
-      allow create: if isAuthenticated();
-      allow update: if isStaff() || (isAuthenticated() && (request.auth.token.email == resource.data.customerEmail || request.auth.token.email == resource.data.creatorEmail));
-      allow delete: if isStaff();
-    }
-
-    match /audit_logs/{id} {
-      allow read: if isSuperAdmin();
-      allow create: if isAuthenticated();
-    }
-
-    match /notifications/{id} {
-      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
   }
 }

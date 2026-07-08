@@ -18,6 +18,7 @@ export interface CartItem extends Service {
   disP: number;
   staffEmail?: string;
   staffName?: string;
+  staffAssignments?: { name: string, qty: number, commission?: number }[];
 }
 
 export interface Sale {
@@ -26,6 +27,7 @@ export interface Sale {
   dateTime: string;
   staff: string;
   staffEmail: string;
+  staffNames?: string[];
   customerName?: string;
   customerPhone?: string;
   total: number;
@@ -46,6 +48,7 @@ export interface Sale {
     disP: number;
     staffId?: string;
     staffName?: string;
+  staffAssignments?: { name: string, qty: number, commission?: number }[];
     commission?: number;
   }[];
 }
@@ -138,6 +141,7 @@ export interface Appointment {
   serviceName: string;
   serviceId?: string;
   staffName?: string;
+  staffAssignments?: { name: string, qty: number, commission?: number }[];
   staffEmail?: string;
   date: string;
   time: string;

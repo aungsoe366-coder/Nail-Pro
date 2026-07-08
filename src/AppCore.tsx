@@ -161,6 +161,7 @@ const localizer = dateFnsLocalizer({
 });
 
 // --- Utils ---
+let initialRedirectDone = false;
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -314,9 +315,22 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
   }
   
   if (!settings?.hideStaffNameOnReceipt) {
-    const uniqueStaff = Array.from(new Set(sale.items.map(i => i.staffName || sale.staff).filter(Boolean)));
+    let itemStaffNames: string[] = [];
+    sale.items.forEach((item) => {
+      if (item.staffAssignments && item.staffAssignments.length > 0) {
+        itemStaffNames.push(...item.staffAssignments.map((a: any) => a.name));
+      } else if (item.staffName) {
+        itemStaffNames.push(item.staffName);
+      }
+    });
+    
+    const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
     if (uniqueStaff.length > 0) {
-      text += `Staff  : ${uniqueStaff.join(' + ')}\n`;
+      text += `Staff  : ${uniqueStaff.join(', ')}
+`;
+    } else if (sale.staff) {
+      text += `Staff  : ${sale.staff}
+`;
     }
   }
 
@@ -387,9 +401,22 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
     }
 
     if (!settings?.hideStaffNameOnReceipt) {
-      const uniqueStaff = Array.from(new Set(sale.items.map(i => i.staffName || sale.staff).filter(Boolean)));
+      let itemStaffNames: string[] = [];
+      sale.items.forEach((item) => {
+        if (item.staffAssignments && item.staffAssignments.length > 0) {
+          itemStaffNames.push(...item.staffAssignments.map((a: any) => a.name));
+        } else if (item.staffName) {
+          itemStaffNames.push(item.staffName);
+        }
+      });
+      
+      const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
       if (uniqueStaff.length > 0) {
-        text += `Staff: ${uniqueStaff.join(' + ')}\n`;
+        text += `Staff: ${uniqueStaff.join(', ')}
+`;
+      } else if (sale.staff) {
+        text += `Staff: ${sale.staff}
+`;
       }
     }
 
@@ -540,7 +567,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           try {
             const now = new Date().toISOString();
             
-            if (email === 'aungsoe366@gmail.com') {
+            if (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) {
               const docSnap = await getDoc(docRef);
               if (!docSnap.exists() || docSnap.data()?.role !== 'super_admin') {
                 await setDoc(docRef, { 
@@ -570,7 +597,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }
 
-            if (currentRole === 'customer' && email !== 'aungsoe366@gmail.com') {
+            if (currentRole === 'customer' && email !== (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) {
               let initialName = u.displayName || 'Customer';
               let initialPoints = 0;
               try {
@@ -621,7 +648,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               const profileData: UserProfile = {
                 name: u.displayName || 'User',
                 email: email,
-                role: (email === 'aungsoe366@gmail.com') ? 'super_admin' : 'customer',
+                role: (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) ? 'super_admin' : 'customer',
                 commission: 0,
                 uid: u.uid,
                 points: 0,
@@ -695,7 +722,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             throw new Error('Google Auth did not return an ID token');
           }
         } catch (nativeErr) {
-          console.error("Capacitor Google Auth error:", nativeErr);
+          console.error("Capacitor Google Auth error");
           throw nativeErr;
         }
       } else {
@@ -703,14 +730,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
-        console.log("User closed the login popup.");
       } else if (err.code === 'auth/cancelled-popup-request') {
-        console.log("Popup request was cancelled by a newer request.");
       } else if (err.code === 'auth/network-request-failed') {
-        console.error("Login Error:", err);
+        console.error("Login Error");
         setError("Login failed. If you are in preview, please open the app in a new tab using the icon in the top right, or check your internet connection.");
       } else {
-        console.error("Login Error:", err);
+        console.error("Login Error");
         setError("Google login failed: " + (err.message || "Unknown error"));
       }
     } finally {
@@ -746,7 +771,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Only log unexpected errors
       if (!['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(errCode)) {
-        console.error("Email Login Error:", err);
+        console.error("Email Login Error");
       }
       
       let msg = "";
@@ -812,15 +837,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const errCode = err.code || "";
       const errMessage = err.message || "";
       
-      // Only log unexpected errors
-      if (!['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(errCode)) {
-        console.error("Phone Login Error Details:", {
-          code: err.code,
-          message: err.message,
-          phone: cleanPhone,
-          email: dummyEmail
-        });
-      }
       
       let msg = "";
       
@@ -849,9 +865,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // 1. Check for existing user document to preserve role
       const docRef = doc(db, 'users', cleanEmail);
-      console.log('Checking existing user doc for:', cleanEmail);
       const existingDoc = await getDoc(docRef);
-      console.log('Existing doc check complete');
       let roleToSet: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer' = 'customer';
       let existingCommission = 0;
       let existingPhone = '';
@@ -898,26 +912,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: 'active'
       };
       
-      console.log('Creating/Updating user profile in Firestore...', profileData);
       try {
         await setDoc(docRef, profileData, { merge: true });
-        console.log('User profile created/updated successfully');
       } catch (firestoreErr: any) {
         // CRITICAL: If Firestore write fails, delete the Auth user
         if (newlyCreatedUser) {
           await newlyCreatedUser.delete();
-          console.log("Cleaned up Auth user after Firestore failure.");
         }
         throw firestoreErr;
       }
 
       // 4. Create or Update Customer Record (Only if role is customer)
       if (roleToSet === 'customer') {
-        console.log('Checking/Creating customer record for:', cleanEmail);
         try {
           const custQuery = query(collection(db, 'customers'), where('email', '==', cleanEmail));
           const custSnap = await getDocs(custQuery);
-          console.log('Customer query complete, found:', custSnap.size);
           if (custSnap.empty) {
             // Create new customer record if it doesn't exist
             await addDoc(collection(db, 'customers'), {
@@ -929,11 +938,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               points: existingPoints,
               createdAt: new Date().toISOString()
             });
-            console.log('New customer record created');
           } else {
             // Update existing customer record
             await setDoc(custSnap.docs[0].ref, { name: name }, { merge: true });
-            console.log('Existing customer record updated');
           }
         } catch (custErr) {
           console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
@@ -947,7 +954,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               points: existingPoints,
               createdAt: new Date().toISOString()
             });
-            console.log('Customer record created via fallback after query failed');
           } catch (fallbackErr) {
             console.error("Fallback customer creation failed:", fallbackErr);
           }
@@ -1074,16 +1080,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         status: 'active'
       };
       
-      console.log('Creating/Updating user profile in Firestore (phone)...', profileData);
       try {
         await setDoc(userDocRef, profileData, { merge: true });
-        console.log('User profile created/updated successfully (phone)');
       } catch (firestoreErr: any) {
         // CRITICAL: If Firestore write fails, delete the Auth user
         if (newlyCreatedUser) {
           try {
             await newlyCreatedUser.delete();
-            console.log("Cleaned up Auth user after Firestore failure.");
           } catch (deleteErr) {
             console.error("Failed to cleanup Auth user:", deleteErr);
           }
@@ -1093,11 +1096,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 5. Create or Update Customer Record (Only if role is customer)
       if (roleToSet === 'customer') {
-        console.log('Checking/Creating customer record for phone:', cleanPhone);
         try {
           const custQuery = query(collection(db, 'customers'), where('email', '==', dummyEmail));
           const custSnap = await getDocs(custQuery);
-          console.log('Customer query complete (phone), found:', custSnap.size);
           if (custSnap.empty) {
             // Create new customer record if it doesn't exist
             await addDoc(collection(db, 'customers'), {
@@ -1109,11 +1110,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               points: existingPoints,
               createdAt: new Date().toISOString()
             });
-            console.log('New customer record created (phone)');
           } else {
             // Update existing customer record
             await setDoc(custSnap.docs[0].ref, { name: name, email: dummyEmail }, { merge: true });
-            console.log('Existing customer record updated (phone)');
           }
         } catch (custErr) {
           console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
@@ -1127,7 +1126,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               points: existingPoints,
               createdAt: new Date().toISOString()
             });
-            console.log('Customer record created via fallback after query failed (phone)');
           } catch (fallbackErr) {
             console.error("Fallback customer creation failed (phone):", fallbackErr);
           }
@@ -1138,8 +1136,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(newlyCreatedUser);
       
     } catch (err: any) {
-      console.error("signUpWithPhone Error Details:", JSON.stringify(err, Object.getOwnPropertyNames(err), 2));
-      console.error("signUpWithPhone Raw Error:", err);
       const errCode = err.code || "";
       const errMessage = err.message || "";
 
@@ -1173,7 +1169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await sendPasswordResetEmail(auth, cleanEmail);
     } catch (err: any) {
-      console.error("Reset Password Error:", err);
+      console.error("Reset Password Error");
       let msg = "";
       if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         msg = "No account found with this email.";
@@ -1206,7 +1202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Failed to update password. Please try again.");
       }
     } catch (err: any) {
-      console.error("Identity Reset Error:", err);
+      console.error("Identity Reset Error");
       const msg = err.message || "Verification failed. Please check your information.";
       setError(msg);
       throw new Error(msg);
@@ -1221,7 +1217,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await reauthenticateWithCredential(user, credential);
       await updatePassword(user, newPass);
     } catch (err: any) {
-      console.error("Change Password Error:", err);
+      console.error("Change Password Error");
       let msg = "";
       const errCode = err.code || "";
       const errMessage = err.message || "";
@@ -1248,7 +1244,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await updateDoc(docRef, { mustChangePassword: false });
       setProfile(prev => prev ? { ...prev, mustChangePassword: false } : null);
     } catch (err: any) {
-      console.error("Force Change Password Error:", err);
+      console.error("Force Change Password Error");
       let msg = "";
       if (err.code === 'auth/weak-password') {
         msg = "New password is too weak. Please use at least 6 characters.";
@@ -1263,12 +1259,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    sessionStorage.removeItem('initial_redirect_done');
+    initialRedirectDone = false;
     await signOut(auth);
   };
 
   const isSuperAdmin = profile?.role === 'super_admin' || 
-    (user?.email?.toLowerCase() === 'aungsoe366@gmail.com');
+    (user?.email?.toLowerCase() === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || ''));
   const isOwner = profile?.role === 'owner' || isSuperAdmin;
   const isCashier = profile?.role === 'cashier';
   const isStaffMember = profile?.role === 'staff';
@@ -1952,7 +1948,7 @@ export const POSPage: React.FC = () => {
       snapshot.docs.forEach(doc => {
         const data = doc.data() as UserProfile;
         // Client-side filtering: Hide super_admin and customers from the staff list
-        const superAdminEmails = ['aungsoe366@gmail.com'];
+        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
         const isExcluded = data.role === 'super_admin' || 
                           data.role === 'customer' || 
                           (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
@@ -2135,6 +2131,17 @@ export const POSPage: React.FC = () => {
 
   const handleCheckout = (overridePayments?: typeof payments) => {
     if (cart.length === 0) return;
+
+    // Validate quantities for multi-staff assignments
+    for (const item of cart) {
+      if (item.staffAssignments && item.staffAssignments.length > 0) {
+        const sum = item.staffAssignments.reduce((acc, a) => acc + (a.qty || 0), 0);
+        if (sum !== item.qty) {
+          alert(`Cannot checkout. Please ensure the total staff assigned quantities match the service total quantity for ${item.name}.`);
+          return;
+        }
+      }
+    }
     
     // Determine the global fallback staff
     // If 'Any Staff' is selected, fallback to an owner. If no owner, fallback to first staff.
@@ -2160,11 +2167,19 @@ export const POSPage: React.FC = () => {
     let totalSaleCommission = 0;
 
     const mappedItems = cart.map(item => {
-      // Determine staff for this specific item
-      const itemStaffEmail = item.staffEmail || globalStaff.email;
-      const itemStaffName = item.staffName || globalStaff.name;
-      const itemStaff = staff.find(s => s.email === itemStaffEmail) || globalStaff;
+      let finalAssignments = item.staffAssignments ? [...item.staffAssignments] : [];
+      let itemStaffEmail = item.staffEmail;
+      let itemStaffName = item.staffName;
 
+      if (finalAssignments.length > 0) {
+        itemStaffEmail = "";
+        itemStaffName = "";
+      } else if (!itemStaffEmail) {
+        itemStaffEmail = globalStaff.email;
+        itemStaffName = globalStaff.name;
+      }
+
+      const itemStaff = staff.find(s => s.email === itemStaffEmail) || globalStaff;
       const itemSubtotal = item.price * item.qty * (1 - item.disP / 100);
       let itemCommission = 0;
       
@@ -2172,7 +2187,21 @@ export const POSPage: React.FC = () => {
         const proportion = subTotal > 0 ? (itemSubtotal / subTotal) : 0;
         const effectivePointsDiscount = pointsDiscount * proportion;
         const commissionableValue = Math.max(0, itemSubtotal - effectivePointsDiscount);
-        itemCommission = Math.round(commissionableValue * ((itemStaff.commission || 0) / 100));
+        
+        if (finalAssignments.length > 0) {
+          itemCommission = finalAssignments.reduce((sum, a, aIdx) => {
+             const s = staff.find(st => st.name === a.name);
+             let aComm = 0;
+             if (s) {
+                const aCommValue = commissionableValue * (a.qty / item.qty);
+                aComm = Math.round(aCommValue * ((s.commission || 0) / 100));
+             }
+             finalAssignments[aIdx] = { ...a, commission: aComm };
+             return sum + aComm;
+          }, 0);
+        } else {
+          itemCommission = Math.round(commissionableValue * ((itemStaff.commission || 0) / 100));
+        }
         totalSaleCommission += itemCommission;
       }
 
@@ -2185,14 +2214,28 @@ export const POSPage: React.FC = () => {
         disP: item.disP,
         staffId: itemStaffEmail,
         staffName: itemStaffName,
+        staffAssignments: finalAssignments,
         commission: itemCommission
       };
     });
 
+    let saleStaffNames: string[] = [];
+    mappedItems.forEach(item => {
+      if (item.staffAssignments && item.staffAssignments.length > 0) {
+        saleStaffNames.push(...item.staffAssignments.map(a => a.name));
+      } else if (item.staffName) {
+        saleStaffNames.push(item.staffName);
+      }
+    });
+    
+    const uniqueSaleStaffNames = Array.from(new Set(saleStaffNames.filter(Boolean)));
+    const finalSaleStaffName = uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames.join(' + ') : globalStaff.name;
+
     const sale: Omit<Sale, 'id'> = {
       date: localDateStr,
       dateTime: now.toISOString(),
-      staff: globalStaff.name,
+      staff: finalSaleStaffName,
+      staffNames: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
       staffEmail: globalStaff.email,
       customerName: selectedCustomer?.name || '',
       customerPhone: selectedCustomer?.phone || '',
@@ -2280,6 +2323,15 @@ export const POSPage: React.FC = () => {
     { id: 'CB PAY', label: 'CB PAY' },
     { id: 'OK$', label: 'OK$' },
   ];
+
+  const invalidCartItem = cart.find(item => {
+    if (item.staffAssignments && item.staffAssignments.length > 0) {
+      const sum = item.staffAssignments.reduce((acc, a) => acc + (a.qty || 0), 0);
+      return sum !== item.qty;
+    }
+    return false;
+  });
+  const isCartValid = !invalidCartItem;
 
   return (
     <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-73px)] overflow-y-auto lg:overflow-hidden bg-background">
@@ -2464,61 +2516,176 @@ export const POSPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center bg-muted/5 rounded-xl p-1 border border-border/50">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center bg-muted/5 rounded-xl p-1 border border-border/50">
+                        <button 
+                          onClick={() => {
+                            const newQty = Math.max(1, item.qty - 1);
+                            let updates: any = { qty: newQty };
+                            if (item.staffAssignments && item.staffAssignments.length > 0) {
+                              let sum = item.staffAssignments.reduce((s, a) => s + (a.qty || 0), 0);
+                              if (sum > newQty) {
+                                updates.staffAssignments = [];
+                                updates.staffEmail = "";
+                                updates.staffName = "";
+                                alert("Staff assignments cleared because item quantity was reduced below assigned quantity.");
+                              }
+                            }
+                            updateCartItem(i, updates);
+                          }}
+                          className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all"
+                        >
+                          <ArrowDown size={14} />
+                        </button>
+                        <span className="w-8 text-center font-black text-sm">{item.qty}</span>
+                        <button 
+                          onClick={() => updateCartItem(i, { qty: item.qty + 1 })}
+                          className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all"
+                        >
+                          <ArrowUp size={14} />
+                        </button>
+                      </div>
                       <button 
-                        onClick={() => updateCartItem(i, { qty: Math.max(1, item.qty - 1) })}
-                        className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all"
+                        onClick={() => removeFromCart(i)}
+                        className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
                       >
-                        <ArrowDown size={14} />
-                      </button>
-                      <span className="w-8 text-center font-black text-sm">{item.qty}</span>
-                      <button 
-                        onClick={() => updateCartItem(i, { qty: item.qty + 1 })}
-                        className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all"
-                      >
-                        <ArrowUp size={14} />
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </div>
                   
-                  <div className="mt-4 pt-4 border-t border-border/30 flex justify-between items-center flex-wrap gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Discount %</span>
-                      <input 
-                        type="number" 
-                        value={item.disP || 0}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          if (val >= 0 && val <= 100) {
-                            updateCartItem(i, { disP: val });
-                          }
-                        }}
-                        className="w-12 bg-input border border-border/50 rounded-lg px-2 py-1 text-[10px] font-black text-center focus:border-primary outline-none transition-all"
-                      />
+                  <div className="mt-4 pt-4 border-t border-border/30 flex flex-col gap-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Discount %</span>
+                        <input 
+                          type="number" 
+                          value={item.disP === "" as any ? "" : (item.disP ?? 0)}
+                          onFocus={() => {
+                            if (item.disP === 0) updateCartItem(i, { disP: "" as any });
+                          }}
+                          onBlur={(e) => {
+                            if (e.target.value === "") updateCartItem(i, { disP: 0 });
+                          }}
+                          onChange={(e) => {
+                            if (e.target.value === "") {
+                              updateCartItem(i, { disP: "" as any });
+                              return;
+                            }
+                            const val = Number(e.target.value);
+                            if (val >= 0 && val <= 100) {
+                              updateCartItem(i, { disP: val });
+                            }
+                          }}
+                          className="w-12 bg-input border border-border/50 rounded-lg px-2 py-1 text-[10px] font-black text-center focus:border-primary outline-none transition-all"
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-2 flex-1 max-w-[200px]">
+                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest whitespace-nowrap">Staff</span>
+                        <div className="relative flex-1">
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              const sName = e.target.value;
+                              if (!sName) return;
+                              if (item.qty === 1 && item.staffAssignments && item.staffAssignments.length >= 1) {
+                                alert("Cannot assign more staff. Total quantity is 1.");
+                                return;
+                              }
+                              let current = item.staffAssignments ? [...item.staffAssignments] : [];
+                              if (!current.find(a => a.name === sName)) {
+                                const otherQty = current.reduce((sum, a) => sum + (a.qty || 0), 0);
+                                const defaultQty = Math.max(0, item.qty - otherQty);
+                                if (defaultQty > 0) {
+                                  current.push({ name: sName, qty: defaultQty });
+                                  updateCartItem(i, { staffAssignments: current, staffEmail: "", staffName: "" });
+                                } else {
+                                  alert("Cannot assign more staff. Remaining quantity is 0.");
+                                }
+                              }
+                            }}
+                            className="w-full px-2 py-1 bg-input border border-border/50 rounded-lg text-[10px] font-bold outline-none focus:border-primary cursor-pointer [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border-primary"
+                          >
+                             <option value="">+ Assign Staff</option>
+                             {staff.filter(s => ["staff", "owner", "cashier"].includes(s.role || "")).map(s => (
+                                <option key={s.email} value={s.name}>{s.name}</option>
+                             ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Staff</span>
-                      <CustomSelect
-                        value={item.staffEmail || ''}
-                        onChange={(val) => {
-                          const selected = staff.find(s => s.email === val);
-                          if (selected) {
-                            updateCartItem(i, { staffEmail: selected.email, staffName: selected.name });
-                          } else {
-                            updateCartItem(i, { staffEmail: '', staffName: '' });
-                          }
-                        }}
-                        placeholder="Auto (Main Staff)"
-                        options={[
-                          { value: '', label: 'Auto (Main Staff)' },
-                          ...staff.filter(s => ['staff', 'owner', 'cashier'].includes(s.role || '')).map(s => ({ value: s.email, label: s.name }))
-                        ]}
-                        buttonClassName="px-2 py-1 text-[10px] font-black min-w-[120px]"
-                      />
+                    
+                    <div className="flex justify-between items-end gap-4 mt-1">
+                      <div className="flex flex-wrap gap-1.5 flex-1">
+                        {item.staffAssignments && item.staffAssignments.length > 0 ? (
+                          item.staffAssignments.map((assignment, aIdx) => (
+                             <div key={aIdx} className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-md px-1.5 py-1">
+                               <button 
+                                 onClick={() => {
+                                   const newA = item.staffAssignments!.filter(a => a.name !== assignment.name);
+                                   updateCartItem(i, { staffAssignments: newA });
+                                 }}
+                                 className="text-red-500 hover:bg-red-500/10 p-0.5 rounded transition-colors"
+                               >
+                                 <X size={12} />
+                               </button>
+                               <span className="text-[10px] font-bold text-primary">{assignment.name}</span>
+                               <input 
+                                 type="number"
+                                 min="1"
+                                 value={assignment.qty === "" as any ? "" : (assignment.qty || "")}
+                                 onBlur={(e) => {
+                                   if (e.target.value === "") {
+                                     const newA = item.staffAssignments!.map(a => a.name === assignment.name ? { ...a, qty: 1 } : a);
+                                     updateCartItem(i, { staffAssignments: newA });
+                                   }
+                                 }}
+                                 onChange={(e) => {
+                                   if (e.target.value === "") {
+                                     const newA = item.staffAssignments!.map(a => a.name === assignment.name ? { ...a, qty: "" as any } : a);
+                                     updateCartItem(i, { staffAssignments: newA });
+                                     return;
+                                   }
+                                   let val = parseInt(e.target.value) || 0;
+                                   if (val < 1) val = 1;
+                                   const otherQty = item.staffAssignments!.filter(a => a.name !== assignment.name).reduce((sum, a) => sum + (a.qty || 0), 0);
+                                   const maxVal = Math.max(0, item.qty - otherQty);
+                                   if (val > maxVal) val = maxVal;
+                                   const newA = item.staffAssignments!.map(a => a.name === assignment.name ? { ...a, qty: val } : a);
+                                   updateCartItem(i, { staffAssignments: newA });
+                                 }}
+                                 className="w-10 bg-background border border-primary/20 rounded px-1 py-0.5 text-[10px] font-black text-center focus:border-primary outline-none transition-colors"
+                               />
+                             </div>
+                          ))
+                        ) : (
+                          <CustomSelect
+                            value={item.staffEmail || ""}
+                            onChange={(val) => {
+                              const selected = staff.find(s => s.email === val);
+                              if (selected) {
+                                updateCartItem(i, { staffEmail: selected.email, staffName: selected.name, staffAssignments: [] });
+                              } else {
+                                updateCartItem(i, { staffEmail: "", staffName: "", staffAssignments: [] });
+                              }
+                            }}
+                            placeholder="Auto (Main Staff)"
+                            options={[
+                              { value: "", label: "Auto (Main Staff)" },
+                              ...staff.filter(s => ["staff", "owner", "cashier"].includes(s.role || "")).map(s => ({ value: s.email, label: s.name }))
+                            ]}
+                            buttonClassName="px-2 py-1 text-[10px] font-black min-w-[120px]"
+                          />
+                        )}
+                      </div>
+                      
+                      <div className="text-right shrink-0">
+                        <span className="font-black text-primary w-full text-right">
+                          {(item.price * item.qty * (1 - item.disP / 100)).toLocaleString()} Ks
+                        </span>
+                      </div>
                     </div>
-                    <span className="font-black text-primary w-full text-right mt-1">
-                      {(item.price * item.qty * (1 - item.disP / 100)).toLocaleString()} Ks
-                    </span>
                   </div>
                 </motion.div>
               ))}
@@ -2550,7 +2717,7 @@ export const POSPage: React.FC = () => {
                   { value: '', label: 'Any Staff (Auto-assign)' },
                   ...staff.filter(s => {
                     const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-                    return !s.workingDays || s.workingDays.includes(todayName);
+                    return (!s.workingDays || s.workingDays.includes(todayName)) && s.role !== 'super_admin';
                   }).map(s => ({ value: s.email, label: s.name }))
                 ]}
                 buttonClassName="px-3 py-2.5 text-xs font-bold"
@@ -2781,9 +2948,8 @@ export const POSPage: React.FC = () => {
                       placeholder="Redeem points..."
                       value={pointsToRedeem || ''}
                       onChange={(e) => {
-                        const val = Math.max(0, Number(e.target.value));
-                        const max = customers.find(c => c.id === selectedCustomerId)?.points || 0;
-                        setPointsToRedeem(Math.min(val, max));
+                        const val = Math.min(Number(e.target.value), (customers.find(c => c.id === selectedCustomerId)?.points || 0));
+                        setPointsToRedeem(Math.max(0, val));
                       }}
                       className="w-full bg-input border border-border/50 rounded-xl pl-4 pr-12 py-2.5 text-xs font-black text-foreground focus:border-primary outline-none transition-all"
                     />
@@ -2842,19 +3008,22 @@ export const POSPage: React.FC = () => {
                   <div className="grid grid-cols-3 gap-2">
                     <button 
                       onClick={() => handleQuickCheckout('Cash')}
-                      className="bg-green-500/10 hover:bg-green-500 text-green-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-green-500/20"
+                      disabled={!isCartValid}
+                      className="bg-green-500/10 hover:bg-green-500 text-green-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-green-500/20 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       CASH
                     </button>
                     <button 
                       onClick={() => handleQuickCheckout('KBZPay')}
-                      className="bg-blue-500/10 hover:bg-blue-500 text-blue-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-blue-500/20"
+                      disabled={!isCartValid}
+                      className="bg-blue-500/10 hover:bg-blue-500 text-blue-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-blue-500/20 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       KBZPAY
                     </button>
                     <button 
                       onClick={() => handleQuickCheckout('WavePay')}
-                      className="bg-yellow-500/10 hover:bg-yellow-500 text-yellow-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-yellow-500/20"
+                      disabled={!isCartValid}
+                      className="bg-yellow-500/10 hover:bg-yellow-500 text-yellow-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-yellow-500/20 disabled:opacity-50 disabled:pointer-events-none"
                     >
                       WAVEPAY
                     </button>
@@ -2862,10 +3031,16 @@ export const POSPage: React.FC = () => {
                 </div>
               )}
 
+              {!isCartValid && invalidCartItem && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-[10px] font-bold text-center">
+                  Cannot checkout. Please ensure the total staff assigned quantities match the service total quantity for {invalidCartItem.name}.
+                </div>
+              )}
+
               <button 
                 onClick={() => handleCheckout()}
-                disabled={cart.length === 0 || remainingAmount !== 0}
-                className="w-full bg-primary text-primary-foreground py-5 rounded-[1.5rem] font-black text-base tracking-[0.2em] shadow-2xl shadow-primary/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-4 group"
+                disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid}
+                className="w-full bg-primary text-primary-foreground [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border [.midnight_&]:border-primary py-5 rounded-[1.5rem] font-black text-base tracking-[0.2em] shadow-2xl shadow-primary/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-4 group"
               >
                 <Printer size={20} className="group-hover:rotate-12 transition-transform" />
                 CHECKOUT NOW
@@ -2927,6 +3102,38 @@ export const POSPage: React.FC = () => {
     </div>
   );
 };
+export const getEffectiveStaffItems = (s: any, staffName: string) => {
+  return s.items?.map((item: any) => {
+    if (item.staffAssignments && item.staffAssignments.length > 0) {
+      const assignment = item.staffAssignments.find((a: any) => a.name === staffName);
+      if (assignment) {
+        return { 
+          ...item, 
+          qty: assignment.qty, 
+          commission: assignment.commission, 
+          originalQty: item.qty,
+          originalCommission: item.commission
+        };
+      }
+      return null;
+    } else if (item.staffName) {
+      if (item.staffName === staffName) {
+        return { ...item, originalQty: item.qty, originalCommission: item.commission };
+      }
+      return null;
+    } else {
+      let hasSpecificStaff = false;
+      if (s.items) {
+        hasSpecificStaff = s.items.some((i: any) => (i.staffAssignments && i.staffAssignments.length > 0) || i.staffName);
+      }
+      if (!hasSpecificStaff && (s.staff === staffName || s.staffEmail === staffName)) {
+        return { ...item, originalQty: item.qty, originalCommission: item.commission };
+      }
+      return null;
+    }
+  }).filter(Boolean) || [];
+};
+
 
 export const MonthlySummaryPage: React.FC = () => {
   const { profile, isAdmin, isCashier } = useAuth();
@@ -3555,25 +3762,40 @@ export const HistoryPage: React.FC = () => {
   useEffect(() => {
     if (!profile) return;
     
+    let unsubStaff: () => void = () => {};
+    if (isAdmin || isCashier) {
+      const qStaff = query(collection(db, 'users'));
+      unsubStaff = onSnapshot(qStaff, (snapshot) => {
+        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
+        const names = snapshot.docs
+          .map(doc => doc.data() as UserProfile)
+          .filter(u => {
+            const isExcluded = u.role === 'super_admin' || 
+                               (u.email && superAdminEmails.includes(u.email.toLowerCase().trim()));
+            return !isExcluded && ['owner', 'cashier', 'staff'].includes(u.role || '');
+          })
+          .map(u => u.name);
+        setStaffList([...new Set(names)].sort());
+      });
+    } else if (isStaff) {
+      setStaffList([profile.name]);
+    }
+
     let q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
-    
-    // If staff, we only fetch their own sales for security (though rules also enforce this)
     if (isStaff) {
       q = query(collection(db, 'sales'), where('staffEmail', '==', profile.email), orderBy('dateTime', 'desc'));
     }
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    
+    const unsubSales = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
       setSales(data);
-      const allStaff = data.flatMap(s => {
-        const names = [s.staff];
-        if (s.items) s.items.forEach(i => { if (i.staffName) names.push(i.staffName); });
-        return names;
-      });
-      setStaffList([...new Set(allStaff.filter(Boolean))]);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
-    return unsubscribe;
-  }, [profile, isStaff]);
+    
+    return () => {
+      unsubStaff();
+      unsubSales();
+    };
+  }, [profile, isAdmin, isCashier, isStaff]);
 
   useEffect(() => {
     const docRef = doc(db, 'settings', 'salon');
@@ -3597,7 +3819,7 @@ export const HistoryPage: React.FC = () => {
       }
 
       if (staffFilter) {
-        const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+        const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
         if (itemStaffNames.length > 0) {
           if (!itemStaffNames.includes(staffFilter)) return false;
         } else {
@@ -3611,12 +3833,9 @@ export const HistoryPage: React.FC = () => {
 
   const totalIncome = filteredSales.reduce((sum, s) => {
     if (staffFilter) {
-      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
       const hasSpecificStaff = itemStaffNames.length > 0;
-      const staffItems = s.items?.filter(item => {
-        if (hasSpecificStaff) return item.staffName === staffFilter;
-        return s.staff === staffFilter;
-      }) || [];
+      const staffItems = getEffectiveStaffItems(s, staffFilter);
       if (staffItems.length > 0) {
         return sum + staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
       }
@@ -3627,12 +3846,9 @@ export const HistoryPage: React.FC = () => {
 
   const totalComm = filteredSales.reduce((sum, s) => {
     if (staffFilter) {
-      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
       const hasSpecificStaff = itemStaffNames.length > 0;
-      const staffItems = s.items?.filter(item => {
-        if (hasSpecificStaff) return item.staffName === staffFilter;
-        return s.staff === staffFilter;
-      }) || [];
+      const staffItems = getEffectiveStaffItems(s, staffFilter);
       if (staffItems.length > 0) {
         return sum + staffItems.reduce((itemSum, item) => {
           if (item.commission !== undefined) return itemSum + item.commission;
@@ -3656,12 +3872,9 @@ export const HistoryPage: React.FC = () => {
       amt = (s.method === 'Cash' || !s.method) ? s.total : 0;
     }
     if (staffFilter) {
-      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
       const hasSpecificStaff = itemStaffNames.length > 0;
-      const staffItems = s.items?.filter(item => {
-        if (hasSpecificStaff) return item.staffName === staffFilter;
-        return s.staff === staffFilter;
-      }) || [];
+      const staffItems = getEffectiveStaffItems(s, staffFilter);
       if (staffItems.length > 0) {
         const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
         const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
@@ -3681,12 +3894,9 @@ export const HistoryPage: React.FC = () => {
       amt = (s.method && s.method !== 'Cash' ? s.total : 0);
     }
     if (staffFilter) {
-      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
       const hasSpecificStaff = itemStaffNames.length > 0;
-      const staffItems = s.items?.filter(item => {
-        if (hasSpecificStaff) return item.staffName === staffFilter;
-        return s.staff === staffFilter;
-      }) || [];
+      const staffItems = getEffectiveStaffItems(s, staffFilter);
       if (staffItems.length > 0) {
         const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
         const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
@@ -3720,7 +3930,7 @@ export const HistoryPage: React.FC = () => {
           s.total,
           s.commission,
           s.payments && s.payments.length > 1 ? s.payments.map(p => `${p.method}: ${p.amount}`).join(' | ') : (s.method || 'Cash'),
-          [...new Set(s.items?.map(i => i.staffName || s.staff) || [s.staff])].join(', ')
+          [...new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]) || [s.staff])].join(', ')
         ];
       });
       
@@ -3956,7 +4166,7 @@ export const HistoryPage: React.FC = () => {
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
                         <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">
-                          {Array.from(new Set(s.items?.map(i => i.staffName || s.staff).filter(Boolean))).join(' + ') || s.staff}
+                          {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
                         </span>
                         <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
                           {s.payments && s.payments.length > 1 
@@ -4003,9 +4213,20 @@ export const HistoryPage: React.FC = () => {
                             <div key={idx} className="bg-muted/30 p-4 rounded-2xl border border-border/50 flex items-center justify-between group/item hover:bg-muted/50 transition-colors">
                               <div className="space-y-0.5">
                                 <span className="text-sm font-bold text-foreground group-hover/item:text-primary transition-colors">{item.name}</span>
-                                <p className="text-[10px] text-muted-foreground font-mono">
+                                <div className="text-[10px] text-muted-foreground font-mono">
                                   {item.qty} × {item.price.toLocaleString()} Ks
-                                </p>
+                                </div>
+                                {(item.staffAssignments && item.staffAssignments.length > 0) ? (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {item.staffAssignments.map((a: any, i: number) => (
+                                      <span key={i} className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{a.name} ({a.qty})</span>
+                                    ))}
+                                  </div>
+                                ) : item.staffName ? (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{item.staffName}</span>
+                                  </div>
+                                ) : null}
                               </div>
                               <div className="text-right space-y-0.5">
                                 <span className="text-sm font-mono font-bold text-foreground">{(item.qty * item.price).toLocaleString()} Ks</span>
@@ -4099,7 +4320,7 @@ export const StaffCommissionsPage: React.FC = () => {
     // Fetch staff names for filter
     if (isAdmin || isCashier) {
       const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
-        const superAdminEmails = ['aungsoe366@gmail.com'];
+        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
         const names = snapshot.docs
           .map(doc => doc.data() as UserProfile)
           .filter(u => {
@@ -4143,16 +4364,10 @@ export const StaffCommissionsPage: React.FC = () => {
     let count = 0;
 
     filteredSales.forEach(s => {
-      const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
       const hasSpecificStaff = itemStaffNames.length > 0;
       
-      const staffItems = s.items?.filter(item => {
-        if (hasSpecificStaff) {
-          return item.staffName === name;
-        } else {
-          return s.staff === name;
-        }
-      }) || [];
+      const staffItems = getEffectiveStaffItems(s, name);
       
       if (staffItems.length > 0) {
         const itemsTotal = staffItems.reduce((sum, item) => sum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
@@ -4179,7 +4394,7 @@ export const StaffCommissionsPage: React.FC = () => {
 
   const displaySalesDetails = filteredSales.filter(s => {
     if (!staffFilter) return true;
-    const itemStaffNames = Array.from(new Set(s.items?.map(i => i.staffName).filter(Boolean)));
+    const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
     if (itemStaffNames.length > 0) {
       return itemStaffNames.includes(staffFilter);
     }
@@ -4323,7 +4538,7 @@ export const StaffCommissionsPage: React.FC = () => {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="text-foreground font-bold text-sm group-hover:text-primary transition-colors">
-                      {Array.from(new Set(s.items?.map(i => i.staffName || s.staff).filter(Boolean))).join(' + ') || s.staff}
+                      {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
                     </span>
                     <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
@@ -4650,7 +4865,7 @@ export const AppointmentsPage: React.FC = () => {
       snapshot.docs.forEach(doc => {
         const data = doc.data() as UserProfile;
         // Client-side filtering: Hide super_admin and customers from the staff list
-        const superAdminEmails = ['aungsoe366@gmail.com'];
+        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
         const isExcluded = data.role === 'super_admin' || 
                           data.role === 'customer' || 
                           (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
@@ -5089,10 +5304,7 @@ export const AppointmentsPage: React.FC = () => {
     })
     .filter((e): e is any => e !== null);
 
-  console.log("Calendar View Mode:", viewMode);
-  console.log("Calendar Events Count:", calendarEvents.length);
   if (calendarEvents.length > 0) {
-    console.log("First Event:", calendarEvents[0]);
   }
 
   const handleSelectEvent = (event: any) => {
@@ -5145,25 +5357,25 @@ export const AppointmentsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={goToBack}
-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-90 border border-border bg-card shadow-sm"
+            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 active:scale-90 border border-border bg-card shadow-sm"
           >
             <ChevronLeft size={20} />
           </button>
           <button
             onClick={goToToday}
-            className="px-6 py-2.5 bg-primary/10 text-primary rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10 active:scale-95 shadow-sm"
+            className="px-6 py-2.5 bg-primary/10 text-primary [.midnight_&]:text-amber-400 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10 active:scale-95 shadow-sm"
           >
             Today
           </button>
           <button
             onClick={goToNext}
-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-90 border border-border bg-card shadow-sm"
+            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 active:scale-90 border border-border bg-card shadow-sm"
           >
             <ChevronRight size={20} />
           </button>
         </div>
 
-        <div className="text-xl font-black tracking-tighter text-foreground uppercase">
+        <div className="text-xl font-black tracking-tighter text-foreground [.midnight_&]:text-slate-200 uppercase">
           {toolbar.label}
         </div>
 
@@ -5175,8 +5387,8 @@ export const AppointmentsPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                 toolbar.view === view 
-                  ? "bg-gray-700/80 text-foreground shadow-lg" 
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-gray-700/80 text-foreground [.midnight_&]:text-slate-200 shadow-lg" 
+                  : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
               )}
             >
               {view}
@@ -5191,12 +5403,12 @@ export const AppointmentsPage: React.FC = () => {
     <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground leading-none">
+          <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground [.midnight_&]:text-slate-200 leading-none">
             {isCustomer ? 'My Appointments' : 'Customer Appointments'}
           </h1>
           {isCustomer && profile.points !== undefined && (
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-bold bg-primary/20 text-primary px-3 py-1 rounded-full border border-primary/30 shadow-sm">
+              <span className="text-xs font-bold bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full border border-primary/30 shadow-sm">
                 {profile.points.toLocaleString()} Points Available
               </span>
             </div>
@@ -5210,8 +5422,8 @@ export const AppointmentsPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
                 viewMode === 'list' 
-                  ? "bg-card text-foreground shadow-lg" 
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-card text-foreground [.midnight_&]:text-slate-200 shadow-lg" 
+                  : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
               )}
             >
               List
@@ -5221,8 +5433,8 @@ export const AppointmentsPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
                 viewMode === 'calendar' 
-                  ? "bg-card text-foreground shadow-lg" 
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "bg-card text-foreground [.midnight_&]:text-slate-200 shadow-lg" 
+                  : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
               )}
             >
               <CalendarIcon size={16} />
@@ -5232,7 +5444,7 @@ export const AppointmentsPage: React.FC = () => {
 
           <button
             onClick={() => { resetForm(); setIsAdding(true); }}
-            className="bg-primary text-foreground px-6 py-3 rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-primary/20 font-bold group"
+            className="bg-primary text-foreground [.midnight_&]:text-slate-200 px-6 py-3 rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-primary/20 font-bold group"
           >
             <div className="bg-black/10 p-1 rounded-full group-hover:bg-black/20 transition-colors">
               <Plus size={20} />
@@ -5272,9 +5484,9 @@ export const AppointmentsPage: React.FC = () => {
                 placeholder="Search customer or service..."
                 value={apptSearch}
                 onChange={(e) => setApptSearch(e.target.value)}
-                className="w-full p-2 pl-10 border-none outline-none bg-transparent text-foreground font-bold text-sm transition-all placeholder:text-muted-foreground/50"
+                className="w-full p-2 pl-10 border-none outline-none bg-transparent text-foreground [.midnight_&]:text-slate-200 font-bold text-sm transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300/50"
               />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary" size={16} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400" size={16} />
             </div>
             <div className="flex flex-col md:flex-row md:items-center">
               <CustomDatePicker 
@@ -5289,8 +5501,8 @@ export const AppointmentsPage: React.FC = () => {
               />
               {profile?.role !== 'customer' && (
                 <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
-                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                     <UserIcon size={12} className="text-primary" /> STAFF
+                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground [.midnight_&]:text-slate-300 flex items-center gap-2 mb-2">
+                     <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" /> STAFF
                    </label>
                    <CustomSelect
                      value={selectedStaffFilter} 
@@ -5298,14 +5510,14 @@ export const AppointmentsPage: React.FC = () => {
                      placeholder="All Staff"
                      options={[
                        { value: 'all', label: 'All Staff' },
-                       ...staff.map(s => ({ value: s.email, label: s.name }))
+                       ...staff.filter(s => s.role !== 'super_admin').map(s => ({ value: s.email, label: s.name }))
                      ]}
                    />
                 </div>
               )}
               <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
-                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                   <Activity size={12} className="text-primary" /> STATUS
+                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground [.midnight_&]:text-slate-300 flex items-center gap-2 mb-2">
+                   <Activity size={12} className="text-primary [.midnight_&]:text-amber-400" /> STATUS
                  </label>
                  <CustomSelect
                    value={statusFilter} 
@@ -5321,19 +5533,19 @@ export const AppointmentsPage: React.FC = () => {
                  />
               </div>
               <div className="flex flex-col p-4 flex-1">
-                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                   <Settings size={12} className="text-primary" /> OPTIONS
+                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground [.midnight_&]:text-slate-300 flex items-center gap-2 mb-2">
+                   <Settings size={12} className="text-primary [.midnight_&]:text-amber-400" /> OPTIONS
                  </label>
                  <div className="flex items-center gap-2">
                    <button
                      onClick={() => setShowAllDates(!showAllDates)}
-                     className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/80")}
+                     className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground [.midnight_&]:text-slate-300 hover:bg-muted/80")}
                    >
                      {showAllDates ? 'All Dates' : 'Show All'}
                    </button>
                    <button
                      onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
-                     className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-muted-foreground hover:bg-muted/80"
+                     className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-muted-foreground [.midnight_&]:text-slate-300 hover:bg-muted/80"
                    >
                      Sort: {sortBy}
                    </button>
@@ -5408,12 +5620,12 @@ export const AppointmentsPage: React.FC = () => {
           ) : filteredAppts.length === 0 ? (
             <div className="text-center py-32 bg-muted/5 rounded-[3rem] border-2 border-dashed border-border">
               <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CalendarIcon className="text-muted-foreground/30" size={48} />
+                <CalendarIcon className="text-muted-foreground [.midnight_&]:text-slate-300/30" size={48} />
               </div>
-              <p className="text-muted-foreground text-lg font-bold italic">No appointments found matching your criteria.</p>
+              <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-lg font-bold italic">No appointments found matching your criteria.</p>
               <button 
                 onClick={() => { resetForm(); setIsAdding(true); }}
-                className="mt-6 text-primary font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
+                className="mt-6 text-primary [.midnight_&]:text-amber-400 font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
               >
                 <Plus size={16} />
                 Book New Appointment
@@ -5441,10 +5653,10 @@ export const AppointmentsPage: React.FC = () => {
                       
                       <div className="flex justify-between items-start relative z-10 mb-6">
                         <div className="flex flex-col">
-                          <div className="bg-primary/5 text-primary px-4 py-2 rounded-xl font-black text-xl tracking-tighter shadow-sm border border-primary/10">
+                          <div className="bg-primary/5 text-primary [.midnight_&]:text-amber-400 px-4 py-2 rounded-xl font-black text-xl tracking-tighter shadow-sm border border-primary/10">
                             {appt.time}
                           </div>
-                          <div className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] mt-1.5 ml-1">
+                          <div className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] mt-1.5 ml-1">
                             {formatDisplayDate(appt.date)}
                           </div>
                         </div>
@@ -5452,7 +5664,7 @@ export const AppointmentsPage: React.FC = () => {
                           "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border  transition-all",
                           appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600  border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
                           appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600  border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
-                          appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-foreground border-transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
+                          appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-foreground [.midnight_&]:text-slate-200 border-transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
                           appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600  border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
                         )}>
                           {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
@@ -5466,14 +5678,14 @@ export const AppointmentsPage: React.FC = () => {
                       <div className="space-y-6 relative z-10">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="font-black text-foreground text-xl group-hover:text-primary transition-colors truncate tracking-tight leading-tight">{appt.customerName}</h3>
-                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-xs mt-3 font-bold">
+                            <h3 className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors truncate tracking-tight leading-tight">{appt.customerName}</h3>
+                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground [.midnight_&]:text-slate-300 text-xs mt-3 font-bold">
                               <div className="flex items-center gap-1.5 bg-muted/5 px-2.5 py-1 rounded-lg border border-border">
-                                <Phone size={14} className="text-primary" />
+                                <Phone size={14} className="text-primary [.midnight_&]:text-amber-400" />
                                 <span className="text-xs tracking-tight">{appt.customerPhone}</span>
                               </div>
                               {customer && (
-                                <span className="bg-primary/5 text-primary px-3 py-1 rounded-full text-[9px] font-black border border-primary/10 tracking-widest shadow-sm">
+                                <span className="bg-primary/5 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full text-[9px] font-black border border-primary/10 tracking-widest shadow-sm">
                                   {customer.points} PTS
                                 </span>
                               )}
@@ -5481,7 +5693,7 @@ export const AppointmentsPage: React.FC = () => {
                           </div>
                           <div className="flex flex-col gap-2">
                             {appt.isHomeService && (
-                              <div className="p-2.5 bg-green-600 text-foreground rounded-xl shadow-lg shadow-green-900/10 transition-transform group-hover:scale-110" title="At Home Service">
+                              <div className="p-2.5 bg-green-600 text-foreground [.midnight_&]:text-slate-200 rounded-xl shadow-lg shadow-green-900/10 transition-transform group-hover:scale-110" title="At Home Service">
                                 <Car size={18} strokeWidth={2.5} />
                               </div>
                             )}
@@ -5491,7 +5703,7 @@ export const AppointmentsPage: React.FC = () => {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
-                                className="p-2.5 bg-green-500/5 text-green-600 hover:bg-green-600 hover:text-foreground rounded-xl transition-all border border-green-500/10 shadow-sm active:scale-90"
+                                className="p-2.5 bg-green-500/5 text-green-600 hover:bg-green-600 hover:text-foreground [.midnight_&]:hover:text-slate-200 rounded-xl transition-all border border-green-500/10 shadow-sm active:scale-90"
                                 title="WhatsApp"
                               >
                                 <MessageCircle size={16} strokeWidth={2.5} />
@@ -5503,12 +5715,12 @@ export const AppointmentsPage: React.FC = () => {
                         <div className="bg-muted/5 rounded-2xl p-4 space-y-3 border border-border shadow-inner group-hover:bg-muted/10 transition-colors">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="p-2.5 bg-primary/5 rounded-xl text-primary shadow-sm border border-primary/5">
+                              <div className="p-2.5 bg-primary/5 rounded-xl text-primary [.midnight_&]:text-amber-400 shadow-sm border border-primary/5">
                                 <Briefcase size={18} strokeWidth={2.5} />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-muted-foreground text-muted-foreground uppercase tracking-widest">Service</span>
-                                <span className="text-lg font-black text-foreground tracking-tight">{appt.serviceName}</span>
+                                <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Service</span>
+                                <span className="text-lg font-black text-foreground [.midnight_&]:text-slate-200 tracking-tight">{appt.serviceName}</span>
                               </div>
                             </div>
                             {appt.willEarnPoints && appt.willEarnPoints > 0 && (
@@ -5519,12 +5731,12 @@ export const AppointmentsPage: React.FC = () => {
                           <div className="flex items-center justify-between pt-2 border-t border-border/30">
                             {appt.staffName ? (
                               <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-muted/5 rounded-xl text-muted-foreground shadow-sm border border-border">
+                                <div className="p-2.5 bg-muted/5 rounded-xl text-muted-foreground [.midnight_&]:text-slate-300 shadow-sm border border-border">
                                   <UserIcon size={18} strokeWidth={2.5} />
                                 </div>
                                 <div className="flex flex-col">
-                                  <span className="text-[9px] font-black text-muted-foreground text-muted-foreground uppercase tracking-widest">Staff</span>
-                                  <span className="text-xs text-foreground font-bold">{appt.staffName}</span>
+                                  <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Staff</span>
+                                  <span className="text-xs text-foreground [.midnight_&]:text-slate-200 font-bold">{appt.staffName}</span>
                                 </div>
                               </div>
                             ) : <div />}
@@ -5535,16 +5747,16 @@ export const AppointmentsPage: React.FC = () => {
                         </div>
 
                         {appt.notes && (
-                          <div className="text-xs text-muted-foreground italic line-clamp-2 bg-primary/5 p-3 rounded-xl border border-primary/5 font-medium leading-relaxed shadow-inner">
-                            <span className="text-primary font-black not-italic mr-1.5">Notes:</span>
+                          <div className="text-xs text-muted-foreground [.midnight_&]:text-slate-300 italic line-clamp-2 bg-primary/5 p-3 rounded-xl border border-primary/5 font-medium leading-relaxed shadow-inner">
+                            <span className="text-primary [.midnight_&]:text-amber-400 font-black not-italic mr-1.5">Notes:</span>
                             "{appt.notes}"
                           </div>
                         )}
 
                         <div className="pt-4 flex items-center justify-between border-t border-border">
                           <div className="flex flex-col">
-                            <span className="text-[8px] text-muted-foreground uppercase tracking-[0.2em] font-black">Booked By</span>
-                            <span className="text-[9px] font-bold text-foreground">{appt.creatorName || 'SYSTEM'}</span>
+                            <span className="text-[8px] text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] font-black">Booked By</span>
+                            <span className="text-[9px] font-bold text-foreground [.midnight_&]:text-slate-200">{appt.creatorName || 'SYSTEM'}</span>
                           </div>
                           <div className="flex gap-2">
                             {profile?.role !== 'customer' && (
@@ -5567,7 +5779,7 @@ export const AppointmentsPage: React.FC = () => {
                                     appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600  border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
                                   )}
                                 />
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={12} />
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground [.midnight_&]:text-slate-300 pointer-events-none" size={12} />
                               </div>
                             )}
                             {(isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) && (
@@ -5581,7 +5793,7 @@ export const AppointmentsPage: React.FC = () => {
                                 </button>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); setConfirmDeleteAppt(appt); }}
-                                  className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-foreground rounded-xl transition-all border border-red-500/10 shadow-sm active:scale-90"
+                                  className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-foreground [.midnight_&]:hover:text-slate-200 rounded-xl transition-all border border-red-500/10 shadow-sm active:scale-90"
                                   title="Delete"
                                 >
                                   <Trash2 size={16} strokeWidth={2.5} />
@@ -5603,12 +5815,12 @@ export const AppointmentsPage: React.FC = () => {
           <div className="bg-card rounded-3xl border border-border p-8 shadow-sm transition-colors duration-300">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h2 className="text-xl font-bold text-foreground">Points Summary</h2>
-                <p className="text-sm text-muted-foreground">Track your loyalty rewards and redemptions.</p>
+                <h2 className="text-xl font-bold text-foreground [.midnight_&]:text-slate-200">Points Summary</h2>
+                <p className="text-sm text-muted-foreground [.midnight_&]:text-slate-300">Track your loyalty rewards and redemptions.</p>
               </div>
               <div className="text-right">
-                <div className="text-4xl font-black text-primary tracking-tighter">{profile?.points?.toLocaleString() || 0}</div>
-                <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Available Points</div>
+                <div className="text-4xl font-black text-primary [.midnight_&]:text-amber-400 tracking-tighter">{profile?.points?.toLocaleString() || 0}</div>
+                <div className="text-[10px] font-bold text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Available Points</div>
               </div>
             </div>
 
@@ -5632,23 +5844,23 @@ export const AppointmentsPage: React.FC = () => {
                 </div>
               </div>
               <div className="bg-primary/10 p-5 rounded-2xl border border-border">
-                <div className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1">Next Reward</div>
-                <div className="text-2xl font-bold text-primary">500 pts</div>
+                <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest mb-1">Next Reward</div>
+                <div className="text-2xl font-bold text-primary [.midnight_&]:text-amber-400">500 pts</div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
-                <HistoryIcon size={16} className="text-primary" />
+              <h3 className="text-sm font-bold text-foreground [.midnight_&]:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+                <HistoryIcon size={16} className="text-primary [.midnight_&]:text-amber-400" />
                 Recent Activity
               </h3>
               <div className="overflow-hidden rounded-2xl border border-border">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-muted/10">
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date</th>
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Activity</th>
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Points</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Date</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Activity</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest text-right">Points</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -5695,17 +5907,17 @@ export const AppointmentsPage: React.FC = () => {
                       if (history.length === 0) {
                         return (
                           <tr>
-                            <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted-foreground italic">No point activity recorded yet.</td>
+                            <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted-foreground [.midnight_&]:text-slate-300 italic">No point activity recorded yet.</td>
                           </tr>
                         );
                       }
 
                       return history.map(item => (
                         <tr key={item.id} className="hover:bg-muted/5 transition-colors">
-                          <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(item.date), 'MMM d, yyyy')}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground [.midnight_&]:text-slate-300">{format(new Date(item.date), 'MMM d, yyyy')}</td>
                           <td className="px-4 py-3">
-                            <div className="text-xs font-bold text-foreground">{item.title}</div>
-                            <div className="text-[10px] text-muted-foreground">{item.details}</div>
+                            <div className="text-xs font-bold text-foreground [.midnight_&]:text-slate-200">{item.title}</div>
+                            <div className="text-[10px] text-muted-foreground [.midnight_&]:text-slate-300">{item.details}</div>
                           </td>
                           <td className={cn(
                             "px-4 py-3 text-right text-xs font-bold",
@@ -5734,7 +5946,7 @@ export const AppointmentsPage: React.FC = () => {
             <div className="p-8 border-b border-border bg-muted/5 flex justify-between items-center">
               <div>
                 <div className="flex items-center gap-4">
-                  <h3 className="text-primary font-black text-3xl tracking-tighter">{viewingCustomerHistory.name}</h3>
+                  <h3 className="text-primary [.midnight_&]:text-amber-400 font-black text-3xl tracking-tighter">{viewingCustomerHistory.name}</h3>
                   {isAdmin && (
                     <button 
                       onClick={() => {
@@ -5749,13 +5961,13 @@ export const AppointmentsPage: React.FC = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-1">
-                  <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
-                  <span className="text-[10px] bg-primary/10 text-primary px-3 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
+                  <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
+                  <span className="text-[10px] bg-primary/10 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
                 </div>
               </div>
               <button 
                 onClick={() => setViewingCustomerHistory(null)}
-                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
+                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 active:scale-90"
               >
                 <X size={24} />
               </button>
@@ -5785,24 +5997,24 @@ export const AppointmentsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-foreground mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
-                    <HistoryIcon className="text-primary" size={16} />
+                  <h4 className="font-bold text-foreground [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
+                    <HistoryIcon className="text-primary [.midnight_&]:text-amber-400" size={16} />
                     Sales History
                   </h4>
                   <div className="space-y-3">
                     {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
-                      <p className="text-muted-foreground text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No sales history found.</p>
+                      <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No sales history found.</p>
                     ) : (
                       sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name)
                         .sort((a, b) => b.dateTime.localeCompare(a.dateTime))
                         .map(s => (
                         <div key={s.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex justify-between items-center hover:border-primary/50 transition-all group">
                           <div>
-                            <div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.items.map(i => i.name).join(', ')}</div>
-                            <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
+                            <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{s.items.map(i => i.name).join(', ')}</div>
+                            <div className="text-[10px] text-muted-foreground [.midnight_&]:text-slate-300 mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
                           </div>
                           <div className="text-right">
-                            <div className="font-black text-primary text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
+                            <div className="font-black text-primary [.midnight_&]:text-amber-400 text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
                             {s.pointsEarned > 0 && <div className="text-[10px] text-green-600  font-bold uppercase tracking-widest">+{s.pointsEarned} pts</div>}
                             {s.pointsRedeemed > 0 && <div className="text-[10px] text-red-500  font-bold uppercase tracking-widest">-{s.pointsRedeemed} pts</div>}
                           </div>
@@ -5813,13 +6025,13 @@ export const AppointmentsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-foreground mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
-                    <Calendar className="text-primary" size={16} />
+                  <h4 className="font-bold text-foreground [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
+                    <Calendar className="text-primary [.midnight_&]:text-amber-400" size={16} />
                     Appointment History
                   </h4>
                   <div className="space-y-3">
                     {appointments.filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone).length === 0 ? (
-                      <p className="text-muted-foreground text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No appointment history found.</p>
+                      <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No appointment history found.</p>
                     ) : (
                       appointments
                         .filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone)
@@ -5827,20 +6039,20 @@ export const AppointmentsPage: React.FC = () => {
                         .map(a => (
                           <div key={a.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex justify-between items-center hover:border-primary/50 transition-all group">
                             <div>
-                              <div className="font-bold text-foreground group-hover:text-primary transition-colors">{a.serviceName}</div>
-                              <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
+                              <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{a.serviceName}</div>
+                              <div className="text-[10px] text-muted-foreground [.midnight_&]:text-slate-300 mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
                               <div className={cn(
                                 "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
                                 a.status === 'completed' ? "bg-green-500/10 text-green-600  border-green-500/20" : 
                                 a.status === 'cancelled' ? "bg-red-500/10 text-red-600  border-red-500/20" :
-                                "bg-muted/10 text-muted-foreground border-border"
+                                "bg-muted/10 text-muted-foreground [.midnight_&]:text-slate-300 border-border"
                               )}>
                                 {a.status}
                               </div>
                               {a.pointsProcessed && (
-                                <div className="text-[10px] font-bold text-primary uppercase tracking-widest">
+                                <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">
                                   {a.willEarnPoints > 0 && `+${a.willEarnPoints} pts`}
                                   {a.pointsToRedeem > 0 && ` -${a.pointsToRedeem} pts`}
                                 </div>
@@ -5866,16 +6078,16 @@ export const AppointmentsPage: React.FC = () => {
           >
             <div className="p-6 sm:p-8 border-b bg-muted/5 flex justify-between items-center shrink-0">
               <div>
-                <h3 className="text-primary font-black text-2xl sm:text-3xl tracking-tighter">
+                <h3 className="text-primary [.midnight_&]:text-amber-400 font-black text-2xl sm:text-3xl tracking-tighter">
                   {editingAppointment ? 'Edit Appointment' : 'Book Appointment'}
                 </h3>
-                <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+                <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
                   {editingAppointment ? 'Update existing booking details' : 'Schedule a new customer visit'}
                 </p>
               </div>
               <button 
                 onClick={resetForm}
-                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
+                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 active:scale-90"
               >
                 <X size={24} />
               </button>
@@ -5895,8 +6107,8 @@ export const AppointmentsPage: React.FC = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Customer Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                    <UserIcon size={14} className="text-primary" />
+                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <UserIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Customer Information
                   </label>
                   
@@ -5921,7 +6133,7 @@ export const AppointmentsPage: React.FC = () => {
                           ...customers.map(c => ({ value: c.id, label: `${c.name} (${c.phone})` }))
                         ]}
                         icon={<Search size={18} />}
-                        buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground shadow-inner font-bold text-sm"
+                        buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold text-sm"
                       />
 
                       {selectedCustId === 'manual' && (
@@ -5944,16 +6156,16 @@ export const AppointmentsPage: React.FC = () => {
                     </div>
                   ) : (
                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 shadow-inner">
-                      <div className="font-black text-foreground text-lg tracking-tight">{profile.name}</div>
-                      <div className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
+                      <div className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{profile.name}</div>
+                      <div className="text-xs text-muted-foreground [.midnight_&]:text-slate-300 font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
                     </div>
                   )}
                 </div>
 
                 {/* Service & Staff Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Briefcase size={14} className="text-primary" />
+                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Briefcase size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Service & Staff
                   </label>
                   
@@ -5973,7 +6185,7 @@ export const AppointmentsPage: React.FC = () => {
                         { value: 'manual', label: 'Other Service (Manual Entry)' },
                         ...services.map(s => ({ value: s.id, label: s.name }))
                       ]}
-                      buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground shadow-inner font-bold text-sm"
+                      buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold text-sm"
                     />
 
                     {selectedSvcId === 'manual' && (
@@ -5995,18 +6207,18 @@ export const AppointmentsPage: React.FC = () => {
                           const [year, month, day] = (apptDate || getLocalISODate()).split('-');
                           const apptDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
                           const apptDayName = apptDateObj.toLocaleDateString('en-US', { weekday: 'long' });
-                          return !s.workingDays || s.workingDays.includes(apptDayName);
+                          return (!s.workingDays || s.workingDays.includes(apptDayName)) && s.role !== 'super_admin';
                         }).map(s => ({ value: s.email, label: s.name }))
                       ]}
-                      buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground shadow-inner font-bold text-sm"
+                      buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold text-sm"
                     />
                   </div>
                 </div>
 
                 {/* Date & Time Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                    <CalendarIcon size={14} className="text-primary" />
+                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <CalendarIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Schedule
                   </label>
                   
@@ -6018,10 +6230,10 @@ export const AppointmentsPage: React.FC = () => {
                       className="rounded-xl border-border shadow-inner"
                     />
                     <div className="relative group flex items-center gap-3 px-4 py-2 bg-input border border-border rounded-xl shadow-inner hover:border-primary/30 transition-all">
-                      <Clock size={18} className="text-primary" />
+                      <Clock size={18} className="text-primary [.midnight_&]:text-amber-400" />
                       <div className="flex flex-col flex-1">
-                        <label className="text-[8px] text-muted-foreground font-black uppercase tracking-widest leading-none mb-1">TIME</label>
-                        <span className="text-sm font-bold text-foreground">{apptTime}</span>
+                        <label className="text-[8px] text-muted-foreground [.midnight_&]:text-slate-300 font-black uppercase tracking-widest leading-none mb-1">TIME</label>
+                        <span className="text-sm font-bold text-foreground [.midnight_&]:text-slate-200">{apptTime}</span>
                       </div>
                       <input
                         type="time"
@@ -6034,12 +6246,12 @@ export const AppointmentsPage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between p-4 bg-muted/5 rounded-2xl border border-border shadow-inner">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-primary/5 rounded-xl text-primary shadow-sm">
+                      <div className="p-2.5 bg-primary/5 rounded-xl text-primary [.midnight_&]:text-amber-400 shadow-sm">
                         <HistoryIcon size={18} />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Duration</span>
-                        <span className="text-xs text-foreground font-bold">Ends at {apptEndTime}</span>
+                        <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Duration</span>
+                        <span className="text-xs text-foreground [.midnight_&]:text-slate-200 font-bold">Ends at {apptEndTime}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -6047,17 +6259,17 @@ export const AppointmentsPage: React.FC = () => {
                         type="number"
                         value={apptDuration}
                         onChange={(e) => setApptDuration(parseInt(e.target.value) || 0)}
-                        className="w-20 p-2 text-sm border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-black text-center"
+                        className="w-20 p-2 text-sm border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-black text-center"
                       />
-                      <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Mins</span>
+                      <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Mins</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Status & Points Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Star size={14} className="text-primary" />
+                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <Star size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Status & Rewards
                   </label>
                   
@@ -6072,7 +6284,7 @@ export const AppointmentsPage: React.FC = () => {
                           { value: 'completed', label: 'Completed' },
                           { value: 'cancelled', label: 'Cancelled' }
                         ]}
-                        buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground shadow-inner font-bold text-sm"
+                        buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold text-sm"
                       />
                     )}
 
@@ -6083,7 +6295,7 @@ export const AppointmentsPage: React.FC = () => {
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Service Type</span>
-                          <span className="text-xs font-bold text-foreground">At Home Service</span>
+                          <span className="text-xs font-bold text-foreground [.midnight_&]:text-slate-200">At Home Service</span>
                         </div>
                       </div>
                       <button
@@ -6103,15 +6315,15 @@ export const AppointmentsPage: React.FC = () => {
 
                     <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-3 shadow-inner">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Points to Earn</span>
+                        <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Points to Earn</span>
                         <span className="text-sm font-black text-green-600">+{willEarnPoints} PTS</span>
                       </div>
                       
                       {selectedCustId && selectedCustId !== 'manual' && (
                         <div className="space-y-2 pt-3 border-t border-primary/10">
                           <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Available Points</span>
-                            <span className="text-sm font-black text-primary">
+                            <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Available Points</span>
+                            <span className="text-sm font-black text-primary [.midnight_&]:text-amber-400">
                               {customers.find(c => c.id === selectedCustId)?.points || 0} PTS
                             </span>
                           </div>
@@ -6121,16 +6333,15 @@ export const AppointmentsPage: React.FC = () => {
                               placeholder="Redeem Points"
                               value={pointsToRedeem}
                               onChange={(e) => {
-                                const val = parseInt(e.target.value) || 0;
-                                const max = customers.find(c => c.id === selectedCustId)?.points || 0;
-                                setPointsToRedeem(Math.min(val, max));
+                                const val = Math.min(Number(e.target.value), (customers.find(c => c.id === selectedCustId)?.points || 0));
+                                setPointsToRedeem(Math.max(0, val));
                               }}
-                              className="w-full p-2 text-xs border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-bold"
+                              className="w-full p-2 text-xs border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold"
                             />
                             <button 
                               type="button"
                               onClick={() => setPointsToRedeem(customers.find(c => c.id === selectedCustId)?.points || 0)}
-                              className="text-[9px] font-black text-primary hover:underline whitespace-nowrap uppercase tracking-widest"
+                              className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 hover:underline whitespace-nowrap uppercase tracking-widest"
                             >
                               Redeem All
                             </button>
@@ -6143,15 +6354,15 @@ export const AppointmentsPage: React.FC = () => {
               </div>
 
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] flex items-center gap-2">
-                    <FileText size={14} className="text-primary" />
+                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                    <FileText size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Additional Notes
                   </label>
                   <textarea
                     placeholder="Any special requests or details..."
                     value={apptNotes}
                     onChange={(e) => setApptNotes(e.target.value)}
-                    className="w-full p-4 border border-border rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground shadow-inner font-medium min-h-[100px] text-sm"
+                    className="w-full p-4 border border-border rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-medium min-h-[100px] text-sm"
                   />
                 </div>
               </div>
@@ -6159,26 +6370,26 @@ export const AppointmentsPage: React.FC = () => {
               <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 space-y-6 shadow-inner">
                   <div className="flex items-center gap-4">
-                    <div className="p-4 bg-primary/10 rounded-2xl text-primary shadow-sm border border-border">
+                    <div className="p-4 bg-primary/10 rounded-2xl text-primary [.midnight_&]:text-amber-400 shadow-sm border border-border">
                       <Check size={32} strokeWidth={3} />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-primary tracking-tighter">
+                      <h3 className="text-2xl font-black text-primary [.midnight_&]:text-amber-400 tracking-tighter">
                         Booking Confirmation
                       </h3>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Review your appointment details</p>
+                      <p className="text-[10px] text-muted-foreground [.midnight_&]:text-slate-300 font-bold uppercase tracking-widest">Review your appointment details</p>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                        <UserIcon size={12} className="text-primary" />
+                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                        <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Customer
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
-                        <p className="font-black text-foreground text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
+                        <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground [.midnight_&]:text-slate-300 font-bold mt-1.5 flex items-center gap-1.5">
                           <Phone size={12} />
                           {manualCustPhone || 'N/A'}
                         </p>
@@ -6186,13 +6397,13 @@ export const AppointmentsPage: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                        <Briefcase size={12} className="text-primary" />
+                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                        <Briefcase size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Service
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
-                        <p className="font-black text-foreground text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
+                        <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
+                        <p className="text-xs text-muted-foreground [.midnight_&]:text-slate-300 font-bold mt-1.5 flex items-center gap-1.5">
                           <HistoryIcon size={12} />
                           {apptDuration} mins ({apptTime} - {apptEndTime})
                         </p>
@@ -6200,48 +6411,48 @@ export const AppointmentsPage: React.FC = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                        <UserIcon size={12} className="text-primary" />
+                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                        <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Staff Member
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
-                        <p className="font-black text-foreground text-lg tracking-tight">
+                        <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">
                           {staff.find(s => s.email === selectedStaffEmail)?.name || 'Any Staff (Auto)'}
                         </p>
-                        <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
+                        <p className="text-[9px] text-muted-foreground [.midnight_&]:text-slate-300 font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                        <CalendarIcon size={12} className="text-primary" />
+                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                        <CalendarIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Scheduled Date
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
-                        <p className="font-black text-foreground text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
-                        <p className="text-[9px] text-muted-foreground font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
+                        <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
+                        <p className="text-[9px] text-muted-foreground [.midnight_&]:text-slate-300 font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
                       </div>
                     </div>
 
                     {isHomeService && (
                       <div className="col-span-full bg-green-500/10 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm">
-                        <div className="p-3 bg-green-600 text-foreground rounded-xl shadow-lg">
+                        <div className="p-3 bg-green-600 text-foreground [.midnight_&]:text-slate-200 rounded-xl shadow-lg">
                           <Car size={20} strokeWidth={2.5} />
                         </div>
                         <div className="flex flex-col">
                           <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Service Location</span>
-                          <span className="text-sm font-black text-foreground">At Home Service Requested</span>
+                          <span className="text-sm font-black text-foreground [.midnight_&]:text-slate-200">At Home Service Requested</span>
                         </div>
                       </div>
                     )}
 
                     {apptNotes && (
                       <div className="col-span-full space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-                          <FileText size={12} className="text-primary" />
+                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                          <FileText size={12} className="text-primary [.midnight_&]:text-amber-400" />
                           Additional Notes
                         </div>
-                        <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm italic text-muted-foreground font-medium text-xs">
+                        <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm italic text-muted-foreground [.midnight_&]:text-slate-300 font-medium text-xs">
                           "{apptNotes}"
                         </div>
                       </div>
@@ -6258,7 +6469,7 @@ export const AppointmentsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
+                    className="px-6 py-2.5 text-xs font-black text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 transition-colors uppercase tracking-widest"
                   >
                     Cancel
                   </button>
@@ -6275,7 +6486,7 @@ export const AppointmentsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setFormStep(1)}
-                    className="px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
+                    className="px-6 py-2.5 text-xs font-black text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 transition-colors uppercase tracking-widest"
                   >
                     Back
                   </button>
@@ -6314,20 +6525,20 @@ export const AppointmentsPage: React.FC = () => {
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-6 mx-auto shadow-inner border border-red-500/20">
               <Trash2 size={32} strokeWidth={2.5} />
             </div>
-            <h3 className="text-2xl font-black text-foreground mb-4 tracking-tighter text-center">Confirm Deletion</h3>
-            <p className="text-muted-foreground font-bold mb-8 leading-relaxed text-center">
-              Are you sure you want to delete the appointment for <span className="text-foreground font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-foreground font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
+            <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Confirm Deletion</h3>
+            <p className="text-muted-foreground [.midnight_&]:text-slate-300 font-bold mb-8 leading-relaxed text-center">
+              Are you sure you want to delete the appointment for <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setConfirmDeleteAppt(null)}
-                className="flex-1 px-6 py-4 border-2 border-border text-muted-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
+                className="flex-1 px-6 py-4 border-2 border-border text-muted-foreground [.midnight_&]:text-slate-300 font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAppointment}
-                className="flex-1 px-6 py-4 bg-red-600 text-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-600/20 active:scale-95"
+                className="flex-1 px-6 py-4 bg-red-600 text-foreground [.midnight_&]:text-slate-200 font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-600/20 active:scale-95"
               >
                 Delete
               </button>
@@ -6347,8 +6558,8 @@ export const AppointmentsPage: React.FC = () => {
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-6 mx-auto shadow-inner border border-red-500/20">
               <AlertCircle size={32} strokeWidth={2.5} />
             </div>
-            <h3 className="text-2xl font-black text-foreground mb-4 tracking-tighter text-center">Time Slot Overlap</h3>
-            <p className="text-muted-foreground font-bold mb-8 leading-relaxed text-center">
+            <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Time Slot Overlap</h3>
+            <p className="text-muted-foreground [.midnight_&]:text-slate-300 font-bold mb-8 leading-relaxed text-center">
               The selected time slot overlaps with an existing appointment for this staff member. Please select a different time or staff member.
             </p>
             <div className="flex gap-4">
@@ -6386,14 +6597,14 @@ const PrintPreviewModal: React.FC<{
       >
         <div className="p-6 border-b border-border flex justify-between items-center bg-muted/10 shrink-0">
           <h3 className="font-bold text-lg tracking-tight flex items-center gap-2">
-            <Printer size={20} className="text-primary" />
+            <Printer size={20} className="text-primary [.midnight_&]:text-amber-400" />
             {title}
           </h3>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></button>
         </div>
         
         <div className="p-6 overflow-y-auto bg-muted/20 flex-1 flex justify-center custom-scrollbar">
-          <div className="bg-white text-black p-6 shadow-md shadow-black/5" style={{ minWidth: '320px' }}>
+          <div className="bg-white text-black  p-6 shadow-md shadow-black/5" style={{ minWidth: '320px' }}>
             <pre className="font-mono text-[12px] leading-[1.4] whitespace-pre-wrap font-medium">
               {text}
             </pre>
@@ -6403,7 +6614,7 @@ const PrintPreviewModal: React.FC<{
         <div className="p-6 border-t border-border bg-card shrink-0 space-y-3">
           <button
             onClick={() => { onPrint(); onClose(); }}
-            className="w-full bg-primary text-primary-foreground py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
+            className="w-full bg-primary text-primary-foreground [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border [.midnight_&]:border-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
           >
             <Printer size={20} />
             {printLabel}
@@ -6412,7 +6623,7 @@ const PrintPreviewModal: React.FC<{
           {onSkipPrint && (
             <button
               onClick={() => { onSkipPrint(); onClose(); }}
-              className="w-full bg-muted text-muted-foreground hover:text-foreground py-4 rounded-2xl font-bold transition-colors"
+              className="w-full bg-muted text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 py-4 rounded-2xl font-bold transition-colors"
             >
               {skipLabel}
             </button>
@@ -6440,8 +6651,8 @@ const Modal: React.FC<{
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
         <div className="flex justify-between items-center">
-          <h3 className="text-primary font-bold text-xl uppercase tracking-widest">{title}</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-1"><X size={24} /></button>
+          <h3 className="text-primary [.midnight_&]:text-amber-400 font-bold text-xl uppercase tracking-widest">{title}</h3>
+          <button onClick={onClose} className="text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 transition-colors p-1"><X size={24} /></button>
         </div>
         <div className="space-y-4">
           {children}
@@ -6529,7 +6740,7 @@ export const ManagePage: React.FC = () => {
         const data = doc.data() as UserProfile;
         // Client-side filtering: Hide super_admin and customers from the staff list
         // EXCLUDE the Super Admin emails from appearing in any UI list
-        const superAdminEmails = ['aungsoe366@gmail.com'];
+        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
         const isExcluded = data.role === 'super_admin' || 
                           data.role === 'customer' || 
                           (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
@@ -6677,7 +6888,7 @@ export const ManagePage: React.FC = () => {
 
       // 2. Role-based protection
       // Only master can delete super_admins
-      if (targetUser?.role === 'super_admin' && currentUserEmail !== 'aungsoe366@gmail.com') {
+      if (targetUser?.role === 'super_admin' && currentUserEmail !== (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) {
         setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can delete Super Admin accounts." });
         setIsDeleting(false);
         setShowConfirm(null);
@@ -6742,7 +6953,7 @@ export const ManagePage: React.FC = () => {
 
   const handleSetupSuperAdmin = async () => {
     if (!user?.email) return;
-    const superAdminEmails = ['aungsoe366@gmail.com'];
+    const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
     if (superAdminEmails.includes(user.email.toLowerCase())) {
       try {
         const docRef = doc(db, 'users', user.email.toLowerCase());
@@ -6786,7 +6997,7 @@ export const ManagePage: React.FC = () => {
     const commissionVal = Number(stfComm);
     
     // Only master account can create super_admin or owner
-    if (user?.email?.toLowerCase() !== 'aungsoe366@gmail.com' && (stfRole === 'super_admin' || stfRole === 'owner')) {
+    if (!isSuperAdmin && (stfRole === 'super_admin' || stfRole === 'owner')) {
       setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can assign Admin or Owner roles." });
       return;
     }
@@ -6807,7 +7018,6 @@ export const ManagePage: React.FC = () => {
       updatedAt: now
     };
 
-    console.log('Registering user...', userData);
 
     try {
       const email = userData.email;
@@ -6841,7 +7051,7 @@ export const ManagePage: React.FC = () => {
     }
 
     // Only master account can update super_admin or owner accounts
-    if (user?.email?.toLowerCase() !== 'aungsoe366@gmail.com' && (editingStaff.role === 'super_admin' || editingStaff.role === 'owner' || stfRole === 'super_admin' || stfRole === 'owner')) {
+    if (!isSuperAdmin && ((editingStaff.email !== user?.email && (editingStaff.role === 'super_admin' || editingStaff.role === 'owner')) || stfRole === 'super_admin')) {
       setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can modify Admin or Owner accounts." });
       return;
     }
@@ -6864,7 +7074,6 @@ export const ManagePage: React.FC = () => {
       updatedAt: now
     };
 
-    console.log('Updating user...', userData);
 
     try {
       if (newEmail !== editingStaff.email) {
@@ -7613,7 +7822,7 @@ export const ManagePage: React.FC = () => {
                   <div className="space-y-3">
                     <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-1">Assigned Roles</label>
                     <div className="flex flex-wrap gap-2 pb-4">
-                       {['staff', 'cashier', 'owner', 'super_admin'].map(roleOption => (
+                       {['staff', 'cashier', 'owner', 'super_admin'].filter(role => role !== 'super_admin' || isSuperAdmin).map(roleOption => (
                          <button 
                            key={roleOption}
                            type="button"
@@ -7752,10 +7961,10 @@ export const ManagePage: React.FC = () => {
             
             <div className="space-y-4 pt-2">
               <h4 className="text-primary font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
-                <span>Registered Staff ({staff.length})</span>
+                <span>Registered Staff ({staff.filter(s => s.role !== 'super_admin').length})</span>
                 <UsersIcon size={14} />
               </h4>
-              {staff.map(s => (
+              {staff.filter(s => s.role !== 'super_admin').map(s => (
                 <div key={s.email} className="bg-background p-5 rounded-2xl border border-border space-y-4 shadow-sm hover:border-primary/30 transition-all">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-4">
@@ -7775,7 +7984,7 @@ export const ManagePage: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {/* Edit Button Logic: Owners are uneditable except by master account */}
-                      {(isAdmin && s.role !== 'owner' && s.role !== 'super_admin') || (user?.email?.toLowerCase() === 'aungsoe366@gmail.com') ? (
+                      {(isAdmin && s.role !== 'owner' && s.role !== 'super_admin') || isSuperAdmin || user?.email === s.email ? (
                         <button 
                           onClick={() => {
                             setEditingStaff(s);
@@ -7799,7 +8008,7 @@ export const ManagePage: React.FC = () => {
                       ) : null}
                       
                       {/* Delete Button Logic: Owners are undeletable easily */}
-                      {isAdmin && s.email !== user?.email && s.role !== 'owner' && s.role !== 'super_admin' && (
+                      {((isSuperAdmin && s.email !== user?.email) || (isAdmin && s.email !== user?.email && s.role !== 'owner' && s.role !== 'super_admin')) && (
                         <button 
                           onClick={() => setShowConfirm({ coll: 'users', id: s.id || s.email })} 
                           className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
@@ -9050,7 +9259,7 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] overflow-hidden overscroll-none bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] transition-colors duration-500 ease-in-out text-foreground select-none">
+    <div className="fixed inset-0 z-[99999] overflow-hidden overscroll-none bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] transition-colors duration-500 ease-in-out text-foreground [.midnight_&]:text-slate-200 select-none">
       <div className="h-[100dvh] w-full flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
         <div className="relative w-full max-w-[400px] flex flex-col justify-center z-10 shrink-0 h-full max-h-[800px]">
         <AnimatePresence mode="wait">
@@ -9104,7 +9313,7 @@ const LoginPage: React.FC = () => {
           >
             <button
               onClick={() => setViewState('welcome')}
-              className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
+              className="absolute top-4 left-4 p-2 text-muted-foreground [.midnight_&]:text-slate-300 hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
             >
               <ArrowLeft size={14} /> Back
             </button>
@@ -9131,7 +9340,7 @@ const LoginPage: React.FC = () => {
                 onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  loginMethod === 'phone' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  loginMethod === 'phone' ? "text-primary-foreground" : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
                 )}
               >
                 {loginMethod === 'phone' && (
@@ -9144,7 +9353,7 @@ const LoginPage: React.FC = () => {
                 onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  loginMethod === 'email' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  loginMethod === 'email' ? "text-primary-foreground" : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
                 )}
               >
                 {loginMethod === 'email' && (
@@ -9156,49 +9365,49 @@ const LoginPage: React.FC = () => {
 
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">
+                <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">
                   {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
                 </label>
                 <div className="relative">
                   {loginMethod === 'email' ? (
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
                   ) : (
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
                   )}
                   <input 
                     type={loginMethod === 'email' ? "email" : "tel"} 
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder={loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center px-1">
-                  <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest">Password</label>
+                  <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest">Password</label>
                   <button 
                     type="button"
                     onClick={() => navigate('/identity-reset')}
-                    className="text-[9px] text-primary font-bold hover:underline"
+                    className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-bold hover:underline"
                   >
                     Forgot?
                   </button>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
                   <input 
                     type={showPassword ? "text" : "password"} 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40 hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -9208,7 +9417,7 @@ const LoginPage: React.FC = () => {
               <button 
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-primary text-foreground font-black py-3 mt-2 rounded-xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
+                className="w-full bg-primary text-foreground [.midnight_&]:text-slate-200 font-black py-3 mt-2 rounded-xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
               >
                 {isSubmitting ? "PROCESSING..." : "SIGN IN"}
               </button>
@@ -9218,7 +9427,7 @@ const LoginPage: React.FC = () => {
               <button 
                 onClick={handleBiometricLogin}
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-primary/10 border border-primary/20 text-primary font-bold py-3 mt-4 rounded-xl hover:bg-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+                className="w-full flex items-center justify-center gap-3 bg-primary/10 border border-primary/20 text-primary [.midnight_&]:text-amber-400 font-bold py-3 mt-4 rounded-xl hover:bg-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
               >
                 {biometryType === BiometryType.FACE_ID || biometryType === BiometryType.FACE_AUTHENTICATION ? (
                   <ScanFace size={18} />
@@ -9234,13 +9443,13 @@ const LoginPage: React.FC = () => {
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
-                <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-card">Or continue with</span>
+                <span className="relative px-4 text-[8px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest bg-card">Or continue with</span>
               </div>
 
               <button 
                 onClick={handleGoogleLogin}
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-input border border-border text-foreground font-bold py-3 rounded-xl hover:bg-muted transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+                className="w-full flex items-center justify-center gap-3 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold py-3 rounded-xl hover:bg-muted transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
               >
                 <span className="text-xs tracking-wider">Continue with Google</span>
               </button>
@@ -9249,7 +9458,7 @@ const LoginPage: React.FC = () => {
             <div className="pt-6 text-center">
               <button 
                 onClick={() => setShowHelp(!showHelp)}
-                className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-primary transition-colors flex items-center justify-center gap-2 mx-auto"
+                className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors flex items-center justify-center gap-2 mx-auto"
               >
                 <HelpCircle size={12} />
                 Need help?
@@ -9261,9 +9470,9 @@ const LoginPage: React.FC = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-4 p-4 bg-primary/5 border border-primary/10 rounded-2xl text-left"
                 >
-                  <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2">Staff Registration</p>
-                  <p className="text-[9px] text-muted-foreground leading-relaxed">
-                    If you were added as a staff member by an admin, you still need to <strong className="text-primary">Sign Up</strong> once with your email to set your password.
+                  <p className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest mb-2">Staff Registration</p>
+                  <p className="text-[9px] text-muted-foreground [.midnight_&]:text-slate-300 leading-relaxed">
+                    If you were added as a staff member by an admin, you still need to <strong className="text-primary [.midnight_&]:text-amber-400">Sign Up</strong> once with your email to set your password.
                   </p>
                 </motion.div>
               )}
@@ -9282,7 +9491,7 @@ const LoginPage: React.FC = () => {
           >
             <button
               onClick={() => setViewState('welcome')}
-              className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-primary transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
+              className="absolute top-4 left-4 p-2 text-muted-foreground [.midnight_&]:text-slate-300 hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
             >
               <ArrowLeft size={14} /> Back
             </button>
@@ -9305,7 +9514,7 @@ const LoginPage: React.FC = () => {
                 onClick={() => { setSignUpMethod('phone'); setSignUpIdentifier(''); setError(null); }}
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  signUpMethod === 'phone' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  signUpMethod === 'phone' ? "text-primary-foreground" : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
                 )}
               >
                 {signUpMethod === 'phone' && (
@@ -9318,7 +9527,7 @@ const LoginPage: React.FC = () => {
                 onClick={() => { setSignUpMethod('email'); setSignUpIdentifier(''); setError(null); }}
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  signUpMethod === 'email' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  signUpMethod === 'email' ? "text-primary-foreground" : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
                 )}
               >
                 {signUpMethod === 'email' && (
@@ -9330,66 +9539,66 @@ const LoginPage: React.FC = () => {
 
             <form onSubmit={handleSignUpSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">Full Name</label>
+                <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">Full Name</label>
                 <div className="relative">
-                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
                   <input 
                     type="text" 
                     value={signUpName}
                     onChange={(e) => setSignUpName(e.target.value)}
                     placeholder="Your Name"
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">
+                <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">
                   {signUpMethod === 'phone' ? 'Phone Number' : 'Email Address'}
                 </label>
                 <div className="relative">
                   {signUpMethod === 'email' ? (
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
                   ) : (
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
                   )}
                   <input 
                     type={signUpMethod === 'email' ? "email" : "tel"} 
                     value={signUpIdentifier}
                     onChange={(e) => setSignUpIdentifier(e.target.value)}
                     placeholder={signUpMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
                   />
                 </div>
               </div>
 
               {signUpMethod === 'phone' && (
                 <div className="space-y-1">
-                  <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">Date of Birth</label>
+                  <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">Date of Birth</label>
                   <input 
                     type="date"
                     value={signUpDob}
                     onChange={(e) => setSignUpDob(e.target.value)}
-                    className="w-full bg-input border border-border rounded-xl p-3 text-foreground text-sm focus:border-primary outline-none transition-all"
+                    className="w-full bg-input border border-border rounded-xl p-3 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all"
                   />
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">Password</label>
+                <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
                   <input 
                     type={signUpShowPassword ? "text" : "password"} 
                     value={signUpPassword}
                     onChange={(e) => setSignUpPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
                   />
                   <button 
                     type="button"
                     onClick={() => setSignUpShowPassword(!signUpShowPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/40 hover:text-primary transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40 hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors"
                   >
                     {signUpShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -9398,15 +9607,15 @@ const LoginPage: React.FC = () => {
 
               {signUpMethod === 'phone' && (
                 <div className="space-y-1">
-                  <label className="text-[9px] text-primary/60 font-black uppercase tracking-widest ml-1">Confirm Password</label>
+                  <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">Confirm Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary/40" size={16} />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
                     <input 
                       type={signUpShowPassword ? "text" : "password"} 
                       value={signUpConfirmPassword}
                       onChange={(e) => setSignUpConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground"
+                      className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
                     />
                   </div>
                 </div>
@@ -9415,7 +9624,7 @@ const LoginPage: React.FC = () => {
               <button 
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-primary text-foreground font-black py-3 mt-4 rounded-xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
+                className="w-full bg-primary text-foreground [.midnight_&]:text-slate-200 font-black py-3 mt-4 rounded-xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
               >
                 {isSubmitting ? "PROCESSING..." : "CREATE ACCOUNT"}
               </button>
@@ -9426,13 +9635,13 @@ const LoginPage: React.FC = () => {
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
-                <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-card">Or continue with</span>
+                <span className="relative px-4 text-[8px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest bg-card">Or continue with</span>
               </div>
 
               <button 
                 onClick={handleGoogleLogin}
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-input border border-border text-foreground font-bold py-3 rounded-xl hover:bg-muted transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+                className="w-full flex items-center justify-center gap-3 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold py-3 rounded-xl hover:bg-muted transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
               >
                 <span className="text-xs tracking-wider">Continue with Google</span>
               </button>
@@ -9486,10 +9695,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   useEffect(() => {
     if (!loading && user && profile) {
-      const hasRedirected = sessionStorage.getItem('initial_redirect_done');
+      const hasRedirected = initialRedirectDone;
       if (!hasRedirected) {
         navigate('/');
-        sessionStorage.setItem('initial_redirect_done', 'true');
+        initialRedirectDone = true;
       }
     }
   }, [user, profile, loading, navigate]);

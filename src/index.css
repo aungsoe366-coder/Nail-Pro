@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
+@custom-variant midnight (.midnight &);
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -52,15 +53,22 @@
 }
 
 .midnight {
-  --theme-primary: #192a56;
-  --theme-primary-foreground: #ffffff;
-  --fg: #1e272e;
-  --card-fg: #1e272e;
-  --border-color: rgba(25, 42, 86, 0.15);
-  --muted-foreground: #485460;
-  --body-bg-from: #f1f2f6;
-  --body-bg-via: #dfe4ea;
-  --body-bg-to: #ced6e0;
+  --theme-primary: #D4AF37;
+  --theme-primary-foreground: #12100E;
+  --bg: transparent;
+  --fg: #E6DFD9;
+  --card: #221C18;
+  --card-fg: #E6DFD9;
+  --border-color: #3D322C;
+  --input-bg: #2E2520;
+  --muted: #1A1613;
+  --muted-foreground: #9C9086;
+  --secondary: #3A2F28;
+  --secondary-foreground: #E6DFD9;
+  --accent: #D4AF37;
+  --body-bg-from: #12100E;
+  --body-bg-via: #161311;
+  --body-bg-to: #1A1613;
 }
 
 @layer base {

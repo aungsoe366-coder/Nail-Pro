@@ -1,10 +1,13 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
 import { getFirestore, getDocFromServer, doc } from 'firebase/firestore';
+import { Capacitor } from '@capacitor/core';
 import firebaseConfig from '../firebase-applet-config.json';
 
 export const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
+export const auth = Capacitor.isNativePlatform() 
+  ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
+  : getAuth(app);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 
 export enum OperationType {
