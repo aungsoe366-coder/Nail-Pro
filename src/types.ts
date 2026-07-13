@@ -60,6 +60,8 @@ export interface Expense {
   desc: string;
   amount: number;
   category?: string;
+  assignedStaff?: string;
+  createdBy?: string;
 }
 
 export interface ExpenseCategory {

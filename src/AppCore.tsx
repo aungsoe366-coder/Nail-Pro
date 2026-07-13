@@ -168,7 +168,7 @@ function cn(...inputs: ClassValue[]) {
 
 const normalizePhone = (phone: string) => {
   // Strip all non-digits
-  let cleaned = phone.replace(/\D/g, '');
+  let cleaned = phone.replace(/\\D/g, '');
   
   // Handle Myanmar specific normalization (common for this app's context)
   // If it starts with 959..., convert to 09...
@@ -298,20 +298,26 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
   
   if (settings?.receiptHeader) {
     const headerLines = settings.receiptHeader.match(/.{1,32}/g) || [settings.receiptHeader];
-    headerLines.forEach(l => text += center(l.trim(), 32) + "\n");
+    headerLines.forEach(l => text += center(l.trim(), 32) + "\
+");
   }
 
   if (!settings?.hideShopNameOnReceipt) {
-    text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\n";
+    text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\
+";
   }
   const address = settings?.addr || "";
   const addrLines = address.match(/.{1,32}/g) || [address];
-  addrLines.forEach(l => text += center(l.trim(), 32) + "\n");
-  text += center("Ph: " + (settings?.ph || ""), 32) + "\n";
-  text += "-".repeat(32) + "\n";
+  addrLines.forEach(l => text += center(l.trim(), 32) + "\
+");
+  text += center("Ph: " + (settings?.ph || ""), 32) + "\
+";
+  text += "-".repeat(32) + "\
+";
   
   if (!settings?.hideDateTimeOnReceipt) {
-    text += `Date   : ${new Date(sale.dateTime).toLocaleString()}\n`;
+    text += `Date   : ${new Date(sale.dateTime).toLocaleString()}\
+`;
   }
   
   if (!settings?.hideStaffNameOnReceipt) {
@@ -334,37 +340,52 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
     }
   }
 
-  text += "-".repeat(32) + "\n";
-  text += "Item           Qty Price  Total\n";
-  text += "-".repeat(32) + "\n";
+  text += "-".repeat(32) + "\
+";
+  text += "Item           Qty Price  Total\
+";
+  text += "-".repeat(32) + "\
+";
 
   sale.items.forEach(item => {
     const sub = item.price * item.qty;
     const netSub = sub - (sub * (item.disP / 100));
     let fullItemName = item.name + (item.disP > 0 ? `(-${item.disP}%)` : "");
     let nameChunks = fullItemName.match(/.{1,14}/g) || [fullItemName];
-    text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\n";
+    text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\
+";
     if (nameChunks.length > 1) {
-      for (let i = 1; i < nameChunks.length; i++) { text += pad(nameChunks[i], 14) + "\n"; }
+      for (let i = 1; i < nameChunks.length; i++) { text += pad(nameChunks[i], 14) + "\
+"; }
     }
   });
 
-  text += "-".repeat(32) + "\n";
-  text += pad("NET TOTAL", 18) + padL(sale.total.toLocaleString() + " Ks", 14) + "\n";
+  text += "-".repeat(32) + "\
+";
+  text += pad("NET TOTAL", 18) + padL(sale.total.toLocaleString() + " Ks", 14) + "\
+";
 
   if (!settings?.hideLoyaltyPointsOnReceipt && (sale.pointsEarned || sale.pointsRedeemed)) {
-    text += "-".repeat(32) + "\n";
-    if (sale.pointsEarned) text += pad("Points Earned", 18) + padL("+" + sale.pointsEarned, 14) + "\n";
-    if (sale.pointsRedeemed) text += pad("Points Redeemed", 18) + padL("-" + sale.pointsRedeemed, 14) + "\n";
+    text += "-".repeat(32) + "\
+";
+    if (sale.pointsEarned) text += pad("Points Earned", 18) + padL("+" + sale.pointsEarned, 14) + "\
+";
+    if (sale.pointsRedeemed) text += pad("Points Redeemed", 18) + padL("-" + sale.pointsRedeemed, 14) + "\
+";
   }
 
-  text += "-".repeat(32) + "\n";
+  text += "-".repeat(32) + "\
+";
   
   const footerText = settings?.receiptFooter || "Thank You! Please Come Again";
   const footerLines = footerText.match(/.{1,32}/g) || [footerText];
-  footerLines.forEach(l => text += center(l.trim(), 32) + "\n");
+  footerLines.forEach(l => text += center(l.trim(), 32) + "\
+");
   
-  text += "\n\n\n";
+  text += "\
+\
+\
+";
   return text;
 };
 
@@ -381,23 +402,31 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
   
   if (settings?.receiptHeader) {
     const headerLines = settings.receiptHeader.match(/.{1,32}/g) || [settings.receiptHeader];
-    headerLines.forEach(l => text += center(l.trim(), 32) + "\n");
+    headerLines.forEach(l => text += center(l.trim(), 32) + "\
+");
   }
 
   if (!settings?.hideShopNameOnReceipt) {
-    text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\n";
+    text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\
+";
   }
-  text += center("CONSOLIDATED SALES REPORT", 32) + "\n";
-  text += center(`From: ${from}`, 32) + "\n";
-  text += center(`To  : ${to}`, 32) + "\n";
-  text += "-".repeat(32) + "\n";
+  text += center("CONSOLIDATED SALES REPORT", 32) + "\
+";
+  text += center(`From: ${from}`, 32) + "\
+";
+  text += center(`To  : ${to}`, 32) + "\
+";
+  text += "-".repeat(32) + "\
+";
 
   let grandTotal = 0;
   sales.forEach((sale, idx) => {
-    text += `Sale #${idx + 1}\n`;
+    text += `Sale #${idx + 1}\
+`;
     
     if (!settings?.hideDateTimeOnReceipt) {
-      text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\n`;
+      text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\
+`;
     }
 
     if (!settings?.hideStaffNameOnReceipt) {
@@ -420,36 +449,51 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
       }
     }
 
-    text += "-".repeat(32) + "\n";
-    text += "Item           Qty Price  Total\n";
+    text += "-".repeat(32) + "\
+";
+    text += "Item           Qty Price  Total\
+";
     
     sale.items.forEach(item => {
       const sub = item.price * item.qty;
       const netSub = sub - (sub * (item.disP / 100));
       let fullItemName = item.name + (item.disP > 0 ? `(-${item.disP}%)` : "");
       let nameChunks = fullItemName.match(/.{1,14}/g) || [fullItemName];
-      text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\n";
+      text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\
+";
       if (nameChunks.length > 1) {
-        for (let i = 1; i < nameChunks.length; i++) { text += pad(nameChunks[i], 14) + "\n"; }
+        for (let i = 1; i < nameChunks.length; i++) { text += pad(nameChunks[i], 14) + "\
+"; }
       }
     });
     
-    text += padL(`Sale Total: ${sale.total.toLocaleString()} Ks`, 32) + "\n";
-    text += "-".repeat(32) + "\n\n";
+    text += padL(`Sale Total: ${sale.total.toLocaleString()} Ks`, 32) + "\
+";
+    text += "-".repeat(32) + "\
+\
+";
     grandTotal += sale.total;
   });
 
-  text += "=".repeat(32) + "\n";
-  text += pad("GRAND TOTAL", 18) + padL(grandTotal.toLocaleString() + " Ks", 14) + "\n";
-  text += "=".repeat(32) + "\n";
-  text += center("Generated on: " + new Date().toLocaleString(), 32) + "\n";
+  text += "=".repeat(32) + "\
+";
+  text += pad("GRAND TOTAL", 18) + padL(grandTotal.toLocaleString() + " Ks", 14) + "\
+";
+  text += "=".repeat(32) + "\
+";
+  text += center("Generated on: " + new Date().toLocaleString(), 32) + "\
+";
 
   if (settings?.receiptFooter) {
     const footerLines = settings.receiptFooter.match(/.{1,32}/g) || [settings.receiptFooter];
-    footerLines.forEach(l => text += center(l.trim(), 32) + "\n");
+    footerLines.forEach(l => text += center(l.trim(), 32) + "\
+");
   }
 
-  text += "\n\n\n";
+  text += "\
+\
+\
+";
   return text;
 };
 
@@ -3179,7 +3223,7 @@ export const MonthlySummaryPage: React.FC = () => {
     const totalExp = shopExp + comms;
     const profit = income - totalExp;
 
-    return { mName, income, totalExp, profit };
+    return { mName, income, comms, shopExp, totalExp, profit };
   }).filter(d => d.income > 0 || d.totalExp > 0);
 
   const gIncome = monthlyData.reduce((sum, d) => sum + d.income, 0);
@@ -3189,15 +3233,20 @@ export const MonthlySummaryPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportCSV = async () => {
-    if (monthlyData.length === 0) return;
+    if (monthlyData.length === 0) {
+      alert("No data to export");
+      return;
+    }
     setIsExporting(true);
     
     try {
-      const headers = ['Month', 'Gross Revenue (Ks)', 'Expenses (Ks)', 'Net Profit (Ks)'];
+      const headers = ['Month', 'Total Revenue (Ks)', 'Total Commission (Ks)', 'Shop Expenses (Ks)', 'Total Expenses (Ks)', 'Net Income (Ks)'];
       
       const csvData = monthlyData.map(d => [
         d.mName,
         d.income,
+        d.comms,
+        d.shopExp,
         d.totalExp,
         d.profit
       ]);
@@ -3346,6 +3395,7 @@ export const ExpenseListPage: React.FC = () => {
   if (!isAdmin && !isCashier) return <Navigate to="/" />;
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
+  const [staffList, setStaffList] = useState<UserProfile[]>([]);
   const today = getLocalISODate();
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
@@ -3357,8 +3407,10 @@ export const ExpenseListPage: React.FC = () => {
   const [expDesc, setExpDesc] = useState('');
   const [expAmt, setExpAmt] = useState('');
   const [expCategory, setExpCategory] = useState('');
+  const [assignedStaff, setAssignedStaff] = useState('');
   const [editingExpenseCategory, setEditingExpenseCategory] = useState<ExpenseCategory | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
   
   const [showConfirm, setShowConfirm] = useState<{coll: string, id: string} | null>(null);
 
@@ -3372,8 +3424,14 @@ export const ExpenseListPage: React.FC = () => {
     const unsubCat = onSnapshot(query(collection(db, 'expense_categories'), orderBy('name')), (snapshot) => {
       setExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExpenseCategory)));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'expense_categories'));
+
+    const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+      const staff = users.filter(u => ['owner', 'cashier', 'staff'].includes(u.role || ''));
+      setStaffList(staff);
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
     
-    return () => { unsubscribe(); unsubCat(); };
+    return () => { unsubscribe(); unsubCat(); unsubStaff(); };
   }, [profile]);
 
   const filteredExpenses = expenses.filter(e => 
@@ -3399,12 +3457,14 @@ export const ExpenseListPage: React.FC = () => {
     setIsExporting(true);
     
     try {
-      const headers = ['Date', 'Description', 'Category', 'Amount (Ks)'];
+      const headers = ['Date', 'Description', 'Category', 'Assigned Staff', 'Maker', 'Amount (Ks)'];
       
       const csvData = filteredExpenses.map(e => [
         e.date,
         e.desc,
         e.category || 'General',
+        e.assignedStaff || '',
+        e.createdBy || '',
         e.amount
       ]);
       
@@ -3425,14 +3485,22 @@ export const ExpenseListPage: React.FC = () => {
     if (!expDesc || !expAmt) return;
     const now = new Date();
     const localDateStr = getLocalISODate(now);
+    
     try {
-      await addDoc(collection(db, 'expenses'), { 
-        date: localDateStr, 
-        desc: expDesc, 
-        amount: Number(expAmt),
-        category: expCategory || 'General'
-      });
-      setExpDesc(''); setExpAmt(''); setExpCategory('');
+      const newExpense: any = {
+         date: localDateStr,
+         desc: expDesc,
+         amount: Number(expAmt),
+         category: expCategory || 'General',
+         createdBy: profile?.name || 'Unknown User'
+      };
+
+      if ((expCategory === 'Staff Salary' || expCategory === 'Advance Pay') && assignedStaff) {
+         newExpense.assignedStaff = assignedStaff;
+      }
+
+      await addDoc(collection(db, 'expenses'), newExpense);
+      setExpDesc(''); setExpAmt(''); setExpCategory(''); setAssignedStaff('');
       setShowExpForm(false);
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'expenses');
@@ -3475,38 +3543,55 @@ export const ExpenseListPage: React.FC = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       <Modal 
         isOpen={showExpForm} 
-        onClose={() => { setShowExpForm(false); setExpDesc(''); setExpAmt(''); setExpCategory(''); }} 
+        onClose={() => { setShowExpForm(false); setExpDesc(''); setExpAmt(''); setExpCategory(''); setAssignedStaff(''); }} 
         title="Add Daily Expense"
       >
         <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Expense Type</label>
+            <CustomSelect
+              value={expCategory}
+              onChange={(val) => {
+                 setExpCategory(val);
+                 if (val !== 'Staff Salary' && val !== 'Advance Pay') {
+                    setAssignedStaff('');
+                 }
+              }}
+              options={[
+                { value: '', label: 'General' },
+                ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
+              ]}
+              buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
+            />
+          </div>
+
+          {(expCategory === 'Staff Salary' || expCategory === 'Advance Pay') && (
+            <div className="space-y-1.5 animate-in fade-in zoom-in duration-200">
+              <label className="text-[10px] text-primary [.midnight_&]:text-[#D4AF37] font-bold uppercase tracking-widest ml-1">Assign Staff</label>
+              <CustomSelect
+                value={assignedStaff}
+                onChange={setAssignedStaff}
+                placeholder="Select Staff Member..."
+                options={staffList.map(s => ({ value: s.name, label: s.name }))}
+                buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:border-[#D4AF37]/50"
+              />
+            </div>
+          )}
+
           <FloatingInput 
-            label="Reason"
+            label="Note (Description)"
             value={expDesc}
             onChange={setExpDesc}
             onFocusClear
           />
-          <div className="grid grid-cols-2 gap-4">
-            <FloatingInput 
-              label="Amount (Ks)"
-              type="number"
-              value={expAmt}
-              onChange={setExpAmt}
-              onFocusClear
-            />
-            <div className="space-y-1.5">
-              <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
-              <CustomSelect
-                value={expCategory}
-                onChange={setExpCategory}
-                options={[
-                  { value: '', label: 'General' },
-                  ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
-                ]}
-                buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-red-500"
-              />
-            </div>
-          </div>
-          <button onClick={handleAddExpense} className="w-full bg-red-500 text-foreground font-bold py-4 rounded-2xl mt-2 hover:bg-red-600 transition-all active:scale-95 shadow-lg shadow-red-500/20 uppercase tracking-widest">Add Expense</button>
+          <FloatingInput 
+            label="Amount (Ks)"
+            type="number"
+            value={expAmt}
+            onChange={setExpAmt}
+            onFocusClear
+          />
+          <button onClick={handleAddExpense} className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Add Expense</button>
         </div>
       </Modal>
 
@@ -3524,19 +3609,18 @@ export const ExpenseListPage: React.FC = () => {
               onFocusClear
             />
             {editingExpenseCategory ? (
-              <button onClick={handleUpdateExpenseCategory} className="w-full bg-red-500 text-foreground py-4 mt-2 uppercase tracking-widest font-black rounded-xl">Update Category</button>
+              <button onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-primary-foreground py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Update Category</button>
             ) : (
-              <button onClick={handleAddExpenseCategory} className="w-full bg-red-500 text-foreground py-4 mt-2 uppercase tracking-widest font-black rounded-xl">Add Category</button>
+              <button onClick={handleAddExpenseCategory} className="w-full bg-primary text-primary-foreground py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Add Category</button>
             )}
           </div>
-
           <div className="space-y-3 pt-6 border-t border-border">
             <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Existing Categories</h4>
             <div className="flex flex-wrap gap-2">
               {expenseCategories.map(c => (
-                <div key={c.id} className="flex items-center gap-2 bg-background border border-border px-3 py-1.5 rounded-full group hover:border-red-500/50 transition-all">
+                <div key={c.id} className="flex items-center gap-2 bg-background border border-border px-3 py-1.5 rounded-full group hover:border-primary/50 transition-all">
                   <span className="text-xs font-bold text-foreground">{c.name}</span>
-                  <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-muted-foreground hover:text-red-500 hover:scale-110 transition-all"><Settings size={12} /></button>
+                  <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-muted-foreground hover:text-primary hover:scale-110 transition-all"><Settings size={12} /></button>
                   {isAdmin && (
                     <button onClick={() => setShowConfirm({ coll: 'expense_categories', id: c.id })} className="text-red-500 hover:text-red-600 hover:scale-110 transition-all"><Trash2 size={12} /></button>
                   )}
@@ -3547,45 +3631,60 @@ export const ExpenseListPage: React.FC = () => {
         </div>
       </Modal>
 
+      {/* Confirm Delete Modal */}
+      <Modal 
+        isOpen={!!showConfirm} 
+        onClose={() => setShowConfirm(null)} 
+        title="Confirm Deletion"
+      >
+        <div className="space-y-6">
+          <p className="text-sm text-muted-foreground">Are you sure you want to delete this record? This action cannot be undone.</p>
+          <div className="flex gap-4">
+            <button onClick={() => setShowConfirm(null)} className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:opacity-80 transition-opacity">Cancel</button>
+            <button onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Delete</button>
+          </div>
+        </div>
+      </Modal>
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
-        <div className="space-y-1">
+        <div className="space-y-1 flex-1 min-w-0">
           <h3 className="text-3xl font-light tracking-tight text-foreground">Shop <span className="italic font-serif">Expenses</span></h3>
           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-4">Operating Cost Management</p>
           <div className="flex items-center gap-3 mt-4">
             <button 
               onClick={() => setShowExpForm(true)}
-              className="bg-red-500 text-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-red-500/20 hover:bg-red-600 transition-colors"
+              className="bg-primary text-primary-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-95 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
             >
               <Plus size={14} /> ADD EXPENSE
             </button>
             <button 
               onClick={() => setShowExpCatForm(true)}
-              className="bg-card border border-border text-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 hover:border-red-500/30 transition-colors"
+              className="bg-card border border-border text-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 hover:border-primary/30 transition-colors"
             >
               <Settings size={14} /> MANAGE CATEGORIES
             </button>
           </div>
         </div>
         
-        <div className="bg-card rounded-[2rem] border border-border shadow-2xl z-50 relative min-w-[320px]">
+        <div className="bg-card rounded-[2rem] border border-border shadow-2xl z-40 relative min-w-[320px] [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C]">
           <div className="grid grid-cols-1 md:grid-cols-3">
             <CustomDatePicker 
               label="FROM" 
               value={dateFrom} 
               onChange={setDateFrom} 
-              iconColor="text-red-500"
+              iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
               className="border-b md:border-b-0 md:border-r border-border/50"
             />
             <CustomDatePicker 
               label="TO" 
               value={dateTo} 
               onChange={setDateTo} 
-              iconColor="text-red-500"
+              iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
               className="border-b md:border-b-0 md:border-r border-border/50"
             />
             <div className="flex flex-col p-4">
                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                 <Settings size={12} className="text-red-500" /> CATEGORY
+                 <Settings size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> CATEGORY
                </label>
                <CustomSelect
                  value={expFilterCat}
@@ -3596,41 +3695,42 @@ export const ExpenseListPage: React.FC = () => {
                    { value: 'General', label: 'General' },
                    ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
                  ]}
+                 buttonClassName="bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
                />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-6 relative overflow-hidden group">
-        <div className="absolute inset-0 bg-red-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-6 relative overflow-hidden group [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C]">
+        <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
         <div className="relative z-10 space-y-2">
           <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Total Operating Expenditure</span>
           <div className="flex items-center justify-center gap-4">
-            <TrendingDown size={32} className="text-red-500/50" />
-            <h1 className="text-6xl font-mono tracking-tighter text-red-500 drop-shadow-sm">
+            <TrendingDown size={32} className="text-red-500/50 [.midnight_&]:text-red-400/50" />
+            <h1 className="text-6xl font-mono tracking-tighter text-red-500 drop-shadow-sm [.midnight_&]:text-[#D4AF37]">
               {totalExp.toLocaleString()} <span className="text-2xl font-sans font-normal opacity-50">Ks</span>
             </h1>
           </div>
-          <div className="h-1 bg-red-500/20 w-24 mx-auto rounded-full" />
+          <div className="h-1 bg-red-500/20 w-24 mx-auto rounded-full [.midnight_&]:bg-[#D4AF37]/20" />
         </div>
         {filteredExpenses.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
           <div className="relative z-10 flex justify-center mt-4">
             <button 
               onClick={handleExportCSV}
               disabled={isExporting}
-              className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 [.midnight_&]:from-[#3A2F28] [.midnight_&]:to-[#2E2520] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
               title="Export to CSV"
             >
               {isExporting ? (
                 <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
+                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin [.midnight_&]:border-[#D4AF37]/30 [.midnight_&]:border-t-[#D4AF37]" />
+                  <span className="text-xs uppercase tracking-widest font-bold [.midnight_&]:text-[#D4AF37]">Generating...</span>
                 </>
               ) : (
                 <>
-                  <Download size={18} />
-                  <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
+                  <Download size={18} className="[.midnight_&]:text-[#D4AF37]" />
+                  <span className="text-xs uppercase tracking-widest font-bold [.midnight_&]:text-[#D4AF37]">Export Excel</span>
                 </>
               )}
             </button>
@@ -3646,19 +3746,19 @@ export const ExpenseListPage: React.FC = () => {
 
         <div className="space-y-12">
           {groupedExpenses.length === 0 ? (
-            <div className="text-center py-20 bg-card rounded-[2rem] border border-dashed border-border">
+            <div className="text-center py-20 bg-card rounded-[2rem] border border-dashed border-border [.midnight_&]:bg-[#1A1613]">
               <div className="flex flex-col items-center gap-3 opacity-30">
-                <Receipt size={48} />
+                <Receipt size={48} className="[.midnight_&]:text-[#D4AF37]" />
                 <p className="text-sm font-medium italic text-muted-foreground">No expense records found for this period.</p>
               </div>
             </div>
           ) : (
             groupedExpenses.map(([date, expenses]) => (
               <div key={date} className="space-y-4">
-                <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background/90  border-b border-border/30">
-                  <div className="flex items-center gap-3 px-5 py-2 bg-red-500/10 border border-red-500/20 rounded-2xl shadow-sm shadow-red-500/5">
-                    <CalendarIcon size={14} className="text-red-500" />
-                    <span className="text-xs font-black uppercase tracking-[0.15em] text-red-500">
+                <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background/90 backdrop-blur-sm border-b border-border/30">
+                  <div className="flex items-center gap-3 px-5 py-2 bg-primary/10 border border-primary/20 rounded-2xl shadow-sm shadow-primary/5 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:border-[#D4AF37]/20">
+                    <CalendarIcon size={14} className="text-primary [.midnight_&]:text-[#D4AF37]" />
+                    <span className="text-xs font-black uppercase tracking-[0.15em] text-primary [.midnight_&]:text-[#D4AF37]">
                       {formatDisplayDate(date)}
                     </span>
                   </div>
@@ -3673,34 +3773,57 @@ export const ExpenseListPage: React.FC = () => {
                 <div className="grid grid-cols-1 gap-3">
                   {expenses.map(e => (
                     <div 
+                      onClick={() => setSelectedExpense(e)}
+                      
                       key={e.id} 
-                      className="group bg-card border border-border rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md hover:border-red-500/30 transition-all"
+                      className="group bg-card border border-border rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md hover:border-primary/30 transition-all relative overflow-hidden cursor-pointer [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C] [.midnight_&]:hover:border-[#D4AF37]/50"
                     >
-                      <div className="flex items-center gap-5">
-                        <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 group-hover:scale-110 transition-transform">
-                          <Receipt size={24} />
+                      <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors [.midnight_&]:bg-[#D4AF37]/20 [.midnight_&]:group-hover:bg-[#D4AF37]" />
+                      <div className="flex items-start gap-4 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform shrink-0 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:text-[#D4AF37]">
+                          <Receipt size={20} />
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-lg font-medium text-foreground block group-hover:text-red-500 transition-colors leading-tight">{e.desc}</span>
-                          <div className="flex items-center gap-3">
-                            <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{e.category || 'General'}</span>
-                            <span className="text-[10px] text-muted-foreground font-mono uppercase tracking-wider">{new Date(e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-bold text-foreground uppercase tracking-widest [.midnight_&]:text-[#E6DFD9]">
+                              {e.assignedStaff ? `${e.category || 'General'} - ${e.assignedStaff}` : (e.category || 'General')}
+                            </span>
+                          </div>
+                          {e.desc && (
+                            <p className="text-sm text-muted-foreground font-medium leading-tight max-w-[200px] sm:max-w-xs truncate [.midnight_&]:text-[#9C9086]">
+                              {e.desc}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider flex items-center gap-1">
+                              <Clock size={10} /> {new Date(e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {e.createdBy && (
+                              <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest flex items-center gap-1 [.midnight_&]:text-[#9C9086]/70">
+                                Maker: {e.createdBy}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-6">
-                        <div className="text-right">
-                          <span className="text-xl font-mono font-bold text-red-500">{e.amount.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
+                      <div className="flex flex-col items-end gap-2 shrink-0 pl-4">
+                        <div className="text-right whitespace-nowrap shrink-0">
+                          <span className="text-lg sm:text-xl font-mono font-bold text-red-500 group-hover:text-red-600 transition-colors [.midnight_&]:text-[#D4AF37] [.midnight_&]:group-hover:text-[#F3C853]">
+                            {e.amount.toLocaleString()} <span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">Ks</span>
+                          </span>
                         </div>
-                        {isAdmin && (
-                          <button 
-                            onClick={() => setShowConfirm({ coll: 'expenses', id: e.id })}
-                            className="p-2.5 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all active:scale-90"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isAdmin && (
+                            <button 
+                              onClick={(ev) => { ev.stopPropagation(); setShowConfirm({ coll: 'expenses', id: e.id }); }} 
+                              className="w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm opacity-0 group-hover:opacity-100"
+                              title="Delete Expense"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -3709,36 +3832,87 @@ export const ExpenseListPage: React.FC = () => {
             ))
           )}
         </div>
-      </div>
-
+      
       <Modal 
-        isOpen={!!showConfirm} 
-        onClose={() => setShowConfirm(null)} 
-        title="Are you sure?"
-        maxWidth="max-w-xs"
+        isOpen={!!selectedExpense} 
+        onClose={() => setSelectedExpense(null)} 
+        title="Expense Details"
+        maxWidth="max-w-md"
       >
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto">
-            <Trash2 size={32} />
-          </div>
-          <p className="text-muted-foreground text-sm font-bold">This action cannot be undone.</p>
-          <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={() => setShowConfirm(null)}
-              className="bg-muted/20 text-foreground font-black py-3 rounded-xl border border-border hover:bg-muted/30 transition-all uppercase tracking-widest text-xs"
-            >
-              CANCEL
-            </button>
-            <button 
-              onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)}
-              className="bg-red-500 text-foreground font-black py-3 rounded-xl shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs"
-            >
-              DELETE
-            </button>
-          </div>
-        </div>
-      </Modal>
+        {selectedExpense && (
+          <div className="space-y-6">
+            <div className="bg-muted/30 p-6 rounded-[2rem] border border-border/50 space-y-6 shadow-inner [.midnight_&]:bg-[#221C18]/50 [.midnight_&]:border-[#D4AF37]/10">
+              <div className="bg-background/50 p-5 rounded-2xl border border-border/50 grid grid-cols-2 gap-5 [.midnight_&]:bg-[#1A1613] [.midnight_&]:border-[#3D322C]">
+                <div className="space-y-1 col-span-2">
+                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Transaction ID (Txn ID)</span>
+                  <span className="text-[10px] font-mono text-muted-foreground [.midnight_&]:text-[#9C9086] truncate block">{selectedExpense.id}</span>
+                </div>
 
+                <div className="space-y-1">
+                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Category</span>
+                  <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#E6DFD9]">{selectedExpense.category || 'General'}</span>
+                </div>
+                {selectedExpense.assignedStaff && (
+                  <div className="space-y-1">
+                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Paid To</span>
+                    <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#D4AF37]">{selectedExpense.assignedStaff}</span>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Maker</span>
+                  <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#9C9086]">{selectedExpense.createdBy || 'Unknown'}</span>
+                </div>
+                <div className="space-y-1">
+                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Date & Time</span>
+                  <span className="text-[11px] font-mono text-muted-foreground [.midnight_&]:text-[#9C9086]">
+                    {formatDisplayDate(selectedExpense.date)} {new Date(selectedExpense.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary [.midnight_&]:bg-[#D4AF37]" />
+                  Note / Description
+                </span>
+                <div className="bg-background/50 p-4 rounded-xl border border-border/50 min-h-[80px] [.midnight_&]:bg-[#1A1613] [.midnight_&]:border-[#3D322C]">
+                  <span className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap [.midnight_&]:text-[#E6DFD9]">
+                    {selectedExpense.desc || 'No description provided.'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-border/30 flex justify-between items-end [.midnight_&]:border-[#3D322C]">
+                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Amount</span>
+                <span className="text-3xl font-mono font-bold text-red-500 [.midnight_&]:text-[#F3C853] tracking-tighter drop-shadow-sm">
+                  {selectedExpense.amount.toLocaleString()} <span className="text-sm font-sans font-normal opacity-50">Ks</span>
+                </span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              {(profile?.role === 'super_admin' || profile?.role === 'owner') && (
+                <button 
+                  onClick={() => {
+                    setSelectedExpense(null);
+                    setShowConfirm({ coll: 'expenses', id: selectedExpense.id! });
+                  }}
+                  className="py-4 px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors border border-red-500/20 shadow-sm flex items-center justify-center"
+                  title="Delete Expense"
+                >
+                  <Trash2 size={18} />
+                </button>
+              )}
+              <button 
+                onClick={() => setSelectedExpense(null)}
+                className="flex-1 py-4 bg-muted hover:bg-muted/80 text-foreground font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors border border-border/50 shadow-sm [.midnight_&]:bg-[#2E2520] [.midnight_&]:hover:bg-[#3A2F28] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:border-[#D4AF37]/30"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+</div>
     </div>
   );
 };
@@ -4615,13 +4789,17 @@ export const SalesReportPage: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportCSV = async () => {
-    if (reportData.length === 0) return;
+    const activeData = reportData.filter(d => d.count > 0);
+    if (activeData.length === 0) {
+      alert("No data to export");
+      return;
+    }
     setIsExporting(true);
     
     try {
-      const headers = ['Month', 'Transactions Count', 'Sales (Ks)', 'Commission (Ks)'];
+      const headers = ['Month', 'Transactions Count', 'Total Sales (Ks)', 'Total Commission (Ks)'];
       
-      const csvData = reportData.map(d => [
+      const csvData = activeData.map(d => [
         d.mName,
         d.count,
         d.totalSales,
@@ -5713,7 +5891,11 @@ export const AppointmentsPage: React.FC = () => {
                             )}
                             {profile?.role !== 'customer' && (
                               <a 
-                                href={`https://wa.me/${appt.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello ' + appt.customerName + ',\n\nYour appointment for ' + appt.serviceName + ' has been ' + appt.status + ' for ' + formatDisplayDate(appt.date) + ' at ' + appt.time + '.\n\nThank you for choosing Nail Pro!')}`}
+                                href={`https://wa.me/${appt.customerPhone.replace(/\\D/g, '')}?text=${encodeURIComponent('Hello ' + appt.customerName + ',\
+\
+Your appointment for ' + appt.serviceName + ' has been ' + appt.status + ' for ' + formatDisplayDate(appt.date) + ' at ' + appt.time + '.\
+\
+Thank you for choosing Nail Pro!')}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 onClick={(e) => e.stopPropagation()}
@@ -7123,7 +7305,7 @@ export const ManagePage: React.FC = () => {
     }
 
     // Basic phone validation: digits, spaces, plus, hyphens, parentheses, 7-20 chars
-    const phoneRegex = /^[0-9+\-() ]{7,20}$/;
+    const phoneRegex = /^[0-9+() -]{7,20}$/;
     if (!phoneRegex.test(custPhone.trim())) {
       setStatusMsg({ type: 'error', text: 'Please enter a valid phone number.' });
       return;
@@ -7131,7 +7313,7 @@ export const ManagePage: React.FC = () => {
 
     // Basic email validation if provided
     if (custEmail && custEmail.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
       if (!emailRegex.test(custEmail.trim())) {
         setStatusMsg({ type: 'error', text: 'Please enter a valid email address.' });
         return;
@@ -7163,7 +7345,7 @@ export const ManagePage: React.FC = () => {
     }
 
     // Basic phone validation
-    const phoneRegex = /^[0-9+\-() ]{7,20}$/;
+    const phoneRegex = /^[0-9+() -]{7,20}$/;
     if (!phoneRegex.test(custPhone.trim())) {
       setStatusMsg({ type: 'error', text: 'Please enter a valid phone number.' });
       return;
@@ -7171,7 +7353,7 @@ export const ManagePage: React.FC = () => {
 
     // Basic email validation if provided
     if (custEmail && custEmail.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
       if (!emailRegex.test(custEmail.trim())) {
         setStatusMsg({ type: 'error', text: 'Please enter a valid email address.' });
         return;
@@ -9032,7 +9214,7 @@ const ResetPasswordPage: React.FC = () => {
       return;
     }
     
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       setError("Please enter a valid email address.");
       return;
