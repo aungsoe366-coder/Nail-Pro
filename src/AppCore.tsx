@@ -125,7 +125,8 @@ import {
   ArrowLeft,
   Palette,
   Fingerprint,
-  ScanFace
+  ScanFace,
+  Camera
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -1336,6 +1337,60 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.email) return;
+    
+    setIsUploadingPhoto(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = async () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 300;
+          const MAX_HEIGHT = 300;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          
+          try {
+            await updateDoc(doc(db, 'users', profile.email), { photoURL: dataUrl });
+          } catch(err) {
+            console.error("Failed to update photo in DB", err);
+            alert("Failed to update photo in DB.");
+          } finally {
+            setIsUploadingPhoto(false);
+          }
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error("Failed to process photo:", err);
+      alert("Failed to process photo.");
+      setIsUploadingPhoto(false);
+    }
+  };
+
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <Home size={18} />, path: '/', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
@@ -1365,12 +1420,32 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
         "fixed top-0 left-0 w-[300px] h-full bg-card z-[10001] transition-transform duration-500 ease-out flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.2)]",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-8 border-b border-border/50 relative overflow-hidden">
+        <div className="p-8 border-b border-border/50 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-          <div className="relative z-10">
-            <span className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-2 block">{profile?.role}</span>
-            <h2 className="text-2xl font-black text-foreground tracking-tighter leading-tight">{profile?.name}</h2>
-            <p className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-widest opacity-60">{profile?.email}</p>
+          <div className="relative z-10 flex items-center space-x-4">
+            <div className="relative shrink-0">
+               <div className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center border-2 border-primary/20">
+                 {profile?.photoURL ? (
+                    <img src={profile.photoURL} alt={profile.name} className="w-full h-full object-cover" />
+                 ) : (
+                    <UserIcon size={32} className="text-muted-foreground" />
+                 )}
+               </div>
+               <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+                 <Camera size={20} />
+                 <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
+               </label>
+               {isUploadingPhoto && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+               )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-1 block truncate">{profile?.role}</span>
+              <h2 className="text-xl font-black text-foreground tracking-tighter leading-tight truncate">{profile?.name}</h2>
+              <p className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-widest opacity-60 truncate">{profile?.email}</p>
+            </div>
           </div>
         </div>
         

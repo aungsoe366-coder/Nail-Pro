@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+
 import { getAuth, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getDocFromServer, doc } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
@@ -8,6 +9,7 @@ export const app = initializeApp(firebaseConfig);
 export const auth = Capacitor.isNativePlatform() 
   ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
   : getAuth(app);
+
 
 export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}) }, firebaseConfig.firestoreDatabaseId);
 
