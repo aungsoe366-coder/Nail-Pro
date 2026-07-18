@@ -33,7 +33,7 @@ import {
 import { 
   collection, 
   doc, 
-  getDoc, 
+  getDoc, getDocFromCache, 
   getDocs, 
   setDoc, 
   addDoc, 
@@ -632,6 +632,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const email = u.email!.toLowerCase();
         const docRef = doc(db, 'users', email);
         let initDone = false;
+
+        getDocFromCache(docRef).then(docSnap => {
+          if (docSnap.exists()) {
+             setProfile(docSnap.data() as UserProfile);
+             setLoading(false);
+             setIsAuthReady(true);
+          }
+        }).catch(() => {});
 
         unsubProfile = onSnapshot(docRef, (docSnap) => {
           try {
@@ -1769,11 +1777,7 @@ export const DashboardPage: React.FC = () => {
     { label: "Appointments", value: pendingAppts.toString(), icon: <Calendar size={24} />, color: "text-purple-500", bg: "bg-purple-500/10" },
   ];
 
-  if (loading) return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
