@@ -285,41 +285,32 @@ const CustomDatePicker: React.FC<{
 
 // Removed redundant OperationType and FirestoreErrorInfo definitions (moved to firebase.ts)
 
-const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | null) => {
-  const pad = (str: string, len: number) => str.length >= len ? str.substring(0, len) : str + ' '.repeat(len - str.length);
-  const padL = (str: string, len: number) => str.length >= len ? str.substring(0, len) : ' '.repeat(len - str.length) + str;
-  const center = (str: string, len: number) => {
-    if(str.length >= len) return str.substring(0, len);
-    const left = Math.floor((len - str.length) / 2);
-    return ' '.repeat(left) + str + ' '.repeat(len - str.length - left);
-  };
-
-  let text = "";
+const generateReceiptHTML = (sale: Omit<Sale, 'id'>, settings: ShopSettings | null) => {
+  let html = `<div style="font-family: sans-serif; font-size: 12px; color: #000; width: 100%; max-width: 320px; margin: 0 auto;">`;
   
+  // Header
+  html += `<div style="text-align: center; margin-bottom: 12px;">`;
   if (settings?.receiptHeader) {
-    const headerLines = settings.receiptHeader.match(/.{1,32}/g) || [settings.receiptHeader];
-    headerLines.forEach(l => text += center(l.trim(), 32) + "\
-");
+    html += `<div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">${settings.receiptHeader.replace(/\n/g, '<br/>')}</div>`;
   }
-
   if (!settings?.hideShopNameOnReceipt) {
-    text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\
-";
+    html += `<div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">${settings?.name || "NAIL PRO BEAUTY STUDIO"}</div>`;
   }
-  const address = settings?.addr || "";
-  const addrLines = address.match(/.{1,32}/g) || [address];
-  addrLines.forEach(l => text += center(l.trim(), 32) + "\
-");
-  text += center("Ph: " + (settings?.ph || ""), 32) + "\
-";
-  text += "-".repeat(32) + "\
-";
-  
+  if (settings?.addr) {
+    html += `<div style="margin-bottom: 2px;">${settings.addr.replace(/\n/g, '<br/>')}</div>`;
+  }
+  if (settings?.ph) {
+    html += `<div>Ph: ${settings.ph}</div>`;
+  }
+  html += `</div>`;
+
+  html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
+
+  // Info
+  html += `<div style="margin-bottom: 8px;">`;
   if (!settings?.hideDateTimeOnReceipt) {
-    text += `Date   : ${new Date(sale.dateTime).toLocaleString()}\
-`;
+    html += `<div><strong>Date:</strong> ${new Date(sale.dateTime).toLocaleString()}</div>`;
   }
-  
   if (!settings?.hideStaffNameOnReceipt) {
     let itemStaffNames: string[] = [];
     sale.items.forEach((item) => {
@@ -329,106 +320,105 @@ const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
         itemStaffNames.push(item.staffName);
       }
     });
-    
     const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
     if (uniqueStaff.length > 0) {
-      text += `Staff  : ${uniqueStaff.join(', ')}
-`;
+      html += `<div><strong>Staff:</strong> ${uniqueStaff.join(', ')}</div>`;
     } else if (sale.staff) {
-      text += `Staff  : ${sale.staff}
-`;
+      html += `<div><strong>Staff:</strong> ${sale.staff}</div>`;
     }
   }
+  html += `</div>`;
 
-  text += "-".repeat(32) + "\
-";
-  text += "Item           Qty Price  Total\
-";
-  text += "-".repeat(32) + "\
-";
+  html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
 
+  // Items Table
+  html += `<table style="width: 100%; border-collapse: collapse; font-size: 12px;">`;
+  html += `<thead>`;
+  html += `<tr>`;
+  html += `<th style="text-align: left; width: 40%; padding: 4px 0; border-bottom: 1px solid #000;">Item</th>`;
+  html += `<th style="text-align: center; width: 15%; padding: 4px 0; border-bottom: 1px solid #000;">Qty</th>`;
+  html += `<th style="text-align: right; width: 20%; padding: 4px 0; border-bottom: 1px solid #000;">Price</th>`;
+  html += `<th style="text-align: right; width: 25%; padding: 4px 0; border-bottom: 1px solid #000;">Amount</th>`;
+  html += `</tr>`;
+  html += `</thead>`;
+  html += `<tbody>`;
+  
   sale.items.forEach(item => {
     const sub = item.price * item.qty;
-    const netSub = sub - (sub * (item.disP / 100));
-    let fullItemName = item.name + (item.disP > 0 ? `(-${item.disP}%)` : "");
-    let nameChunks = fullItemName.match(/.{1,14}/g) || [fullItemName];
-    text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\
-";
-    if (nameChunks.length > 1) {
-      for (let i = 1; i < nameChunks.length; i++) { text += pad(nameChunks[i], 14) + "\
-"; }
-    }
+    const netSub = sub - (sub * ((item.disP || 0) / 100));
+    let fullItemName = item.name + ((item.disP || 0) > 0 ? ` <br/><small>(-${item.disP}%)</small>` : "");
+    html += `<tr>`;
+    html += `<td style="text-align: left; padding: 6px 0; word-wrap: break-word; vertical-align: top;">${fullItemName}</td>`;
+    html += `<td style="text-align: center; padding: 6px 0; vertical-align: top;">${item.qty}</td>`;
+    html += `<td style="text-align: right; padding: 6px 0; vertical-align: top;">${item.price.toLocaleString()}</td>`;
+    html += `<td style="text-align: right; padding: 6px 0; vertical-align: top;">${netSub.toLocaleString()}</td>`;
+    html += `</tr>`;
   });
-
-  text += "-".repeat(32) + "\
-";
-  text += pad("NET TOTAL", 18) + padL(sale.total.toLocaleString() + " Ks", 14) + "\
-";
-
+  
+  // Empty row for spacing before totals
+  html += `<tr><td colspan="4" style="border-top: 1px dashed #000; padding-top: 8px;"></td></tr>`;
+  
+  // Totals
+  html += `<tr style="font-weight: bold;">`;
+  html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">NET TOTAL</td>`;
+  html += `<td style="text-align: right; padding: 4px 0;">${sale.total.toLocaleString()} Ks</td>`;
+  html += `</tr>`;
+  
   if (!settings?.hideLoyaltyPointsOnReceipt && (sale.pointsEarned || sale.pointsRedeemed)) {
-    text += "-".repeat(32) + "\
-";
-    if (sale.pointsEarned) text += pad("Points Earned", 18) + padL("+" + sale.pointsEarned, 14) + "\
-";
-    if (sale.pointsRedeemed) text += pad("Points Redeemed", 18) + padL("-" + sale.pointsRedeemed, 14) + "\
-";
+    if (sale.pointsEarned) {
+      html += `<tr>`;
+      html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Points Earned</td>`;
+      html += `<td style="text-align: right; padding: 4px 0;">+${sale.pointsEarned}</td>`;
+      html += `</tr>`;
+    }
+    if (sale.pointsRedeemed) {
+      html += `<tr>`;
+      html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Points Redeemed</td>`;
+      html += `<td style="text-align: right; padding: 4px 0;">-${sale.pointsRedeemed}</td>`;
+      html += `</tr>`;
+    }
   }
+  html += `</tbody>`;
+  html += `</table>`;
 
-  text += "-".repeat(32) + "\
-";
-  
+  html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
+
+  // Footer
+  html += `<div style="text-align: center; margin-top: 12px;">`;
   const footerText = settings?.receiptFooter || "Thank You! Please Come Again";
-  const footerLines = footerText.match(/.{1,32}/g) || [footerText];
-  footerLines.forEach(l => text += center(l.trim(), 32) + "\
-");
+  html += `<div>${footerText.replace(/\n/g, '<br/>')}</div>`;
+  html += `</div>`;
   
-  text += "\
-\
-\
-";
-  return text;
+  html += `</div>`;
+  return html;
 };
 
-const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings | null, from: string, to: string) => {
-  const pad = (str: string, len: number) => str.length >= len ? str.substring(0, len) : str + ' '.repeat(len - str.length);
-  const padL = (str: string, len: number) => str.length >= len ? str.substring(0, len) : ' '.repeat(len - str.length) + str;
-  const center = (str: string, len: number) => {
-    if(str.length >= len) return str.substring(0, len);
-    const left = Math.floor((len - str.length) / 2);
-    return ' '.repeat(left) + str + ' '.repeat(len - str.length - left);
-  };
-
-  let text = "";
+const generateConsolidatedReceiptHTML = (sales: Sale[], settings: ShopSettings | null, from: string, to: string) => {
+  let html = `<div style="font-family: sans-serif; font-size: 12px; color: #000; width: 100%; max-width: 320px; margin: 0 auto;">`;
   
+  // Header
+  html += `<div style="text-align: center; margin-bottom: 12px;">`;
   if (settings?.receiptHeader) {
-    const headerLines = settings.receiptHeader.match(/.{1,32}/g) || [settings.receiptHeader];
-    headerLines.forEach(l => text += center(l.trim(), 32) + "\
-");
+    html += `<div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">${settings.receiptHeader.replace(/\n/g, '<br/>')}</div>`;
   }
-
   if (!settings?.hideShopNameOnReceipt) {
-    text += center(settings?.name || "NAIL PRO BEAUTY STUDIO", 32) + "\
-";
+    html += `<div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">${settings?.name || "NAIL PRO BEAUTY STUDIO"}</div>`;
   }
-  text += center("CONSOLIDATED SALES REPORT", 32) + "\
-";
-  text += center(`From: ${from}`, 32) + "\
-";
-  text += center(`To  : ${to}`, 32) + "\
-";
-  text += "-".repeat(32) + "\
-";
+  html += `<div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">CONSOLIDATED SALES REPORT</div>`;
+  html += `<div>From: ${from}</div>`;
+  html += `<div>To: ${to}</div>`;
+  html += `</div>`;
+
+  html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
 
   let grandTotal = 0;
+  
   sales.forEach((sale, idx) => {
-    text += `Sale #${idx + 1}\
-`;
-    
+    html += `<div style="margin-bottom: 4px; font-weight: bold;">Sale #${idx + 1}</div>`;
+    html += `<div style="margin-bottom: 8px;">`;
     if (!settings?.hideDateTimeOnReceipt) {
-      text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\
-`;
+      html += `<div><strong>Time:</strong> ${new Date(sale.dateTime).toLocaleTimeString()}</div>`;
     }
-
     if (!settings?.hideStaffNameOnReceipt) {
       let itemStaffNames: string[] = [];
       sale.items.forEach((item) => {
@@ -438,63 +428,65 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
           itemStaffNames.push(item.staffName);
         }
       });
-      
       const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
       if (uniqueStaff.length > 0) {
-        text += `Staff: ${uniqueStaff.join(', ')}
-`;
+        html += `<div><strong>Staff:</strong> ${uniqueStaff.join(', ')}</div>`;
       } else if (sale.staff) {
-        text += `Staff: ${sale.staff}
-`;
+        html += `<div><strong>Staff:</strong> ${sale.staff}</div>`;
       }
     }
-
-    text += "-".repeat(32) + "\
-";
-    text += "Item           Qty Price  Total\
-";
+    html += `</div>`;
+    
+    html += `<table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px;">`;
+    html += `<thead>`;
+    html += `<tr>`;
+    html += `<th style="text-align: left; width: 40%; padding: 4px 0; border-bottom: 1px solid #000;">Item</th>`;
+    html += `<th style="text-align: center; width: 15%; padding: 4px 0; border-bottom: 1px solid #000;">Qty</th>`;
+    html += `<th style="text-align: right; width: 20%; padding: 4px 0; border-bottom: 1px solid #000;">Price</th>`;
+    html += `<th style="text-align: right; width: 25%; padding: 4px 0; border-bottom: 1px solid #000;">Amount</th>`;
+    html += `</tr>`;
+    html += `</thead>`;
+    html += `<tbody>`;
     
     sale.items.forEach(item => {
       const sub = item.price * item.qty;
-      const netSub = sub - (sub * (item.disP / 100));
-      let fullItemName = item.name + (item.disP > 0 ? `(-${item.disP}%)` : "");
-      let nameChunks = fullItemName.match(/.{1,14}/g) || [fullItemName];
-      text += pad(nameChunks[0], 14) + " " + padL(item.qty.toString(), 3) + " " + padL(item.price.toString(), 6) + " " + padL(netSub.toString(), 6) + "\
-";
-      if (nameChunks.length > 1) {
-        for (let i = 1; i < nameChunks.length; i++) { text += pad(nameChunks[i], 14) + "\
-"; }
-      }
+      const netSub = sub - (sub * ((item.disP || 0) / 100));
+      let fullItemName = item.name + ((item.disP || 0) > 0 ? ` <br/><small>(-${item.disP}%)</small>` : "");
+      html += `<tr>`;
+      html += `<td style="text-align: left; padding: 6px 0; word-wrap: break-word; vertical-align: top;">${fullItemName}</td>`;
+      html += `<td style="text-align: center; padding: 6px 0; vertical-align: top;">${item.qty}</td>`;
+      html += `<td style="text-align: right; padding: 6px 0; vertical-align: top;">${item.price.toLocaleString()}</td>`;
+      html += `<td style="text-align: right; padding: 6px 0; vertical-align: top;">${netSub.toLocaleString()}</td>`;
+      html += `</tr>`;
     });
     
-    text += padL(`Sale Total: ${sale.total.toLocaleString()} Ks`, 32) + "\
-";
-    text += "-".repeat(32) + "\
-\
-";
+    html += `<tr><td colspan="4" style="border-top: 1px dashed #000; padding-top: 4px;"></td></tr>`;
+    html += `<tr style="font-weight: bold;">`;
+    html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Sale Total</td>`;
+    html += `<td style="text-align: right; padding: 4px 0;">${sale.total.toLocaleString()} Ks</td>`;
+    html += `</tr>`;
+    html += `</tbody>`;
+    html += `</table>`;
+    html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
+    
     grandTotal += sale.total;
   });
 
-  text += "=".repeat(32) + "\
-";
-  text += pad("GRAND TOTAL", 18) + padL(grandTotal.toLocaleString() + " Ks", 14) + "\
-";
-  text += "=".repeat(32) + "\
-";
-  text += center("Generated on: " + new Date().toLocaleString(), 32) + "\
-";
+  html += `<table style="width: 100%; border-collapse: collapse; font-size: 14px; font-weight: bold; margin-top: 12px; margin-bottom: 12px;">`;
+  html += `<tr>`;
+  html += `<td style="text-align: left; padding: 6px 0;">GRAND TOTAL</td>`;
+  html += `<td style="text-align: right; padding: 6px 0;">${grandTotal.toLocaleString()} Ks</td>`;
+  html += `</tr>`;
+  html += `</table>`;
 
+  html += `<div style="text-align: center; font-style: italic; color: #666; margin-bottom: 12px;">Generated on: ${new Date().toLocaleString()}</div>`;
+  
   if (settings?.receiptFooter) {
-    const footerLines = settings.receiptFooter.match(/.{1,32}/g) || [settings.receiptFooter];
-    footerLines.forEach(l => text += center(l.trim(), 32) + "\
-");
+    html += `<div style="text-align: center;">${settings.receiptFooter.replace(/\n/g, '<br/>')}</div>`;
   }
-
-  text += "\
-\
-\
-";
-  return text;
+  
+  html += `</div>`;
+  return html;
 };
 
 // Removed redundant handleFirestoreError definition (moved to firebase.ts)
@@ -604,132 +596,99 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (u) {
+        setUser(u);
         const email = u.email!.toLowerCase();
         const docRef = doc(db, 'users', email);
-        
-        (async () => {
+        let initDone = false;
+
+        unsubProfile = onSnapshot(docRef, (docSnap) => {
           try {
-            const now = new Date().toISOString();
-            
-            if (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) {
-              const docSnap = await getDoc(docRef);
-              if (!docSnap.exists() || docSnap.data()?.role !== 'super_admin') {
-                await setDoc(docRef, { 
-                  role: 'super_admin', 
+            if (!docSnap.exists()) {
+              if (!initDone) {
+                initDone = true;
+                const now = new Date().toISOString();
+                let currentRole = (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) ? 'super_admin' : 'customer';
+                const profileData: any = {
+                  name: u.displayName || (currentRole === 'super_admin' ? 'Admin' : 'Customer'),
                   email: email,
-                  name: u.displayName || 'Admin',
-                  status: 'active',
-                  uid: u.uid,
-                  createdAt: now,
-                  updatedAt: now
-                }, { merge: true });
-              }
-            }
-
-            const docSnap = await getDoc(docRef);
-            let currentRole = 'customer';
-            
-            if (docSnap.exists()) {
-              const data = docSnap.data() as UserProfile;
-              currentRole = data.role;
-              if (!data.uid || !data.createdAt) {
-                await setDoc(docRef, { 
-                  uid: u.uid,
-                  createdAt: data.createdAt || now,
-                  updatedAt: now
-                }, { merge: true });
-              }
-            }
-
-            if (currentRole === 'customer' && email !== (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) {
-              let initialName = u.displayName || 'Customer';
-              let initialPoints = 0;
-              try {
-                const custQuery = query(collection(db, 'customers'), where('email', '==', email));
-                const custSnap = await getDocs(custQuery);
-                
-                if (!custSnap.empty) {
-                  const custData = custSnap.docs[0].data() as Customer;
-                  initialName = custData.name || initialName;
-                  initialPoints = custData.points || 0;
-                } else {
-                  if (docSnap.exists()) {
-                    const existingData = docSnap.data() as UserProfile;
-                    if (existingData.points) {
-                      initialPoints = existingData.points;
-                    }
-                  }
-                  await addDoc(collection(db, 'customers'), {
-                    name: initialName,
-                    email: email,
-                    phone: '',
-                    address: '',
-                    notes: 'Registered via Google Sign-In',
-                    points: initialPoints,
-                    totalVisits: 0,
-                    totalSpent: 0
-                  });
-                }
-              } catch (err) {
-                console.error("Failed to check or create customer record", err);
-              }
-
-              if (!docSnap.exists()) {
-                const profileData: UserProfile = {
-                  name: initialName,
-                  email: email,
-                  role: 'customer',
+                  role: currentRole as any,
                   commission: 0,
                   uid: u.uid,
-                  points: initialPoints,
+                  points: 0,
                   status: 'active',
                   createdAt: now,
                   updatedAt: now
                 };
-                await setDoc(docRef, profileData);
+                
+                // Do not await this so it doesn't block UI if offline.
+                setDoc(docRef, profileData).catch(err => console.error("setDoc failed", err));
+
+                if (currentRole === 'customer') {
+                   getDocs(query(collection(db, 'customers'), where('email', '==', email))).then(custSnap => {
+                       if (custSnap.empty) {
+                          addDoc(collection(db, 'customers'), {
+                            name: profileData.name,
+                            email: email,
+                            phone: '',
+                            address: '',
+                            notes: 'Registered via Google Sign-In',
+                            points: 0,
+                            totalVisits: 0,
+                            totalSpent: 0
+                          }).catch(err => console.error("addDoc customer failed", err));
+                       }
+                   }).catch(err => console.error("getDocs customers failed", err));
+                }
+                
+                // Optimistically set profile to allow app load
+                setProfile(profileData as UserProfile);
               }
-            } else if (!docSnap.exists()) {
-              const profileData: UserProfile = {
-                name: u.displayName || 'User',
-                email: email,
-                role: (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) ? 'super_admin' : 'customer',
-                commission: 0,
-                uid: u.uid,
-                points: 0,
-                status: 'active',
-                createdAt: now,
-                updatedAt: now
-              };
-              await setDoc(docRef, profileData);
+            } else {
+               const data = docSnap.data();
+               if (data?.status === 'deleted') {
+                  signOut(auth);
+                  setUser(null);
+                  setProfile(null);
+                  setLoading(false);
+                  setIsAuthReady(true);
+                  return;
+               }
+               setProfile(data as UserProfile);
+               
+               // Background admin/uid sync
+               if (!initDone) {
+                 initDone = true;
+                 const now = new Date().toISOString();
+                 let updates: any = {};
+                 if (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '') && data?.role !== 'super_admin') {
+                   updates.role = 'super_admin';
+                   updates.updatedAt = now;
+                 }
+                 if (!data?.uid || !data?.createdAt) {
+                   updates.uid = u.uid;
+                   updates.createdAt = data?.createdAt || now;
+                   updates.updatedAt = now;
+                 }
+                 if (Object.keys(updates).length > 0) {
+                    setDoc(docRef, updates, { merge: true }).catch(e => console.error("update doc failed", e));
+                 }
+               }
             }
-
-            unsubProfile = onSnapshot(docRef, (docSnap) => {
-              if (!docSnap.exists() || docSnap.data()?.status === 'deleted') {
-                signOut(auth);
-                setUser(null);
-                setProfile(null);
-                return;
-              }
-              const profileData = docSnap.data() as UserProfile;
-              setProfile(profileData);
-              setLoading(false);
-              setIsAuthReady(true);
-            }, (err) => {
-              console.error("Profile snapshot error:", err);
-              if (err.message.includes('permission-denied')) {
-                 signOut(auth);
-              }
-              setLoading(false);
-              setIsAuthReady(true);
-            });
-
-            setUser(u);
-          } catch (err) {
-            console.error("Profile initialization error:", err);
             setLoading(false);
             setIsAuthReady(true);
+          } catch (err) {
+             console.error("Profile onSnapshot handler error:", err);
+             setLoading(false);
+             setIsAuthReady(true);
           }
-        })();
+        }, (err) => {
+          console.error("Profile snapshot error:", err);
+          if (err.message.includes('permission-denied')) { 
+            signOut(auth);
+          }
+          setLoading(false);
+          setIsAuthReady(true);
+        });
       } else {
         setUser(null);
         setProfile(null);
@@ -742,9 +701,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       unsubscribe();
       if (unsubProfile) unsubProfile();
     };
-  }, []);
-
-  const isLoggingIn = useRef(false);
+  }, []);  const isLoggingIn = useRef(false);
   const googleProvider = useMemo(() => new GoogleAuthProvider(), []);
 
   const login = async () => {
@@ -2328,9 +2285,9 @@ export const POSPage: React.FC = () => {
       }
 
       if (print) {
-        const printText = generateReceiptText(sale, shopSettings);
+        const printText = generateReceiptHTML(sale, shopSettings);
         if (Capacitor.isNativePlatform()) {
-          const htmlStr = "<html><body style='margin:0;padding:10px;'><pre style='font-family:monospace;font-size:12px;'>" + printText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + "</pre></body></html>";
+          const htmlStr = `<html><body style='margin:0;padding:10px;'>${printText}</body></html>`;
           CapPrinter.printHtml({ name: 'Receipt', html: htmlStr }).catch(e => {
             console.error('Printer error:', e);
             alert('Failed to print: ' + String(e));
@@ -3138,7 +3095,7 @@ export const POSPage: React.FC = () => {
             setShowPrintPreview(false);
             setPendingSaleParams(null);
           }}
-          text={generateReceiptText(pendingSaleParams.sale, shopSettings)}
+          text={generateReceiptHTML(pendingSaleParams.sale, shopSettings)}
           onPrint={() => confirmCheckout(true)}
           onSkipPrint={() => confirmCheckout(false)}
           title="Checkout & Print Preview"
@@ -3252,7 +3209,7 @@ export const MonthlySummaryPage: React.FC = () => {
       ]);
       
       await exportToCSVAndShare(
-        `Monthly_Summary_${year}.csv`,
+        `Monthly_Summary_${year}.xlsx`,
         headers,
         csvData
       );
@@ -3285,7 +3242,7 @@ export const MonthlySummaryPage: React.FC = () => {
               onClick={handleExportCSV}
               disabled={isExporting}
               className="px-4 py-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 z-20 mr-2"
-              title="Export to CSV"
+              title="Export to Excel"
             >
               {isExporting ? (
                 <>
@@ -3469,7 +3426,7 @@ export const ExpenseListPage: React.FC = () => {
       ]);
       
       await exportToCSVAndShare(
-        `Expense_Report_${dateFrom}_to_${dateTo}.csv`,
+        `Expense_Report_${dateFrom}_to_${dateTo}.xlsx`,
         headers,
         csvData
       );
@@ -3489,6 +3446,7 @@ export const ExpenseListPage: React.FC = () => {
     try {
       const newExpense: any = {
          date: localDateStr,
+         dateTime: now.toISOString(),
          desc: expDesc,
          amount: Number(expAmt),
          category: expCategory || 'General',
@@ -3720,7 +3678,7 @@ export const ExpenseListPage: React.FC = () => {
               onClick={handleExportCSV}
               disabled={isExporting}
               className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 [.midnight_&]:from-[#3A2F28] [.midnight_&]:to-[#2E2520] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
-              title="Export to CSV"
+              title="Export to Excel"
             >
               {isExporting ? (
                 <>
@@ -3796,7 +3754,7 @@ export const ExpenseListPage: React.FC = () => {
                           )}
                           <div className="flex items-center gap-3 mt-2">
                             <span className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider flex items-center gap-1">
-                              <Clock size={10} /> {new Date(e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              <Clock size={10} /> {new Date(e.dateTime || e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                             {e.createdBy && (
                               <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest flex items-center gap-1 [.midnight_&]:text-[#9C9086]/70">
@@ -3812,17 +3770,6 @@ export const ExpenseListPage: React.FC = () => {
                           <span className="text-lg sm:text-xl font-mono font-bold text-red-500 group-hover:text-red-600 transition-colors [.midnight_&]:text-[#D4AF37] [.midnight_&]:group-hover:text-[#F3C853]">
                             {e.amount.toLocaleString()} <span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">Ks</span>
                           </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isAdmin && (
-                            <button 
-                              onClick={(ev) => { ev.stopPropagation(); setShowConfirm({ coll: 'expenses', id: e.id }); }} 
-                              className="w-8 h-8 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm opacity-0 group-hover:opacity-100"
-                              title="Delete Expense"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -3865,7 +3812,7 @@ export const ExpenseListPage: React.FC = () => {
                 <div className="space-y-1">
                   <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Date & Time</span>
                   <span className="text-[11px] font-mono text-muted-foreground [.midnight_&]:text-[#9C9086]">
-                    {formatDisplayDate(selectedExpense.date)} {new Date(selectedExpense.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {formatDisplayDate(selectedExpense.date)} {new Date(selectedExpense.dateTime || selectedExpense.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               </div>
@@ -4117,7 +4064,7 @@ export const HistoryPage: React.FC = () => {
       });
       
       await exportToCSVAndShare(
-        `Sales_Report_${dateFrom}_to_${dateTo}.csv`,
+        `Sales_Report_${dateFrom}_to_${dateTo}.xlsx`,
         headers,
         csvData
       );
@@ -4136,7 +4083,7 @@ export const HistoryPage: React.FC = () => {
 
   const confirmPrintAll = () => {
     if (filteredSales.length === 0) return;
-    const printText = generateConsolidatedReceiptText(filteredSales, shopSettings, dateFrom, dateTo);
+    const printText = generateConsolidatedReceiptHTML(filteredSales, shopSettings, dateFrom, dateTo);
     
     if (Capacitor.isNativePlatform()) {
       const htmlStr = "<html><body style='margin:0;padding:10px;'><pre style='font-family:monospace;font-size:12px;'>" + printText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + "</pre></body></html>";
@@ -4247,7 +4194,7 @@ export const HistoryPage: React.FC = () => {
                   onClick={handleExportCSV}
                   disabled={isExporting}
                   className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  title="Export to CSV"
+                  title="Export to Excel"
                 >
                   {isExporting ? (
                     <>
@@ -4472,7 +4419,7 @@ export const HistoryPage: React.FC = () => {
       <PrintPreviewModal
         isOpen={showPrintPreview}
         onClose={() => setShowPrintPreview(false)}
-        text={generateConsolidatedReceiptText(filteredSales, shopSettings, dateFrom, dateTo)}
+        text={generateConsolidatedReceiptHTML(filteredSales, shopSettings, dateFrom, dateTo)}
         onPrint={confirmPrintAll}
         title="Consolidated Report Preview"
         printLabel="Print Report"
@@ -4604,7 +4551,7 @@ export const StaffCommissionsPage: React.FC = () => {
       ]);
       
       await exportToCSVAndShare(
-        `Staff_Commissions_${dateFrom}_to_${dateTo}.csv`,
+        `Staff_Commissions_${dateFrom}_to_${dateTo}.xlsx`,
         headers,
         csvData
       );
@@ -4665,7 +4612,7 @@ export const StaffCommissionsPage: React.FC = () => {
               onClick={handleExportCSV}
               disabled={isExporting}
               className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              title="Export to CSV"
+              title="Export to Excel"
             >
               {isExporting ? (
                 <>
@@ -4807,7 +4754,7 @@ export const SalesReportPage: React.FC = () => {
       ]);
       
       await exportToCSVAndShare(
-        `Sales_Report_${year}.csv`,
+        `Sales_Report_${year}.xlsx`,
         headers,
         csvData
       );
@@ -4843,7 +4790,7 @@ export const SalesReportPage: React.FC = () => {
                 onClick={handleExportCSV}
                 disabled={isExporting}
                 className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                title="Export to CSV"
+                title="Export to Excel"
               >
                 {isExporting ? (
                   <>
@@ -6801,9 +6748,7 @@ const PrintPreviewModal: React.FC<{
         
         <div className="p-6 overflow-y-auto bg-muted/20 flex-1 flex justify-center custom-scrollbar">
           <div className="bg-white text-black  p-6 shadow-md shadow-black/5" style={{ minWidth: '320px' }}>
-            <pre className="font-mono text-[12px] leading-[1.4] whitespace-pre-wrap font-medium">
-              {text}
-            </pre>
+            <div dangerouslySetInnerHTML={{ __html: text }} />
           </div>
         </div>
 

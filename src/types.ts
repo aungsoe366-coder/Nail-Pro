@@ -57,6 +57,7 @@ export interface Sale {
 export interface Expense {
   id: string;
   date: string;
+  dateTime?: string;
   desc: string;
   amount: number;
   category?: string;
