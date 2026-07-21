@@ -1,3 +1,4 @@
+import nailSalonBg from './assets/images/nail_salon_background_1784539561011.jpg';
 import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { 
@@ -67,7 +68,8 @@ import {
   Calendar as CalendarIcon,
   LayoutGrid,
   TrendingDown, 
-  Settings, 
+  Settings,
+  Database,
   LogOut, 
   Search, 
   X, 
@@ -127,12 +129,14 @@ import {
   Fingerprint,
   ScanFace,
   Camera
-} from 'lucide-react';
+, Info} from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
+
+const CURRENT_VERSION = "1.0.0";
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { exportToCSVAndShare } from './exportUtils';
@@ -1409,8 +1413,8 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
     { id: 'monthly', label: 'Monthly Summary', icon: <LayoutGrid size={18} />, path: '/monthly', roles: ['super_admin', 'owner', 'cashier'] },
     { id: 'sales-report', label: 'Sales Report', icon: <FileText size={18} />, path: '/sales-report', roles: ['super_admin', 'owner', 'cashier'] },
     { id: 'expenses', label: 'Expenses', icon: <TrendingDown size={18} />, path: '/expenses', roles: ['super_admin', 'owner', 'cashier'] },
-    { id: 'manage', label: 'Management', icon: <Settings size={18} />, path: '/manage', roles: ['super_admin', 'owner'] },
-    { id: 'change-password', label: 'Change Password', icon: <Lock size={18} />, path: '/change-password', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
+    { id: 'manage', label: 'Admin Management', icon: <Database size={18} />, path: '/manage', roles: ['super_admin', 'owner'] },
+    { id: 'settings', label: 'Settings', icon: <Settings size={18} />, path: '/settings', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
   ];
 
   const filteredItems = menuItems.filter(item => item.roles.includes(profile?.role || ''));
@@ -1467,7 +1471,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
                 className={cn(
                   "w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
                   isActive 
-                    ? "bg-primary text-primary-foreground font-bold shadow-xl shadow-primary/20 scale-[1.02]" 
+                    ? "bg-primary text-white font-bold shadow-xl shadow-primary/20 scale-[1.02]" 
                     : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                 )}
               >
@@ -1480,7 +1484,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
                 )}
                 <span className={cn(
                   "mr-4 transition-all duration-300 relative z-10",
-                  isActive ? "text-primary-foreground scale-110" : "text-primary group-hover:scale-120"
+                  isActive ? "text-white scale-110" : "text-primary group-hover:scale-120"
                 )}>
                   {item.icon}
                 </span>
@@ -1661,7 +1665,7 @@ export const CustomerDashboardPage: React.FC = () => {
            </div>
            <button 
              onClick={() => navigate('/appointments')}
-             className="mt-4 px-8 py-3 bg-primary text-primary-foreground font-bold rounded-full hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg w-full md:w-auto"
+             className="mt-4 px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg w-full md:w-auto"
            >
              Book Now
            </button>
@@ -1789,7 +1793,7 @@ export const DashboardPage: React.FC = () => {
         <div className="flex gap-3">
           <button 
             onClick={() => navigate('/pos')}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-black text-xs tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+            className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-black text-xs tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
           >
             <Plus size={16} />
             NEW SALE
@@ -1881,7 +1885,7 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Quick Stats / Info */}
-        <div className="bg-primary rounded-[2.5rem] p-8 text-primary-foreground space-y-8 relative overflow-hidden shadow-2xl shadow-primary/20">
+        <div className="bg-primary rounded-[2.5rem] p-8 text-white space-y-8 relative overflow-hidden shadow-2xl shadow-primary/20">
           <div className="relative z-10 space-y-2">
             <h4 className="text-xs font-black uppercase tracking-[0.3em] opacity-60">Today's Performance</h4>
             <h2 className="text-4xl font-black tracking-tighter leading-none">
@@ -2122,10 +2126,6 @@ export const POSPage: React.FC = () => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
-  const suggestions = search.length > 0 
-    ? services.filter(s => s.name.toLowerCase().includes(search.toLowerCase())).slice(0, 5)
-    : [];
 
   // Remove automatic loyalty prompt useEffect
   
@@ -2468,27 +2468,6 @@ export const POSPage: React.FC = () => {
                 </button>
               )}
             </div>
-            
-            {suggestions.length > 0 && (
-              <div className="absolute top-full left-0 w-full bg-card border border-primary/30 rounded-2xl mt-2 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[1001]">
-                {suggestions.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => {
-                      addToCart(s);
-                      setSearch('');
-                    }}
-                    className="w-full text-left p-4 border-b border-border/50 last:border-0 hover:bg-primary/5 flex justify-between items-center transition-colors group"
-                  >
-                    <div>
-                      <span className="text-foreground font-bold block group-hover:text-primary transition-colors">{s.name}</span>
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">{s.category || 'General'}</span>
-                    </div>
-                    <span className="text-primary font-black">{s.price.toLocaleString()} Ks</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide px-1">
@@ -2505,7 +2484,7 @@ export const POSPage: React.FC = () => {
                   className={cn(
                     "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap flex items-center gap-2.5",
                     selectedCategory === cat 
-                      ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20 scale-105" 
+                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105" 
                       : "bg-card/50 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-primary"
                   )}
                 >
@@ -3039,7 +3018,7 @@ export const POSPage: React.FC = () => {
                     {customers.find(c => c.id === selectedCustomerId)?.points! >= LOYALTY_THRESHOLD && !isLoyaltyDiscountActive && (
                       <button 
                         onClick={applyLoyaltyDiscount}
-                        className="px-3 py-1.5 bg-primary text-primary-foreground text-[9px] font-black rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-all uppercase tracking-widest"
+                        className="px-3 py-1.5 bg-primary text-white text-[9px] font-black rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-all uppercase tracking-widest"
                       >
                         Apply 10%
                       </button>
@@ -3152,7 +3131,7 @@ export const POSPage: React.FC = () => {
               <button 
                 onClick={() => handleCheckout()}
                 disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid}
-                className="w-full bg-primary text-primary-foreground [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border [.midnight_&]:border-primary py-5 rounded-[1.5rem] font-black text-base tracking-[0.2em] shadow-2xl shadow-primary/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-4 group"
+                className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border [.midnight_&]:border-primary py-5 rounded-[1.5rem] font-black text-base tracking-[0.2em] shadow-2xl shadow-primary/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-4 group"
               >
                 <Printer size={20} className="group-hover:rotate-12 transition-transform" />
                 CHECKOUT NOW
@@ -3168,7 +3147,7 @@ export const POSPage: React.FC = () => {
           <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-primary/30 rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-6 text-center max-h-[calc(100dvh-110px)] overflow-y-auto"
+            className="bg-card border border-primary/30 rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-6 text-center max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
           >
             <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
               <Star className="text-primary w-10 h-10 animate-pulse" />
@@ -3183,7 +3162,7 @@ export const POSPage: React.FC = () => {
             <div className="flex flex-col gap-3">
               <button 
                 onClick={applyLoyaltyDiscount}
-                className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
                 APPLY DISCOUNT
               </button>
@@ -3351,7 +3330,7 @@ export const MonthlySummaryPage: React.FC = () => {
             <button 
               onClick={handleExportCSV}
               disabled={isExporting}
-              className="px-4 py-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 z-20 mr-2"
+              className="px-4 py-2 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 z-20 mr-2"
               title="Export to Excel"
             >
               {isExporting ? (
@@ -3467,6 +3446,7 @@ export const ExpenseListPage: React.FC = () => {
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(today);
   const [expFilterCat, setExpFilterCat] = useState('');
+  const [expFilterStaff, setExpFilterStaff] = useState('');
 
   const [showExpCatForm, setShowExpCatForm] = useState(false);
   const [showExpForm, setShowExpForm] = useState(false);
@@ -3504,7 +3484,8 @@ export const ExpenseListPage: React.FC = () => {
   const filteredExpenses = expenses.filter(e => 
     (!dateFrom || e.date >= dateFrom) && 
     (!dateTo || e.date <= dateTo) &&
-    (!expFilterCat || e.category === expFilterCat)
+    (!expFilterCat || e.category === expFilterCat) &&
+    (!expFilterStaff || e.assignedStaff === expFilterStaff)
   );
 
   const totalExp = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -3659,7 +3640,7 @@ export const ExpenseListPage: React.FC = () => {
             onChange={setExpAmt}
             onFocusClear
           />
-          <button onClick={handleAddExpense} className="w-full bg-primary text-primary-foreground font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Add Expense</button>
+          <button onClick={handleAddExpense} className="w-full bg-primary text-white font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Add Expense</button>
         </div>
       </Modal>
 
@@ -3677,9 +3658,9 @@ export const ExpenseListPage: React.FC = () => {
               onFocusClear
             />
             {editingExpenseCategory ? (
-              <button onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-primary-foreground py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Update Category</button>
+              <button onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Update Category</button>
             ) : (
-              <button onClick={handleAddExpenseCategory} className="w-full bg-primary text-primary-foreground py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Add Category</button>
+              <button onClick={handleAddExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Add Category</button>
             )}
           </div>
           <div className="space-y-3 pt-6 border-t border-border">
@@ -3721,7 +3702,7 @@ export const ExpenseListPage: React.FC = () => {
           <div className="flex items-center gap-3 mt-4">
             <button 
               onClick={() => setShowExpForm(true)}
-              className="bg-primary text-primary-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-95 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
+              className="bg-primary text-white px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-95 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
             >
               <Plus size={14} /> ADD EXPENSE
             </button>
@@ -3735,7 +3716,7 @@ export const ExpenseListPage: React.FC = () => {
         </div>
         
         <div className="bg-card rounded-[2rem] border border-border shadow-2xl z-40 relative min-w-[320px] [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C]">
-          <div className="grid grid-cols-1 md:grid-cols-3">
+          <div className={cn("grid grid-cols-1", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') ? "md:grid-cols-4" : "md:grid-cols-3")}>
             <CustomDatePicker 
               label="FROM" 
               value={dateFrom} 
@@ -3750,13 +3731,18 @@ export const ExpenseListPage: React.FC = () => {
               iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
               className="border-b md:border-b-0 md:border-r border-border/50"
             />
-            <div className="flex flex-col p-4">
+            <div className={cn("flex flex-col p-4", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && "border-b md:border-b-0 md:border-r border-border/50")}>
                <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
                  <Settings size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> CATEGORY
                </label>
                <CustomSelect
                  value={expFilterCat}
-                 onChange={setExpFilterCat}
+                 onChange={(val) => {
+                    setExpFilterCat(val);
+                    if (val !== 'Staff Salary' && val !== 'Advance Pay') {
+                       setExpFilterStaff('');
+                    }
+                 }}
                  placeholder="All Categories"
                  options={[
                    { value: '', label: 'All Categories' },
@@ -3766,6 +3752,23 @@ export const ExpenseListPage: React.FC = () => {
                  buttonClassName="bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
                />
             </div>
+            {(expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && (
+              <div className="flex flex-col p-4 animate-in fade-in zoom-in duration-200">
+                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+                   <UsersIcon size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> STAFF
+                 </label>
+                 <CustomSelect
+                   value={expFilterStaff}
+                   onChange={setExpFilterStaff}
+                   placeholder="All Staff"
+                   options={[
+                     { value: '', label: 'All Staff' },
+                     ...staffList.map(s => ({ value: s.name, label: s.name }))
+                   ]}
+                   buttonClassName="bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
+                 />
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -3787,7 +3790,7 @@ export const ExpenseListPage: React.FC = () => {
             <button 
               onClick={handleExportCSV}
               disabled={isExporting}
-              className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 [.midnight_&]:from-[#3A2F28] [.midnight_&]:to-[#2E2520] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
+              className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 [.midnight_&]:from-[#3A2F28] [.midnight_&]:to-[#2E2520] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
               title="Export to Excel"
             >
               {isExporting ? (
@@ -4303,7 +4306,7 @@ export const HistoryPage: React.FC = () => {
                 <button 
                   onClick={handleExportCSV}
                   disabled={isExporting}
-                  className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                   title="Export to Excel"
                 >
                   {isExporting ? (
@@ -4321,7 +4324,7 @@ export const HistoryPage: React.FC = () => {
               )}
               <button 
                 onClick={handlePrintAll}
-                className="px-6 py-2.5 bg-primary/10 text-primary font-semibold rounded-full border border-primary/20 hover:bg-primary hover:text-primary-foreground transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                className="px-6 py-2.5 bg-primary/10 text-primary font-semibold rounded-full border border-primary/20 hover:bg-primary hover:text-white transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                 title="Print Consolidated Report"
               >
                 <Printer size={18} />
@@ -4899,7 +4902,7 @@ export const SalesReportPage: React.FC = () => {
               <button 
                 onClick={handleExportCSV}
                 disabled={isExporting}
-                className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 title="Export to Excel"
               >
                 {isExporting ? (
@@ -5125,7 +5128,15 @@ export const AppointmentsPage: React.FC = () => {
           }
         }
       });
-      setStaff(Array.from(uniqueStaff.values()));
+      const staffList = Array.from(uniqueStaff.values());
+      const roleOrder: Record<string, number> = { owner: 0, cashier: 1, staff: 2 };
+      staffList.sort((a, b) => {
+        const roleA = roleOrder[a.role] ?? 99;
+        const roleB = roleOrder[b.role] ?? 99;
+        if (roleA !== roleB) return roleA - roleB;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      setStaff(staffList);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
     let unsubSales: () => void = () => {};
@@ -5602,11 +5613,11 @@ export const AppointmentsPage: React.FC = () => {
     };
 
     return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 bg-muted/5 p-4 rounded-3xl border border-border shadow-inner">
+      <div className="flex flex-row items-center justify-between gap-4 mb-6 bg-muted/5 p-4 rounded-3xl border border-border shadow-inner">
         <div className="flex items-center gap-2">
           <button
             onClick={goToBack}
-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 active:scale-90 border border-border bg-card shadow-sm"
+            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-white active:scale-90 border border-border bg-card shadow-sm"
           >
             <ChevronLeft size={20} />
           </button>
@@ -5618,7 +5629,7 @@ export const AppointmentsPage: React.FC = () => {
           </button>
           <button
             onClick={goToNext}
-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 active:scale-90 border border-border bg-card shadow-sm"
+            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-white active:scale-90 border border-border bg-card shadow-sm"
           >
             <ChevronRight size={20} />
           </button>
@@ -5636,8 +5647,8 @@ export const AppointmentsPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                 toolbar.view === view 
-                  ? "bg-gray-700/80 text-foreground [.midnight_&]:text-slate-200 shadow-lg" 
-                  : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {view}
@@ -5671,8 +5682,8 @@ export const AppointmentsPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
                 viewMode === 'list' 
-                  ? "bg-card text-foreground [.midnight_&]:text-slate-200 shadow-lg" 
-                  : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               List
@@ -5682,8 +5693,8 @@ export const AppointmentsPage: React.FC = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
                 viewMode === 'calendar' 
-                  ? "bg-card text-foreground [.midnight_&]:text-slate-200 shadow-lg" 
-                  : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
+                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <CalendarIcon size={16} />
@@ -5750,7 +5761,7 @@ export const AppointmentsPage: React.FC = () => {
               />
               {profile?.role !== 'customer' && (
                 <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
-                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground [.midnight_&]:text-slate-300 flex items-center gap-2 mb-2">
+                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
                      <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" /> STAFF
                    </label>
                    <CustomSelect
@@ -5765,7 +5776,7 @@ export const AppointmentsPage: React.FC = () => {
                 </div>
               )}
               <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
-                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground [.midnight_&]:text-slate-300 flex items-center gap-2 mb-2">
+                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
                    <Activity size={12} className="text-primary [.midnight_&]:text-amber-400" /> STATUS
                  </label>
                  <CustomSelect
@@ -5782,19 +5793,19 @@ export const AppointmentsPage: React.FC = () => {
                  />
               </div>
               <div className="flex flex-col p-4 flex-1">
-                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground [.midnight_&]:text-slate-300 flex items-center gap-2 mb-2">
+                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
                    <Settings size={12} className="text-primary [.midnight_&]:text-amber-400" /> OPTIONS
                  </label>
                  <div className="flex items-center gap-2">
                    <button
                      onClick={() => setShowAllDates(!showAllDates)}
-                     className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground [.midnight_&]:text-slate-300 hover:bg-muted/80")}
+                     className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground")}
                    >
                      {showAllDates ? 'All Dates' : 'Show All'}
                    </button>
                    <button
                      onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
-                     className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-muted-foreground [.midnight_&]:text-slate-300 hover:bg-muted/80"
+                     className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
                    >
                      Sort: {sortBy}
                    </button>
@@ -5869,9 +5880,9 @@ export const AppointmentsPage: React.FC = () => {
           ) : filteredAppts.length === 0 ? (
             <div className="text-center py-32 bg-muted/5 rounded-[3rem] border-2 border-dashed border-border">
               <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CalendarIcon className="text-muted-foreground [.midnight_&]:text-slate-300/30" size={48} />
+                <CalendarIcon className="text-muted-foreground/30" size={48} />
               </div>
-              <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-lg font-bold italic">No appointments found matching your criteria.</p>
+              <p className="text-muted-foreground text-lg font-bold italic">No appointments found matching your criteria.</p>
               <button 
                 onClick={() => { resetForm(); setIsAdding(true); }}
                 className="mt-6 text-primary [.midnight_&]:text-amber-400 font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
@@ -5905,7 +5916,7 @@ export const AppointmentsPage: React.FC = () => {
                           <div className="bg-primary/5 text-primary [.midnight_&]:text-amber-400 px-4 py-2 rounded-xl font-black text-xl tracking-tighter shadow-sm border border-primary/10">
                             {appt.time}
                           </div>
-                          <div className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] mt-1.5 ml-1">
+                          <div className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] mt-1.5 ml-1">
                             {formatDisplayDate(appt.date)}
                           </div>
                         </div>
@@ -5928,7 +5939,7 @@ export const AppointmentsPage: React.FC = () => {
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
                             <h3 className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors truncate tracking-tight leading-tight">{appt.customerName}</h3>
-                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground [.midnight_&]:text-slate-300 text-xs mt-3 font-bold">
+                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-xs mt-3 font-bold">
                               <div className="flex items-center gap-1.5 bg-muted/5 px-2.5 py-1 rounded-lg border border-border">
                                 <Phone size={14} className="text-primary [.midnight_&]:text-amber-400" />
                                 <span className="text-xs tracking-tight">{appt.customerPhone}</span>
@@ -5972,7 +5983,7 @@ Thank you for choosing Nail Pro!')}`}
                                 <Briefcase size={18} strokeWidth={2.5} />
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Service</span>
+                                <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Service</span>
                                 <span className="text-lg font-black text-foreground [.midnight_&]:text-slate-200 tracking-tight">{appt.serviceName}</span>
                               </div>
                             </div>
@@ -5984,11 +5995,11 @@ Thank you for choosing Nail Pro!')}`}
                           <div className="flex items-center justify-between pt-2 border-t border-border/30">
                             {appt.staffName ? (
                               <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-muted/5 rounded-xl text-muted-foreground [.midnight_&]:text-slate-300 shadow-sm border border-border">
+                                <div className="p-2.5 bg-muted/5 rounded-xl text-muted-foreground shadow-sm border border-border">
                                   <UserIcon size={18} strokeWidth={2.5} />
                                 </div>
                                 <div className="flex flex-col">
-                                  <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Staff</span>
+                                  <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Staff</span>
                                   <span className="text-xs text-foreground [.midnight_&]:text-slate-200 font-bold">{appt.staffName}</span>
                                 </div>
                               </div>
@@ -6000,7 +6011,7 @@ Thank you for choosing Nail Pro!')}`}
                         </div>
 
                         {appt.notes && (
-                          <div className="text-xs text-muted-foreground [.midnight_&]:text-slate-300 italic line-clamp-2 bg-primary/5 p-3 rounded-xl border border-primary/5 font-medium leading-relaxed shadow-inner">
+                          <div className="text-xs text-muted-foreground italic line-clamp-2 bg-primary/5 p-3 rounded-xl border border-primary/5 font-medium leading-relaxed shadow-inner">
                             <span className="text-primary [.midnight_&]:text-amber-400 font-black not-italic mr-1.5">Notes:</span>
                             "{appt.notes}"
                           </div>
@@ -6008,7 +6019,7 @@ Thank you for choosing Nail Pro!')}`}
 
                         <div className="pt-4 flex items-center justify-between border-t border-border">
                           <div className="flex flex-col">
-                            <span className="text-[8px] text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] font-black">Booked By</span>
+                            <span className="text-[8px] text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] font-black">Booked By</span>
                             <span className="text-[9px] font-bold text-foreground [.midnight_&]:text-slate-200">{appt.creatorName || 'SYSTEM'}</span>
                           </div>
                           <div className="flex gap-2">
@@ -6032,14 +6043,14 @@ Thank you for choosing Nail Pro!')}`}
                                     appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600  border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
                                   )}
                                 />
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground [.midnight_&]:text-slate-300 pointer-events-none" size={12} />
+                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={12} />
                               </div>
                             )}
                             {(isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) && (
                               <div className="flex gap-1.5">
                                 <button
                                   onClick={(e) => { e.stopPropagation(); startEdit(appt); }}
-                                  className="p-2.5 bg-muted/5 text-primary-foreground hover:bg-primary hover:text-primary-foreground rounded-xl transition-all border border-border shadow-sm active:scale-90"
+                                  className="p-2.5 bg-muted/5 text-white hover:bg-primary hover:text-white rounded-xl transition-all border border-border shadow-sm active:scale-90"
                                   title="Edit"
                                 >
                                   <Pencil size={16} strokeWidth={2.5} />
@@ -6069,11 +6080,11 @@ Thank you for choosing Nail Pro!')}`}
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h2 className="text-xl font-bold text-foreground [.midnight_&]:text-slate-200">Points Summary</h2>
-                <p className="text-sm text-muted-foreground [.midnight_&]:text-slate-300">Track your loyalty rewards and redemptions.</p>
+                <p className="text-sm text-muted-foreground">Track your loyalty rewards and redemptions.</p>
               </div>
               <div className="text-right">
                 <div className="text-4xl font-black text-primary [.midnight_&]:text-amber-400 tracking-tighter">{profile?.points?.toLocaleString() || 0}</div>
-                <div className="text-[10px] font-bold text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Available Points</div>
+                <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</div>
               </div>
             </div>
 
@@ -6111,9 +6122,9 @@ Thank you for choosing Nail Pro!')}`}
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-muted/10">
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Date</th>
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Activity</th>
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest text-right">Points</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Activity</th>
+                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Points</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -6160,17 +6171,17 @@ Thank you for choosing Nail Pro!')}`}
                       if (history.length === 0) {
                         return (
                           <tr>
-                            <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted-foreground [.midnight_&]:text-slate-300 italic">No point activity recorded yet.</td>
+                            <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted-foreground italic">No point activity recorded yet.</td>
                           </tr>
                         );
                       }
 
                       return history.map(item => (
                         <tr key={item.id} className="hover:bg-muted/5 transition-colors">
-                          <td className="px-4 py-3 text-xs text-muted-foreground [.midnight_&]:text-slate-300">{format(new Date(item.date), 'MMM d, yyyy')}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(item.date), 'MMM d, yyyy')}</td>
                           <td className="px-4 py-3">
                             <div className="text-xs font-bold text-foreground [.midnight_&]:text-slate-200">{item.title}</div>
-                            <div className="text-[10px] text-muted-foreground [.midnight_&]:text-slate-300">{item.details}</div>
+                            <div className="text-[10px] text-muted-foreground">{item.details}</div>
                           </td>
                           <td className={cn(
                             "px-4 py-3 text-right text-xs font-bold",
@@ -6194,7 +6205,7 @@ Thank you for choosing Nail Pro!')}`}
           <motion.div 
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] w-full max-w-2xl max-h-[calc(100dvh-110px)] overflow-hidden shadow-2xl border border-border transition-colors duration-300"
+            className="bg-card rounded-[2.5rem] w-full max-w-4xl max-h-[calc(100dvh-110px)] overflow-hidden shadow-2xl border border-border transition-colors duration-300"
           >
             <div className="p-8 border-b border-border bg-muted/5 flex justify-between items-center">
               <div>
@@ -6206,7 +6217,7 @@ Thank you for choosing Nail Pro!')}`}
                         setViewingCustomerHistory(null);
                         navigate('/manage', { state: { activeTab: 'customers', viewCustomer: viewingCustomerHistory } });
                       }}
-                      className="flex items-center gap-2 text-[10px] bg-primary text-primary-foreground px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95"
+                      className="flex items-center gap-2 text-[10px] bg-primary text-white px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95"
                     >
                       <HistoryIcon size={12} />
                       Full History
@@ -6214,13 +6225,13 @@ Thank you for choosing Nail Pro!')}`}
                   )}
                 </div>
                 <div className="flex items-center gap-3 mt-1">
-                  <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
+                  <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
                   <span className="text-[10px] bg-primary/10 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
                 </div>
               </div>
               <button 
                 onClick={() => setViewingCustomerHistory(null)}
-                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 active:scale-90"
+                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
               >
                 <X size={24} />
               </button>
@@ -6256,7 +6267,7 @@ Thank you for choosing Nail Pro!')}`}
                   </h4>
                   <div className="space-y-3">
                     {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
-                      <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No sales history found.</p>
+                      <p className="text-muted-foreground text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No sales history found.</p>
                     ) : (
                       sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name)
                         .sort((a, b) => b.dateTime.localeCompare(a.dateTime))
@@ -6264,7 +6275,7 @@ Thank you for choosing Nail Pro!')}`}
                         <div key={s.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex justify-between items-center hover:border-primary/50 transition-all group">
                           <div>
                             <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{s.items.map(i => i.name).join(', ')}</div>
-                            <div className="text-[10px] text-muted-foreground [.midnight_&]:text-slate-300 mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
+                            <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
                           </div>
                           <div className="text-right">
                             <div className="font-black text-primary [.midnight_&]:text-amber-400 text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
@@ -6284,7 +6295,7 @@ Thank you for choosing Nail Pro!')}`}
                   </h4>
                   <div className="space-y-3">
                     {appointments.filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone).length === 0 ? (
-                      <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No appointment history found.</p>
+                      <p className="text-muted-foreground text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No appointment history found.</p>
                     ) : (
                       appointments
                         .filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone)
@@ -6293,14 +6304,14 @@ Thank you for choosing Nail Pro!')}`}
                           <div key={a.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex justify-between items-center hover:border-primary/50 transition-all group">
                             <div>
                               <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{a.serviceName}</div>
-                              <div className="text-[10px] text-muted-foreground [.midnight_&]:text-slate-300 mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
+                              <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
                             </div>
                             <div className="flex flex-col items-end gap-2">
                               <div className={cn(
                                 "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
                                 a.status === 'completed' ? "bg-green-500/10 text-green-600  border-green-500/20" : 
                                 a.status === 'cancelled' ? "bg-red-500/10 text-red-600  border-red-500/20" :
-                                "bg-muted/10 text-muted-foreground [.midnight_&]:text-slate-300 border-border"
+                                "bg-muted/10 text-muted-foreground border-border"
                               )}>
                                 {a.status}
                               </div>
@@ -6327,20 +6338,20 @@ Thank you for choosing Nail Pro!')}`}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] w-full max-w-2xl shadow-2xl border border-border flex flex-col max-h-[calc(100dvh-110px)] overflow-hidden"
+            className="bg-card rounded-[2.5rem] w-full max-w-4xl shadow-2xl border border-border flex flex-col max-h-[calc(100dvh-110px)] overflow-hidden"
           >
             <div className="p-6 sm:p-8 border-b bg-muted/5 flex justify-between items-center shrink-0">
               <div>
                 <h3 className="text-primary [.midnight_&]:text-amber-400 font-black text-2xl sm:text-3xl tracking-tighter">
                   {editingAppointment ? 'Edit Appointment' : 'Book Appointment'}
                 </h3>
-                <p className="text-muted-foreground [.midnight_&]:text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+                <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-1">
                   {editingAppointment ? 'Update existing booking details' : 'Schedule a new customer visit'}
                 </p>
               </div>
               <button 
                 onClick={resetForm}
-                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 active:scale-90"
+                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
               >
                 <X size={24} />
               </button>
@@ -6360,7 +6371,7 @@ Thank you for choosing Nail Pro!')}`}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Customer Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <UserIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Customer Information
                   </label>
@@ -6410,14 +6421,14 @@ Thank you for choosing Nail Pro!')}`}
                   ) : (
                     <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 shadow-inner">
                       <div className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{profile.name}</div>
-                      <div className="text-xs text-muted-foreground [.midnight_&]:text-slate-300 font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
+                      <div className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
                     </div>
                   )}
                 </div>
 
                 {/* Service & Staff Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <Briefcase size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Service & Staff
                   </label>
@@ -6470,7 +6481,7 @@ Thank you for choosing Nail Pro!')}`}
 
                 {/* Date & Time Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <CalendarIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Schedule
                   </label>
@@ -6485,7 +6496,7 @@ Thank you for choosing Nail Pro!')}`}
                     <div className="relative group flex items-center gap-3 px-4 py-2 bg-input border border-border rounded-xl shadow-inner hover:border-primary/30 transition-all">
                       <Clock size={18} className="text-primary [.midnight_&]:text-amber-400" />
                       <div className="flex flex-col flex-1">
-                        <label className="text-[8px] text-muted-foreground [.midnight_&]:text-slate-300 font-black uppercase tracking-widest leading-none mb-1">TIME</label>
+                        <label className="text-[8px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest leading-none mb-1">TIME</label>
                         <span className="text-sm font-bold text-foreground [.midnight_&]:text-slate-200">{apptTime}</span>
                       </div>
                       <input
@@ -6503,7 +6514,7 @@ Thank you for choosing Nail Pro!')}`}
                         <HistoryIcon size={18} />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Duration</span>
+                        <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Duration</span>
                         <span className="text-xs text-foreground [.midnight_&]:text-slate-200 font-bold">Ends at {apptEndTime}</span>
                       </div>
                     </div>
@@ -6514,14 +6525,14 @@ Thank you for choosing Nail Pro!')}`}
                         onChange={(e) => setApptDuration(parseInt(e.target.value) || 0)}
                         className="w-20 p-2 text-sm border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-black text-center"
                       />
-                      <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Mins</span>
+                      <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Mins</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Status & Points Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <Star size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Status & Rewards
                   </label>
@@ -6568,14 +6579,14 @@ Thank you for choosing Nail Pro!')}`}
 
                     <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-3 shadow-inner">
                       <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Points to Earn</span>
+                        <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Points to Earn</span>
                         <span className="text-sm font-black text-green-600">+{willEarnPoints} PTS</span>
                       </div>
                       
                       {selectedCustId && selectedCustId !== 'manual' && (
                         <div className="space-y-2 pt-3 border-t border-primary/10">
                           <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest">Available Points</span>
+                            <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</span>
                             <span className="text-sm font-black text-primary [.midnight_&]:text-amber-400">
                               {customers.find(c => c.id === selectedCustId)?.points || 0} PTS
                             </span>
@@ -6607,7 +6618,7 @@ Thank you for choosing Nail Pro!')}`}
               </div>
 
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
                     <FileText size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Additional Notes
                   </label>
@@ -6630,19 +6641,19 @@ Thank you for choosing Nail Pro!')}`}
                       <h3 className="text-2xl font-black text-primary [.midnight_&]:text-amber-400 tracking-tighter">
                         Booking Confirmation
                       </h3>
-                      <p className="text-[10px] text-muted-foreground [.midnight_&]:text-slate-300 font-bold uppercase tracking-widest">Review your appointment details</p>
+                      <p className="text-[10px] text-primary [.midnight_&]:text-amber-400 font-bold uppercase tracking-widest">Review your appointment details</p>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
                         <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Customer
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
                         <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground [.midnight_&]:text-slate-300 font-bold mt-1.5 flex items-center gap-1.5">
+                        <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
                           <Phone size={12} />
                           {manualCustPhone || 'N/A'}
                         </p>
@@ -6650,13 +6661,13 @@ Thank you for choosing Nail Pro!')}`}
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
                         <Briefcase size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Service
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
                         <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground [.midnight_&]:text-slate-300 font-bold mt-1.5 flex items-center gap-1.5">
+                        <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
                           <HistoryIcon size={12} />
                           {apptDuration} mins ({apptTime} - {apptEndTime})
                         </p>
@@ -6664,7 +6675,7 @@ Thank you for choosing Nail Pro!')}`}
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
                         <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Staff Member
                       </div>
@@ -6672,18 +6683,18 @@ Thank you for choosing Nail Pro!')}`}
                         <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">
                           {staff.find(s => s.email === selectedStaffEmail)?.name || 'Any Staff (Auto)'}
                         </p>
-                        <p className="text-[9px] text-muted-foreground [.midnight_&]:text-slate-300 font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
+                        <p className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
                       </div>
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
                         <CalendarIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Scheduled Date
                       </div>
                       <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
                         <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
-                        <p className="text-[9px] text-muted-foreground [.midnight_&]:text-slate-300 font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
+                        <p className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
                       </div>
                     </div>
 
@@ -6701,11 +6712,11 @@ Thank you for choosing Nail Pro!')}`}
 
                     {apptNotes && (
                       <div className="col-span-full space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em]">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
                           <FileText size={12} className="text-primary [.midnight_&]:text-amber-400" />
                           Additional Notes
                         </div>
-                        <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm italic text-muted-foreground [.midnight_&]:text-slate-300 font-medium text-xs">
+                        <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm italic text-muted-foreground font-medium text-xs">
                           "{apptNotes}"
                         </div>
                       </div>
@@ -6722,13 +6733,13 @@ Thank you for choosing Nail Pro!')}`}
                   <button
                     type="button"
                     onClick={resetForm}
-                    className="px-6 py-2.5 text-xs font-black text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 transition-colors uppercase tracking-widest"
+                    className="px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
+                    className="px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
                   >
                     Next Step
                     <ArrowRight size={14} />
@@ -6739,14 +6750,14 @@ Thank you for choosing Nail Pro!')}`}
                   <button
                     type="button"
                     onClick={() => setFormStep(1)}
-                    className="px-6 py-2.5 text-xs font-black text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 transition-colors uppercase tracking-widest"
+                    className="px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
                   >
                     Back
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmittingAppt}
-                    className="px-8 py-2.5 bg-primary text-primary-foreground rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmittingAppt ? (
                       <>
@@ -6773,19 +6784,19 @@ Thank you for choosing Nail Pro!')}`}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border max-h-[calc(100dvh-110px)] overflow-y-auto"
+            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
           >
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-6 mx-auto shadow-inner border border-red-500/20">
               <Trash2 size={32} strokeWidth={2.5} />
             </div>
             <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Confirm Deletion</h3>
-            <p className="text-muted-foreground [.midnight_&]:text-slate-300 font-bold mb-8 leading-relaxed text-center">
+            <p className="text-muted-foreground font-bold mb-8 leading-relaxed text-center">
               Are you sure you want to delete the appointment for <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setConfirmDeleteAppt(null)}
-                className="flex-1 px-6 py-4 border-2 border-border text-muted-foreground [.midnight_&]:text-slate-300 font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
+                className="flex-1 px-6 py-4 border-2 border-border text-muted-foreground hover:text-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
               >
                 Cancel
               </button>
@@ -6806,19 +6817,19 @@ Thank you for choosing Nail Pro!')}`}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border max-h-[calc(100dvh-110px)] overflow-y-auto"
+            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
           >
             <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-6 mx-auto shadow-inner border border-red-500/20">
               <AlertCircle size={32} strokeWidth={2.5} />
             </div>
             <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Time Slot Overlap</h3>
-            <p className="text-muted-foreground [.midnight_&]:text-slate-300 font-bold mb-8 leading-relaxed text-center">
+            <p className="text-muted-foreground font-bold mb-8 leading-relaxed text-center">
               The selected time slot overlaps with an existing appointment for this staff member. Please select a different time or staff member.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setShowOverlapPopup(false)}
-                className="w-full px-6 py-4 bg-primary text-primary-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 active:scale-95"
+                className="w-full px-6 py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 active:scale-95"
               >
                 Okay
               </button>
@@ -6865,7 +6876,7 @@ const PrintPreviewModal: React.FC<{
         <div className="p-6 border-t border-border bg-card shrink-0 space-y-3">
           <button
             onClick={() => { onPrint(); onClose(); }}
-            className="w-full bg-primary text-primary-foreground [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border [.midnight_&]:border-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
+            className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border [.midnight_&]:border-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
           >
             <Printer size={20} />
             {printLabel}
@@ -6874,7 +6885,7 @@ const PrintPreviewModal: React.FC<{
           {onSkipPrint && (
             <button
               onClick={() => { onSkipPrint(); onClose(); }}
-              className="w-full bg-muted text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 py-4 rounded-2xl font-bold transition-colors"
+              className="w-full bg-muted text-muted-foreground hover:text-foreground py-4 rounded-2xl font-bold transition-colors"
             >
               {skipLabel}
             </button>
@@ -6898,14 +6909,14 @@ const Modal: React.FC<{
       <motion.div 
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className={cn("bg-card w-full rounded-[2.5rem] border border-primary/30 p-8 space-y-8 shadow-2xl relative overflow-y-auto max-h-[calc(100dvh-110px)]", maxWidth)}
+        className={cn("bg-card w-full rounded-[2.5rem] border border-primary/30 flex flex-col shadow-2xl relative max-h-[calc(100dvh-110px)] overflow-hidden", maxWidth)}
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center shrink-0 p-8 pb-4">
           <h3 className="text-primary [.midnight_&]:text-amber-400 font-bold text-xl uppercase tracking-widest">{title}</h3>
-          <button onClick={onClose} className="text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200 transition-colors p-1"><X size={24} /></button>
+          <button onClick={onClose} className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"><X size={24} /></button>
         </div>
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-4 space-y-4">
           {children}
         </div>
       </motion.div>
@@ -7003,7 +7014,15 @@ export const ManagePage: React.FC = () => {
           }
         }
       });
-      setStaff(Array.from(uniqueStaff.values()));
+      const staffList = Array.from(uniqueStaff.values());
+      const roleOrder: Record<string, number> = { owner: 0, cashier: 1, staff: 2 };
+      staffList.sort((a, b) => {
+        const roleA = roleOrder[a.role] ?? 99;
+        const roleB = roleOrder[b.role] ?? 99;
+        if (roleA !== roleB) return roleA - roleB;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      setStaff(staffList);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
     const unsubCustomers = onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
@@ -7579,45 +7598,6 @@ export const ManagePage: React.FC = () => {
 
               <div className="space-y-4 pt-4 border-t border-border">
                 <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Palette size={14} className="text-primary" /> Local Preferences
-                </h4>
-                
-                <div className="flex flex-col gap-3 p-4 bg-background rounded-2xl border border-border">
-                  <div>
-                    <span className="block text-sm font-bold text-foreground">App Theme Color</span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Select a luxury color palette for this device</span>
-                  </div>
-                  
-                  <div className="flex gap-4 mt-2">
-                    <button 
-                      onClick={() => setLocalTheme('gold')}
-                      className="flex flex-col items-center gap-2 group"
-                    >
-                      <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'gold' ? "border-[#d4af37] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#d4af37' }} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Gold</span>
-                    </button>
-                    
-                    <button 
-                      onClick={() => setLocalTheme('rose')}
-                      className="flex flex-col items-center gap-2 group"
-                    >
-                      <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'rose' ? "border-[#b76e79] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#b76e79' }} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Rose</span>
-                    </button>
-                    
-                    <button 
-                      onClick={() => setLocalTheme('midnight')}
-                      className="flex flex-col items-center gap-2 group"
-                    >
-                      <div className={cn("w-12 h-12 rounded-full border-4 transition-all duration-300", localTheme === 'midnight' ? "border-[#192a56] scale-110" : "border-transparent scale-100 hover:scale-105")} style={{ backgroundColor: '#192a56' }} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Midnight</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-border">
-                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                   <Printer size={14} className="text-primary" /> Receipt Settings
                 </h4>
                 
@@ -7797,11 +7777,20 @@ export const ManagePage: React.FC = () => {
                 </div>
               </div>
 
-              {editingCategory ? (
-                <button onClick={handleUpdateCategory} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Update Category</button>
-              ) : (
-                <button onClick={handleAddCategory} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Add Category</button>
-              )}
+              <div className="pt-2 flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => { setShowCatForm(false); setEditingCategory(null); setCatName(''); setCatIcon('LayoutGrid'); }} 
+                  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+                >
+                  Cancel
+                </button>
+                {editingCategory ? (
+                  <button onClick={handleUpdateCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Update</button>
+                ) : (
+                  <button onClick={handleAddCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Add Category</button>
+                )}
+              </div>
             </Modal>
             <div className="space-y-3 pt-4">
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">Existing Categories</p>
@@ -7921,11 +7910,20 @@ export const ManagePage: React.FC = () => {
                   />
                 </button>
               </div>
-              {editingService ? (
-                <button onClick={handleUpdateService} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Update Service</button>
-              ) : (
-                <button onClick={handleAddService} className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black">Add Service</button>
-              )}
+              <div className="pt-2 flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true); }} 
+                  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+                >
+                  Cancel
+                </button>
+                {editingService ? (
+                  <button onClick={handleUpdateService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Update</button>
+                ) : (
+                  <button onClick={handleAddService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Add Service</button>
+                )}
+              </div>
             </Modal>
             <div className="space-y-3 pt-6">
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">Service List</p>
@@ -8010,7 +8008,7 @@ export const ManagePage: React.FC = () => {
               title={editingStaff ? "Edit Staff" : "Register New Staff"}
               maxWidth="max-w-md"
             >
-              <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar pb-4">
+              <div className="space-y-6">
                 {/* Profile Photo Section */}
                 <div className="flex flex-col items-center gap-3 pb-6 border-b border-border/50">
                   <div className="relative group">
@@ -8026,7 +8024,7 @@ export const ManagePage: React.FC = () => {
                         const url = prompt("Enter photo URL:", stfPhotoURL);
                         if (url !== null) setStfPhotoURL(url);
                       }}
-                      className="absolute bottom-0 right-0 p-2.5 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform"
+                      className="absolute bottom-0 right-0 p-2.5 bg-primary text-white rounded-full shadow-lg hover:scale-110 transition-transform"
                       title="Update Photo"
                     >
                       <Edit2 size={14} />
@@ -8093,7 +8091,7 @@ export const ManagePage: React.FC = () => {
                               setStfRole(calculatedRole as any);
                            }}
                            className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-widest transition-all ${
-                             stfRoles.includes(roleOption) ? "bg-primary text-primary-foreground border-primary" : "bg-transparent border-border text-foreground hover:border-primary/50"
+                             stfRoles.includes(roleOption) ? "bg-primary text-white border-primary" : "bg-transparent border-border text-foreground hover:border-primary/50"
                            }`}
                          >
                            {roleOption.replace('_', ' ')}
@@ -8201,11 +8199,24 @@ export const ManagePage: React.FC = () => {
                 </div>
 
               </div>
-              <div className="pt-4 border-t border-border mt-4">
+              <div className="pt-4 border-t border-border mt-4 flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => { 
+                    setShowStfForm(false); 
+                    setEditingStaff(null); 
+                    setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
+                    setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
+                    setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+                  }} 
+                  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+                >
+                  Cancel
+                </button>
                 {editingStaff ? (
-                  <button onClick={handleUpdateStaff} className="w-full btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Update Staff Profile</button>
+                  <button onClick={handleUpdateStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Update Profile</button>
                 ) : (
-                  <button onClick={handleAddStaff} className="w-full btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Register Staff Member</button>
+                  <button onClick={handleAddStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Register</button>
                 )}
               </div>
             </Modal>
@@ -8356,12 +8367,21 @@ export const ManagePage: React.FC = () => {
                 <FloatingInput label="Email (Optional)" value={custEmail} onChange={setCustEmail} />
                 <FloatingInput label="Address" value={custAddr} onChange={setCustAddr} />
                 <FloatingInput label="Notes" value={custNotes} onChange={setCustNotes} />
-                <button 
-                  onClick={handleAddCustomer}
-                  className="w-full btn-primary py-4 mt-2 uppercase tracking-widest font-black"
-                >
-                  Save Customer
-                </button>
+                <div className="pt-2 flex gap-3">
+                  <button 
+                    type="button" 
+                    onClick={() => { setShowCustForm(false); setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); }}
+                    className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleAddCustomer}
+                    className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
             </Modal>
 
@@ -8389,7 +8409,7 @@ export const ManagePage: React.FC = () => {
                                 setQuickEditingPoints(c);
                                 setQuickPointsValue(String(c.points || 0));
                               }}
-                              className="p-1 bg-primary/5 text-primary rounded-md border border-primary/10 hover:bg-primary hover:text-primary-foreground transition-all"
+                              className="p-1 bg-primary/5 text-primary rounded-md border border-primary/10 hover:bg-primary hover:text-white transition-all"
                               title="Quick Edit Points"
                             >
                               <Coins size={12} />
@@ -8408,7 +8428,7 @@ export const ManagePage: React.FC = () => {
                             setCustNotes(c.notes || '');
                             setCustPoints(String(c.points || 0));
                           }}
-                          className="p-2.5 bg-primary/10 text-primary rounded-xl border border-border hover:bg-primary hover:text-primary-foreground transition-all"
+                          className="p-2.5 bg-primary/10 text-primary rounded-xl border border-border hover:bg-primary hover:text-white transition-all"
                           title="Edit Customer"
                         >
                           <Settings size={18} />
@@ -8451,12 +8471,21 @@ export const ManagePage: React.FC = () => {
           <FloatingInput label="Address" value={custAddr} onChange={setCustAddr} />
           <FloatingInput label="Notes" value={custNotes} onChange={setCustNotes} />
           <FloatingInput label="Loyalty Points" type="number" value={custPoints} onChange={setCustPoints} />
-          <button 
-            onClick={handleUpdateCustomer}
-            className="w-full btn-primary py-4 mt-4 shadow-xl shadow-primary/20 uppercase tracking-widest font-black"
-          >
-            Update Customer
-          </button>
+          <div className="pt-2 flex gap-3">
+            <button 
+              type="button" 
+              onClick={() => setEditingCustomer(null)}
+              className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleUpdateCustomer}
+              className="flex-1 btn-primary py-4 shadow-xl shadow-primary/20 uppercase tracking-widest font-black"
+            >
+              Update
+            </button>
+          </div>
         </div>
       </Modal>
 
@@ -8479,19 +8508,28 @@ export const ManagePage: React.FC = () => {
             onChange={setQuickPointsValue} 
             onFocusClear
           />
-          <button 
-            onClick={handleQuickUpdatePoints}
-            className="w-full btn-primary py-3 shadow-lg shadow-primary/20 uppercase tracking-widest font-black"
-          >
-            Save Points
-          </button>
+          <div className="pt-2 flex gap-3">
+            <button 
+              type="button" 
+              onClick={() => setQuickEditingPoints(null)}
+              className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-3 rounded-xl uppercase tracking-widest font-black transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleQuickUpdatePoints}
+              className="flex-1 btn-primary py-3 shadow-lg shadow-primary/20 uppercase tracking-widest font-black"
+            >
+              Save Points
+            </button>
+          </div>
         </div>
       </Modal>
 
       {/* Customer History Modal */}
       {viewingCustomerHistory && (
         <div className="fixed inset-0 bg-background/95  z-[25000] flex flex-col p-4">
-          <div className="flex justify-between items-center mb-8 max-w-2xl mx-auto w-full">
+          <div className="flex justify-between items-center mb-8 max-w-4xl mx-auto w-full">
             <div>
               <h3 className="text-primary font-bold text-2xl tracking-tight">{viewingCustomerHistory.name}</h3>
               <div className="flex items-center gap-3 mt-1">
@@ -8502,7 +8540,7 @@ export const ManagePage: React.FC = () => {
             <button onClick={() => setViewingCustomerHistory(null)} className="p-3 bg-card rounded-2xl text-foreground border border-border hover:border-primary transition-all"><X size={24} /></button>
           </div>
           
-          <div className="flex-1 overflow-y-auto space-y-4 pb-10 max-w-2xl mx-auto w-full">
+          <div className="flex-1 overflow-y-auto space-y-4 pb-10 max-w-4xl mx-auto w-full">
             <h4 className="text-primary font-bold uppercase text-xs tracking-widest border-b border-border pb-3 flex items-center gap-2">
               <div className="w-1.5 h-4 bg-primary rounded-full"></div>
               Service History
@@ -8734,7 +8772,7 @@ const ForcePasswordChangePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading || success}
-                className="w-full py-4 px-6 rounded-2xl bg-primary text-primary-foreground hover:opacity-90 transition-all font-black text-xs tracking-widest uppercase shadow-xl shadow-primary/20 disabled:opacity-50 active:scale-95"
+                className="w-full py-4 px-6 rounded-2xl bg-primary text-white hover:opacity-90 transition-all font-black text-xs tracking-widest uppercase shadow-xl shadow-primary/20 disabled:opacity-50 active:scale-95"
               >
                 {loading ? 'Updating...' : 'Update Password'}
               </button>
@@ -8753,140 +8791,202 @@ const ForcePasswordChangePage: React.FC = () => {
   );
 };
 
-const ChangePasswordPage: React.FC = () => {
+const SettingsPage: React.FC = () => {
+  const { theme, setTheme } = useTheme();
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdSuccess, setPwdSuccess] = useState(false);
   const { changePassword, error, setError } = useAuth();
-  const navigate = useNavigate();
+  
+  const [updateChecking, setUpdateChecking] = useState(false);
+  const [updateMsg, setUpdateMsg] = useState<{type: 'success'|'info'|'error', text: string} | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccess(false);
+    setPwdSuccess(false);
 
     if (newPassword !== confirmPassword) {
       setError("New passwords do not match.");
       return;
     }
-
     if (newPassword.length < 6) {
       setError("New password must be at least 6 characters.");
       return;
     }
 
-    setLoading(true);
+    setPwdLoading(true);
     try {
       await changePassword(currentPassword, newPassword);
-      setSuccess(true);
+      setPwdSuccess(true);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setTimeout(() => navigate('/'), 3000);
+      setTimeout(() => setPwdSuccess(false), 3000);
     } catch (err) {
       // Error handled in useAuth
     } finally {
-      setLoading(false);
+      setPwdLoading(false);
+    }
+  };
+
+  const checkForUpdates = async () => {
+    setUpdateChecking(true);
+    setUpdateMsg(null);
+    try {
+      const remoteSnap = await getDoc(doc(db, 'app_config', 'version_control'));
+      const data = remoteSnap.data();
+      if (data && data.latestVersion) {
+        if (data.latestVersion !== CURRENT_VERSION) {
+          setUpdateMsg({ type: 'info', text: `Update available: v${data.latestVersion}` });
+          if (data.updateUrl) setUpdateUrl(data.updateUrl);
+        } else {
+          setUpdateMsg({ type: 'success', text: "You are on the latest version." });
+        }
+      } else {
+         setUpdateMsg({ type: 'success', text: "You are on the latest version." });
+      }
+    } catch (err) {
+      setUpdateMsg({ type: 'error', text: "Failed to check for updates." });
+    } finally {
+      setUpdateChecking(false);
+    }
+  };
+
+  const [updateUrl, setUpdateUrl] = useState<string | null>(null);
+
+  const forceUpdate = () => {
+    if (updateUrl) {
+      window.open(updateUrl, '_blank');
+    } else {
+      window.location.reload();
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-8 bg-card rounded-3xl shadow-2xl border border-border/50 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-      
-      <div className="relative z-10">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-primary/10 rounded-2xl border border-border">
-            <Lock className="w-6 h-6 text-primary" />
+    <div className="max-w-4xl mx-auto space-y-6 pb-20">
+       <div className="flex items-center gap-4 mb-8 p-6 bg-card rounded-3xl shadow-sm border border-border/50 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
+          <div className="p-4 bg-primary/10 rounded-2xl border border-border text-primary relative z-10">
+            <Settings className="w-8 h-8" />
           </div>
-          <div>
-            <h2 className="text-2xl font-black tracking-tighter">Change Password</h2>
-            <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">Security Settings</p>
+          <div className="relative z-10">
+            <h1 className="text-3xl font-black tracking-tighter">Settings</h1>
+            <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
           </div>
-        </div>
+       </div>
 
-        {error && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
-          >
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            {error}
-          </motion.div>
-        )}
-
-        {success && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
-          >
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-            Password updated successfully! Redirecting...
-          </motion.div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Current Password</label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-bold text-sm"
-              placeholder="••••••••"
-              required
-            />
+       <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 space-y-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Moon className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-black tracking-tighter">App Theme</h2>
           </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-bold text-sm"
-              placeholder="••••••••"
-              required
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {(['gold', 'rose', 'midnight'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setTheme(t)}
+                className={cn(
+                  "py-4 px-6 rounded-2xl border-2 transition-all font-black text-xs tracking-widest uppercase flex flex-col items-center gap-3",
+                  theme === t 
+                    ? "border-primary bg-primary/10 text-primary scale-[1.02] shadow-xl shadow-primary/20" 
+                    : "border-border/50 text-muted-foreground hover:bg-muted"
+                )}
+              >
+                <div className={cn(
+                  "w-8 h-8 rounded-full shadow-inner",
+                  t === 'gold' ? "bg-gradient-to-br from-amber-200 to-yellow-600" :
+                  t === 'rose' ? "bg-gradient-to-br from-rose-300 to-pink-600" :
+                  "bg-gradient-to-br from-slate-700 to-slate-900"
+                )} />
+                {t}
+              </button>
+            ))}
           </div>
+       </div>
 
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm New Password</label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-bold text-sm"
-              placeholder="••••••••"
-              required
-            />
+       <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 space-y-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Lock className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-black tracking-tighter">Change Password</h2>
           </div>
+          
+          {error && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold">
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              {error}
+            </motion.div>
+          )}
 
-          <div className="flex gap-4 pt-4">
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="flex-1 py-4 px-6 rounded-2xl border border-border/50 hover:bg-muted transition-all font-black text-xs tracking-widest uppercase active:scale-95"
-            >
-              Cancel
+          {pwdSuccess && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-green-500/10 border border-green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold">
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+              Password updated successfully!
+            </motion.div>
+          )}
+
+          <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Current Password</label>
+              <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
+              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm Password</label>
+              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+            </div>
+            <button type="submit" disabled={pwdLoading} className="w-full py-4 px-6 rounded-2xl bg-primary text-white font-black text-xs tracking-widest uppercase shadow-xl shadow-primary/20 hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all mt-2">
+              {pwdLoading ? 'Updating...' : 'Update Password'}
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-4 px-6 rounded-2xl bg-primary text-primary-foreground hover:opacity-90 transition-all font-black text-xs tracking-widest uppercase shadow-xl shadow-primary/20 disabled:opacity-50 active:scale-95"
-            >
-              {loading ? 'Updating...' : 'Update'}
-            </button>
+          </form>
+       </div>
+
+       <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 space-y-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Info className="w-5 h-5 text-primary" />
+            <h2 className="text-xl font-black tracking-tighter">System Version</h2>
           </div>
-        </form>
-      </div>
+
+          <div className="flex items-center justify-between p-6 rounded-2xl bg-muted/20 border border-border/50 flex-wrap gap-4">
+             <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Current Version</p>
+                <p className="text-2xl font-black tracking-tighter">v{CURRENT_VERSION}</p>
+             </div>
+             <button onClick={checkForUpdates} disabled={updateChecking} className="py-3 px-6 rounded-xl border-2 border-primary text-primary font-black text-xs tracking-widest uppercase hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-50">
+               {updateChecking ? 'Checking...' : 'Check for Updates'}
+             </button>
+          </div>
+
+          {updateMsg && (
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={cn(
+              "p-4 border text-sm rounded-2xl flex items-center gap-3 font-bold justify-between flex-wrap",
+              updateMsg.type === 'info' ? "bg-blue-500/10 border-blue-500/20 text-blue-500" :
+              updateMsg.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-500" :
+              "bg-green-500/10 border-green-500/20 text-green-500"
+            )}>
+              <div className="flex items-center gap-3">
+                 {updateMsg.type === 'error' ? <AlertCircle className="w-5 h-5 flex-shrink-0" /> : <Info className="w-5 h-5 flex-shrink-0" />}
+                 {updateMsg.text}
+              </div>
+              {updateMsg.type === 'info' && (
+                 <button onClick={forceUpdate} className="py-2 px-4 rounded-lg bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-blue-500/20">
+                    Force Update
+                 </button>
+              )}
+            </motion.div>
+          )}
+       </div>
     </div>
   );
 };
+
+
 
 const IdentityResetPage: React.FC = () => {
   const [step, setStep] = useState<'verify' | 'reset'>('verify');
@@ -9290,7 +9390,7 @@ const ResetPasswordPage: React.FC = () => {
     <div className="fixed inset-0 bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300 select-none">
       <div className="bg-white p-8 rounded-3xl border border-border w-full max-w-[380px] text-center space-y-6 shadow-xl my-auto transition-colors duration-300">
         <div className="space-y-1">
-          <h2 className="text-[#4A2E31] tracking-[0.25em] uppercase text-2xl font-black font-serif">Nail Pro</h2>
+          <h2 className="text-white tracking-[0.25em] uppercase text-2xl font-black font-serif">Nail Pro</h2>
           <p className="text-muted-foreground text-xs uppercase tracking-widest mt-2">Reset Password</p>
         </div>
 
@@ -9510,9 +9610,13 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] overflow-hidden overscroll-none bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] transition-colors duration-500 ease-in-out text-foreground [.midnight_&]:text-slate-200 select-none">
-      <div className="h-[100dvh] w-full flex flex-col items-center justify-center p-4 sm:p-6 overflow-hidden">
-        <div className="relative w-full max-w-[400px] flex flex-col justify-center z-10 shrink-0 h-full max-h-[800px]">
+    <div 
+      className="fixed inset-0 z-[99999] overflow-hidden overscroll-none transition-colors duration-500 ease-in-out text-foreground [.midnight_&]:text-slate-200 select-none bg-cover bg-center"
+      style={{ backgroundImage: `url(${nailSalonBg})` }}
+    >
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+      <div className="h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden relative z-10">
+        <div className="relative w-full flex flex-col justify-center z-10 shrink-0 h-full">
         <AnimatePresence mode="wait">
         {viewState === 'welcome' && (
           <motion.div 
@@ -9521,7 +9625,7 @@ const LoginPage: React.FC = () => {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.4, delay: 0.2 }}
-            className="w-full flex flex-col items-center justify-center space-y-8 bg-card p-10 sm:p-12 rounded-[2.5rem] shadow-2xl shadow-[#4A2E31]/10 border border-border"
+            className="w-full h-full flex flex-col items-center justify-center space-y-8 bg-black/30 backdrop-blur-md p-10 sm:p-16 shadow-2xl"
           >
             {/* Header */}
             <div className="text-center shrink-0 w-full flex flex-col items-center">
@@ -9531,21 +9635,21 @@ const LoginPage: React.FC = () => {
                 transition={{ duration: 0.6 }}
                 className="flex flex-col items-center w-full"
               >
-                <h1 className="text-4xl sm:text-5xl font-serif text-[#4A2E31] tracking-[0.25em] leading-none mb-4 uppercase ml-4">NAIL PRO</h1>
-                <p className="text-[10px] sm:text-[11px] font-medium text-[#4A2E31]/80 uppercase tracking-[0.5em] ml-2 font-serif">Beauty Studio Management</p>
+                <h1 className="text-5xl sm:text-6xl font-serif text-white tracking-[0.25em] leading-none mb-4 uppercase ml-4 text-shadow-lg">NAIL PRO</h1>
+                <p className="text-xs sm:text-sm font-medium text-white/90 uppercase tracking-[0.5em] ml-2 font-serif">Beauty Studio Management</p>
               </motion.div>
             </div>
 
-            <div className="w-full space-y-4 pt-8">
+            <div className="w-full flex flex-row gap-4 pt-10">
               <button
                 onClick={() => { setViewState('login'); setError(null); }}
-                className="w-full bg-[#4A2E31] text-white font-black py-4 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] tracking-[0.2em]"
+                className="flex-1 bg-white text-[#4A2E31] font-black py-4 px-8 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
               >
                 SIGN IN
               </button>
               <button
                 onClick={() => { setViewState('signup'); setError(null); }}
-                className="w-full bg-white border border-[#4A2E31]/20 text-[#4A2E31] font-black py-4 rounded-xl shadow-sm hover:bg-[#F9EFEF] hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] tracking-[0.2em]"
+                className="flex-1 bg-transparent border-2 border-white text-white font-black py-4 px-8 rounded-xl shadow-sm hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
               >
                 CREATE ACCOUNT
               </button>
@@ -9560,17 +9664,18 @@ const LoginPage: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="bg-card p-5 sm:p-6 rounded-[2rem] border border-border shadow-2xl shadow-[#4A2E31]/10 shrink-0 relative"
+            className="bg-black/40 backdrop-blur-md text-white p-6 sm:p-10 shadow-2xl shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto"
           >
             <button
               onClick={() => setViewState('welcome')}
-              className="absolute top-4 left-4 p-2 text-muted-foreground [.midnight_&]:text-slate-300 hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
+              className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
             >
               <ArrowLeft size={14} /> Back
             </button>
             
+            <div className="w-full max-w-md mx-auto">
             <div className="text-center mb-6 mt-4">
-              <h2 className="text-xl font-black text-[#4A2E31] tracking-widest uppercase font-serif">Welcome Back</h2>
+              <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Welcome Back</h2>
             </div>
 
             {error && (
@@ -9585,13 +9690,13 @@ const LoginPage: React.FC = () => {
             )}
 
             {/* Auth Method Selector */}
-            <div className="flex p-1 bg-input rounded-xl mb-5 border border-border shadow-sm">
+            <div className="flex p-1 bg-white/10 rounded-xl mb-5 border border-white/20 shadow-sm backdrop-blur-sm">
               <button
                 type="button"
                 onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  loginMethod === 'phone' ? "text-primary-foreground" : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
+                  loginMethod === 'phone' ? "text-white" : "text-muted-foreground hover:text-white"
                 )}
               >
                 {loginMethod === 'phone' && (
@@ -9604,7 +9709,7 @@ const LoginPage: React.FC = () => {
                 onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  loginMethod === 'email' ? "text-primary-foreground" : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
+                  loginMethod === 'email' ? "text-white" : "text-muted-foreground hover:text-white"
                 )}
               >
                 {loginMethod === 'email' && (
@@ -9616,28 +9721,28 @@ const LoginPage: React.FC = () => {
 
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">
+                <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">
                   {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
                 </label>
                 <div className="relative">
                   {loginMethod === 'email' ? (
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
                   ) : (
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
                   )}
                   <input 
                     type={loginMethod === 'email' ? "email" : "tel"} 
                     value={identifier}
                     onChange={(e) => setIdentifier(e.target.value)}
                     placeholder={loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center px-1">
-                  <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest">Password</label>
+                  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Password</label>
                   <button 
                     type="button"
                     onClick={() => navigate('/identity-reset')}
@@ -9647,18 +9752,18 @@ const LoginPage: React.FC = () => {
                   </button>
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
                   <input 
                     type={showPassword ? "text" : "password"} 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40 hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -9668,7 +9773,7 @@ const LoginPage: React.FC = () => {
               <button 
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-primary text-foreground [.midnight_&]:text-slate-200 font-black py-3 mt-2 rounded-xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
+                className="w-full bg-white text-[#4A2E31] font-black py-3 mt-2 rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
               >
                 {isSubmitting ? "PROCESSING..." : "SIGN IN"}
               </button>
@@ -9678,14 +9783,10 @@ const LoginPage: React.FC = () => {
               <button 
                 onClick={handleBiometricLogin}
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-primary/10 border border-primary/20 text-primary [.midnight_&]:text-amber-400 font-bold py-3 mt-4 rounded-xl hover:bg-primary/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+                className="w-full flex items-center justify-center gap-3 bg-white/10 border border-white/20 text-white font-bold py-3 mt-4 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm backdrop-blur-sm"
               >
-                {biometryType === BiometryType.FACE_ID || biometryType === BiometryType.FACE_AUTHENTICATION ? (
-                  <ScanFace size={18} />
-                ) : (
-                  <Fingerprint size={18} />
-                )}
-                <span className="text-[10px] font-black uppercase tracking-widest">Use Biometrics</span>
+                <Zap size={18} />
+                <span className="text-[10px] font-black uppercase tracking-widest">1-Tap Login</span>
               </button>
             )}
 
@@ -9694,22 +9795,23 @@ const LoginPage: React.FC = () => {
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
-                <span className="relative px-4 text-[8px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest bg-card">Or continue with</span>
+                <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-transparent">Or continue with</span>
               </div>
 
               <button 
                 onClick={handleGoogleLogin}
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold py-3 rounded-xl hover:bg-muted transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+                className="w-full flex items-center justify-center gap-3 bg-white/10 border border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm backdrop-blur-sm"
               >
                 <span className="text-xs tracking-wider">Continue with Google</span>
               </button>
             </div>
             
+            </div>
             <div className="pt-6 text-center">
               <button 
                 onClick={() => setShowHelp(!showHelp)}
-                className="text-[9px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-[0.2em] hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors flex items-center justify-center gap-2 mx-auto"
+                className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
               >
                 <HelpCircle size={12} />
                 Need help?
@@ -9722,7 +9824,7 @@ const LoginPage: React.FC = () => {
                   className="mt-4 p-4 bg-primary/5 border border-primary/10 rounded-2xl text-left"
                 >
                   <p className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest mb-2">Staff Registration</p>
-                  <p className="text-[9px] text-muted-foreground [.midnight_&]:text-slate-300 leading-relaxed">
+                  <p className="text-[9px] text-muted-foreground leading-relaxed">
                     If you were added as a staff member by an admin, you still need to <strong className="text-primary [.midnight_&]:text-amber-400">Sign Up</strong> once with your email to set your password.
                   </p>
                 </motion.div>
@@ -9738,18 +9840,19 @@ const LoginPage: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.3 }}
-            className="bg-card p-5 sm:p-6 rounded-[2rem] border border-border shadow-2xl  shrink-0 relative w-full overflow-y-auto max-h-[80vh]"
+            className="bg-black/40 backdrop-blur-md text-white p-6 sm:p-10 shadow-2xl shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto custom-scrollbar"
           >
             <button
               onClick={() => setViewState('welcome')}
-              className="absolute top-4 left-4 p-2 text-muted-foreground [.midnight_&]:text-slate-300 hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
+              className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
             >
               <ArrowLeft size={14} /> Back
             </button>
             
+            <div className="w-full max-w-md mx-auto">
             <div className="text-center mb-6 mt-4">
-              <h2 className="text-xl font-black text-[#4A2E31] tracking-widest uppercase font-serif">Create Account</h2>
-              <p className="text-[9px] text-[#4A2E31]/70 font-bold uppercase tracking-[0.2em] mt-1">Join Nail Pro Studio</p>
+              <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Create Account</h2>
+              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-[0.2em] mt-1">Join Nail Pro Studio</p>
             </div>
 
             {error && (
@@ -9759,13 +9862,13 @@ const LoginPage: React.FC = () => {
               </div>
             )}
 
-            <div className="flex p-1 bg-input rounded-xl mb-5 border border-border shadow-sm">
+            <div className="flex p-1 bg-white/10 rounded-xl mb-5 border border-white/20 shadow-sm backdrop-blur-sm">
               <button
                 type="button"
                 onClick={() => { setSignUpMethod('phone'); setSignUpIdentifier(''); setError(null); }}
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  signUpMethod === 'phone' ? "text-primary-foreground" : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
+                  signUpMethod === 'phone' ? "text-white" : "text-muted-foreground hover:text-white"
                 )}
               >
                 {signUpMethod === 'phone' && (
@@ -9778,7 +9881,7 @@ const LoginPage: React.FC = () => {
                 onClick={() => { setSignUpMethod('email'); setSignUpIdentifier(''); setError(null); }}
                 className={cn(
                   "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  signUpMethod === 'email' ? "text-primary-foreground" : "text-muted-foreground [.midnight_&]:text-slate-300 hover:text-foreground [.midnight_&]:hover:text-slate-200"
+                  signUpMethod === 'email' ? "text-white" : "text-muted-foreground hover:text-white"
                 )}
               >
                 {signUpMethod === 'email' && (
@@ -9790,42 +9893,42 @@ const LoginPage: React.FC = () => {
 
             <form onSubmit={handleSignUpSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">Full Name</label>
+                <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Full Name</label>
                 <div className="relative">
-                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
                   <input 
                     type="text" 
                     value={signUpName}
                     onChange={(e) => setSignUpName(e.target.value)}
                     placeholder="Your Name"
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
                   />
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">
+                <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">
                   {signUpMethod === 'phone' ? 'Phone Number' : 'Email Address'}
                 </label>
                 <div className="relative">
                   {signUpMethod === 'email' ? (
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
                   ) : (
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
                   )}
                   <input 
                     type={signUpMethod === 'email' ? "email" : "tel"} 
                     value={signUpIdentifier}
                     onChange={(e) => setSignUpIdentifier(e.target.value)}
                     placeholder={signUpMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
                   />
                 </div>
               </div>
 
               {signUpMethod === 'phone' && (
                 <div className="space-y-1">
-                  <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">Date of Birth</label>
+                  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Date of Birth</label>
                   <input 
                     type="date"
                     value={signUpDob}
@@ -9836,20 +9939,20 @@ const LoginPage: React.FC = () => {
               )}
 
               <div className="space-y-1">
-                <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">Password</label>
+                <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
                   <input 
                     type={signUpShowPassword ? "text" : "password"} 
                     value={signUpPassword}
                     onChange={(e) => setSignUpPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
                   />
                   <button 
                     type="button"
                     onClick={() => setSignUpShowPassword(!signUpShowPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40 hover:text-primary [.midnight_&]:hover:text-amber-400 transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
                   >
                     {signUpShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -9858,15 +9961,15 @@ const LoginPage: React.FC = () => {
 
               {signUpMethod === 'phone' && (
                 <div className="space-y-1">
-                  <label className="text-[9px] text-primary [.midnight_&]:text-amber-400/60 font-black uppercase tracking-widest ml-1">Confirm Password</label>
+                  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Confirm Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400/40" size={16} />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
                     <input 
                       type={signUpShowPassword ? "text" : "password"} 
                       value={signUpConfirmPassword}
                       onChange={(e) => setSignUpConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-input border border-border rounded-xl p-3 pl-10 pr-10 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300"
+                      className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
                     />
                   </div>
                 </div>
@@ -9875,7 +9978,7 @@ const LoginPage: React.FC = () => {
               <button 
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-primary text-foreground [.midnight_&]:text-slate-200 font-black py-3 mt-4 rounded-xl shadow-[0_10px_20px_rgba(212,175,55,0.2)] active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
+                className="w-full bg-white text-[#4A2E31] font-black py-3 mt-4 rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
               >
                 {isSubmitting ? "PROCESSING..." : "CREATE ACCOUNT"}
               </button>
@@ -9886,16 +9989,17 @@ const LoginPage: React.FC = () => {
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-border"></div>
                 </div>
-                <span className="relative px-4 text-[8px] font-black text-muted-foreground [.midnight_&]:text-slate-300 uppercase tracking-widest bg-card">Or continue with</span>
+                <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-transparent">Or continue with</span>
               </div>
 
               <button 
                 onClick={handleGoogleLogin}
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold py-3 rounded-xl hover:bg-muted transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm"
+                className="w-full flex items-center justify-center gap-3 bg-white/10 border border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm backdrop-blur-sm"
               >
                 <span className="text-xs tracking-wider">Continue with Google</span>
               </button>
+            </div>
             </div>
           </motion.div>
         )}
@@ -9912,6 +10016,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState<{latestVersion: string, updateUrl: string} | null>(null);
+
+  useEffect(() => {
+    const fetchUpdateConfig = async () => {
+      try {
+        const remoteSnap = await getDoc(doc(db, 'app_config', 'version_control'));
+        const data = remoteSnap.data();
+        if (data && data.latestVersion && data.updateUrl) {
+          setUpdateInfo({ latestVersion: data.latestVersion, updateUrl: data.updateUrl });
+        }
+      } catch (err) {
+      }
+    };
+    fetchUpdateConfig();
+  }, []);
+
+  const needsUpdate = updateInfo && CURRENT_VERSION !== updateInfo.latestVersion;
 
   useEffect(() => {
     let listener: any = null;
@@ -9959,12 +10080,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return (
       <div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300 select-none">
         <div className="bg-white p-6 rounded-3xl border border-border w-full max-w-[320px] text-center space-y-6 shadow-xl">
-          <h3 className="text-xl font-black text-[#4A2E31] uppercase tracking-widest font-serif">Exit App</h3>
+          <h3 className="text-xl font-black text-white uppercase tracking-widest font-serif">Exit App</h3>
           <p className="text-muted-foreground text-sm">Are you sure you want to exit the app?</p>
           <div className="flex gap-3">
             <button
               onClick={() => setShowExitConfirm(false)}
-              className="flex-1 bg-muted text-[#4A2E31] font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
+              className="flex-1 bg-muted text-white font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
             >
               NO
             </button>
@@ -10054,7 +10175,7 @@ const AppRoutes = () => {
         <Route path="/staff-commissions" element={!(isAdmin || isCashier || isStaffMember) ? <Navigate to="/appointments" /> : <LazyStaffCommissionsPage />} />
         <Route path="/monthly" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazyMonthlySummaryPage />} />
         <Route path="/sales-report" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazySalesReportPage />} />
-        <Route path="/change-password" element={<ChangePasswordPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/identity-reset" element={<IdentityResetPage />} />

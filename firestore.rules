@@ -1,38 +1,28 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
     function isAuthenticated() {
       return request.auth != null;
     }
-
     function getUserEmail() {
       return (request.auth != null && request.auth.token.email != null) 
              ? request.auth.token.email 
              : "unknown";
     }
-
     function hasRole(allowedRoles) {
-      if (!isAuthenticated()) return false;
       let email = getUserEmail();
-      if (email == "aungsoe366@gmail.com") return true;
-      if (email == "unknown") return false;
-      
       let userPath = /databases/$(database)/documents/users/$(email);
-      if (!exists(userPath)) return false;
+      let userDoc = exists(userPath) ? get(userPath).data : null;
       
-      let userDoc = get(userPath).data;
-      return userDoc.role in allowedRoles;
+      return isAuthenticated() && (
+        email == "aungsoe366@gmail.com" ||
+        (userDoc != null && userDoc.role in allowedRoles)
+      );
     }
-
     function isSuperAdmin() { return hasRole(['super_admin']); }
     function isOwner() { return hasRole(['owner', 'super_admin']); }
     function isCashier() { return hasRole(['cashier', 'owner', 'super_admin']); }
     function isStaff() { return hasRole(['staff', 'cashier', 'owner', 'super_admin']); }
-
-    match /{document=**} {
-      allow read, write: if isSuperAdmin() || isOwner();
-    }
 
     match /users/{email} {
       allow get: if isAuthenticated();
@@ -41,49 +31,47 @@ service cloud.firestore {
       allow update: if isAuthenticated() && (getUserEmail() == email || isStaff());
       allow delete: if isSuperAdmin();
     }
-
     match /customers/{id} {
       allow read: if isStaff() || (isAuthenticated() && resource.data.email == getUserEmail());
       allow create: if isStaff() || isAuthenticated();
       allow update: if isStaff() || (isAuthenticated() && resource.data.email == getUserEmail());
       allow delete: if isStaff();
     }
-
     match /sales/{id} {
       allow read, create: if isStaff();
       allow update: if isOwner();
       allow delete: if isSuperAdmin();
     }
-
     match /expenses/{id} {
       allow read, write: if isCashier();
     }
-
     match /appointments/{id} {
       allow read: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail()));
       allow create: if isAuthenticated();
       allow update: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail()));
       allow delete: if isStaff();
     }
-
     match /categories/{id} {
       allow read: if isAuthenticated();
       allow write: if isOwner();
     }
-
     match /services/{id} {
       allow read: if isAuthenticated();
       allow write: if isOwner();
     }
-
     match /expense_categories/{id} {
       allow read: if isStaff();
       allow write: if isOwner();
     }
-
+    match /app_config/{id} {
+      allow read: if isAuthenticated();
+    }
     match /settings/{id} {
       allow read: if isAuthenticated();
       allow write: if isOwner();
+    }
+    match /{document=**} {
+      allow read, write: if isSuperAdmin() || isOwner();
     }
   }
 }
