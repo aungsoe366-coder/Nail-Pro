@@ -136,7 +136,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 
-const CURRENT_VERSION = "1.0.0";
+const CURRENT_VERSION = "1.0.1";
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { exportToCSVAndShare } from './exportUtils';
@@ -10079,22 +10079,26 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     if (!showExitConfirm) return null;
     return (
       <div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300 select-none">
-        <div className="bg-white p-6 rounded-3xl border border-border w-full max-w-[320px] text-center space-y-6 shadow-xl">
-          <h3 className="text-xl font-black text-white uppercase tracking-widest font-serif">Exit App</h3>
+        <div className="bg-card p-6 rounded-3xl border border-border w-full max-w-[320px] text-center space-y-6 shadow-xl">
+          <h3 className="text-xl font-black text-foreground uppercase tracking-widest font-serif">Exit App</h3>
           <p className="text-muted-foreground text-sm">Are you sure you want to exit the app?</p>
           <div className="flex gap-3">
             <button
               onClick={() => setShowExitConfirm(false)}
-              className="flex-1 bg-muted text-white font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
+              className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
             >
               NO
             </button>
             <button
               onClick={() => {
                 setShowExitConfirm(false);
-                CapApp.exitApp();
+                if (Capacitor.isNativePlatform()) {
+                  CapApp.exitApp();
+                } else {
+                  window.location.href = "about:blank";
+                }
               }}
-              className="flex-1 bg-[#4A2E31] text-white font-bold py-3 rounded-xl hover:bg-[#4A2E31]/90 transition-all text-xs tracking-wider shadow-md"
+              className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-all text-xs tracking-wider shadow-md"
             >
               YES
             </button>
