@@ -13,6 +13,8 @@ import { App as CapApp } from '@capacitor/app';
 import { Preferences } from '@capacitor/preferences';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { CustomSelect } from './components/CustomSelect';
+import { PrintView } from './components/PrintView';
+import { renderToString } from 'react-dom/server';
 import { Printer as CapPrinter } from '@capgo/capacitor-printer';
 import { NativeBiometric, BiometryType } from '@capgo/capacitor-native-biometric';
 import { 
@@ -291,30 +293,40 @@ const CustomDatePicker: React.FC<{
 // Removed redundant OperationType and FirestoreErrorInfo definitions (moved to firebase.ts)
 
 const generateReceiptHTML = (sale: Omit<Sale, 'id'>, settings: ShopSettings | null) => {
-  let html = `<div style="font-family: sans-serif; font-size: 12px; color: #000; width: 100%; max-width: 320px; margin: 0 auto;">`;
-  
-  // Header
-  html += `<div style="text-align: center; margin-bottom: 12px;">`;
+  return renderToString(<PrintView sale={sale} settings={settings} />);
+};
+
+const generateConsolidatedReceiptHTML = (sales: Sale[], settings: ShopSettings | null, from: string, to: string) => {
+  return renderToString(<PrintView sales={sales} settings={settings} from={from} to={to} isConsolidated={true} />);
+};
+
+
+const pad = (str, len, align='left') => {
+  str = String(str);
+  if (str.length >= len) return str.substring(0, len);
+  if (align === 'right') return str.padStart(len, ' ');
+  if (align === 'center') return str.padStart(Math.floor((len - str.length)/2) + str.length, ' ').padEnd(len, ' ');
+  return str.padEnd(len, ' ');
+};
+
+const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | null) => {
+  let text = '';
+  const C = 32; 
   if (settings?.receiptHeader) {
-    html += `<div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">${settings.receiptHeader.replace(/\n/g, '<br/>')}</div>`;
+    text += settings.receiptHeader.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
   }
   if (!settings?.hideShopNameOnReceipt) {
-    html += `<div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">${settings?.name || "NAIL PRO BEAUTY STUDIO"}</div>`;
+    text += pad(settings?.name || "NAIL PRO BEAUTY STUDIO", C, 'center') + '\n';
   }
   if (settings?.addr) {
-    html += `<div style="margin-bottom: 2px;">${settings.addr.replace(/\n/g, '<br/>')}</div>`;
+    text += settings.addr.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
   }
   if (settings?.ph) {
-    html += `<div>Ph: ${settings.ph}</div>`;
+    text += pad(`Ph: ${settings.ph}`, C, 'center') + '\n';
   }
-  html += `</div>`;
-
-  html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
-
-  // Info
-  html += `<div style="margin-bottom: 8px;">`;
+  text += '-'.repeat(C) + '\n';
   if (!settings?.hideDateTimeOnReceipt) {
-    html += `<div><strong>Date:</strong> ${new Date(sale.dateTime).toLocaleString()}</div>`;
+    text += `Date: ${new Date(sale.dateTime).toLocaleString()}\n`;
   }
   if (!settings?.hideStaffNameOnReceipt) {
     let itemStaffNames: string[] = [];
@@ -327,27 +339,14 @@ const generateReceiptHTML = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
     });
     const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
     if (uniqueStaff.length > 0) {
-      html += `<div><strong>Staff:</strong> ${uniqueStaff.join(', ')}</div>`;
+      text += `Staff: ${uniqueStaff.join(', ')}\n`;
     } else if (sale.staff) {
-      html += `<div><strong>Staff:</strong> ${sale.staff}</div>`;
+      text += `Staff: ${sale.staff}\n`;
     }
   }
-  html += `</div>`;
-
-  html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
-
-  // Items Table
-  html += `<table style="width: 100%; border-collapse: collapse; font-size: 12px;">`;
-  html += `<thead>`;
-  html += `<tr>`;
-  html += `<th style="text-align: left; width: 40%; padding: 4px 0; border-bottom: 1px solid #000;">Item</th>`;
-  html += `<th style="text-align: center; width: 15%; padding: 4px 0; border-bottom: 1px solid #000;">Qty</th>`;
-  html += `<th style="text-align: right; width: 20%; padding: 4px 0; border-bottom: 1px solid #000;">Price</th>`;
-  html += `<th style="text-align: right; width: 25%; padding: 4px 0; border-bottom: 1px solid #000;">Amount</th>`;
-  html += `</tr>`;
-  html += `</thead>`;
-  html += `<tbody>`;
-  
+  text += '-'.repeat(C) + '\n';
+  text += pad('Item', 14) + pad('Qty', 4, 'center') + pad('Price', 6, 'right') + pad('Amt', 8, 'right') + '\n';
+  text += '-'.repeat(C) + '\n';
   let subTotal = 0;
   let totalDiscount = 0;
   sale.items.forEach(item => {
@@ -355,90 +354,66 @@ const generateReceiptHTML = (sale: Omit<Sale, 'id'>, settings: ShopSettings | nu
     const netSub = sub - (sub * ((item.disP || 0) / 100));
     subTotal += sub;
     totalDiscount += (sub - netSub);
-    let fullItemName = item.name + ((item.disP || 0) > 0 ? ` <br/><small>(-${item.disP}%)</small>` : "");
-    html += `<tr>`;
-    html += `<td style="text-align: left; padding: 6px 0; word-wrap: break-word; vertical-align: top;">${fullItemName}</td>`;
-    html += `<td style="text-align: center; padding: 6px 0; vertical-align: top;">${item.qty}</td>`;
-    html += `<td style="text-align: right; padding: 6px 0; vertical-align: top;">${item.price.toLocaleString()}</td>`;
-    html += `<td style="text-align: right; padding: 6px 0; vertical-align: top;">${netSub.toLocaleString()}</td>`;
-    html += `</tr>`;
+    let name = item.name.substring(0, 14);
+    text += pad(name, 14) + pad(String(item.qty), 4, 'center') + pad(String(item.price), 6, 'right') + pad(String(netSub), 8, 'right') + '\n';
+    if ((item.disP || 0) > 0) {
+      text += `  (-${item.disP}%)\n`;
+    }
   });
-  
-  // Empty row for spacing before totals
-  html += `<tr><td colspan="4" style="border-top: 1px dashed #000; padding-top: 8px;"></td></tr>`;
-  
+  text += '-'.repeat(C) + '\n';
   if (totalDiscount > 0) {
-    html += `<tr>`;
-    html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Sub Total</td>`;
-    html += `<td style="text-align: right; padding: 4px 0;">${subTotal.toLocaleString()} Ks</td>`;
-    html += `</tr>`;
-    html += `<tr>`;
-    html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Total Discount</td>`;
-    html += `<td style="text-align: right; padding: 4px 0;">-${totalDiscount.toLocaleString()} Ks</td>`;
-    html += `</tr>`;
+    text += pad('Sub Total', 20, 'right') + pad(`${subTotal} Ks`, 12, 'right') + '\n';
+    text += pad('Discount', 20, 'right') + pad(`-${totalDiscount} Ks`, 12, 'right') + '\n';
   }
-  
-  // Totals
-  html += `<tr style="font-weight: bold;">`;
-  html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">NET TOTAL</td>`;
-  html += `<td style="text-align: right; padding: 4px 0;">${sale.total.toLocaleString()} Ks</td>`;
-  html += `</tr>`;
-  
+  text += pad('NET TOTAL', 20, 'right') + pad(`${sale.total} Ks`, 12, 'right') + '\n';
   if (!settings?.hideLoyaltyPointsOnReceipt && (sale.pointsEarned || sale.pointsRedeemed)) {
-    if (sale.pointsEarned) {
-      html += `<tr>`;
-      html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Points Earned</td>`;
-      html += `<td style="text-align: right; padding: 4px 0;">+${sale.pointsEarned}</td>`;
-      html += `</tr>`;
-    }
-    if (sale.pointsRedeemed) {
-      html += `<tr>`;
-      html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Points Redeemed</td>`;
-      html += `<td style="text-align: right; padding: 4px 0;">-${sale.pointsRedeemed}</td>`;
-      html += `</tr>`;
-    }
+    if (sale.pointsEarned) text += pad('Pts Earned', 20, 'right') + pad(`+${sale.pointsEarned}`, 12, 'right') + '\n';
+    if (sale.pointsRedeemed) text += pad('Pts Redeemed', 20, 'right') + pad(`-${sale.pointsRedeemed}`, 12, 'right') + '\n';
   }
-  html += `</tbody>`;
-  html += `</table>`;
-
-  html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
-
-  // Footer
-  html += `<div style="text-align: center; margin-top: 12px;">`;
+  text += '-'.repeat(C) + '\n';
   const footerText = settings?.receiptFooter || "Thank You! Please Come Again";
-  html += `<div>${footerText.replace(/\n/g, '<br/>')}</div>`;
-  html += `</div>`;
-  
-  html += `</div>`;
-  return html;
+  text += footerText.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
+  text += '\n\n';
+  return text;
 };
 
-const generateConsolidatedReceiptHTML = (sales: Sale[], settings: ShopSettings | null, from: string, to: string) => {
-  let html = `<div style="font-family: sans-serif; font-size: 12px; color: #000; width: 100%; max-width: 320px; margin: 0 auto;">`;
-  
-  // Header
-  html += `<div style="text-align: center; margin-bottom: 12px;">`;
+
+const triggerRawbtPrint = (text: string) => {
+  try {
+    const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(text))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+    const a = document.createElement('a');
+    a.href = rawbtUrl;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+    }, 1000);
+  } catch(e) {
+    console.error('Failed to trigger RawBT', e);
+    alert('Failed to open RawBT: ' + String(e));
+  }
+};
+
+const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings | null, from: string, to: string) => {
+  let text = '';
+  const C = 32;
   if (settings?.receiptHeader) {
-    html += `<div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">${settings.receiptHeader.replace(/\n/g, '<br/>')}</div>`;
+    text += settings.receiptHeader.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
   }
   if (!settings?.hideShopNameOnReceipt) {
-    html += `<div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">${settings?.name || "NAIL PRO BEAUTY STUDIO"}</div>`;
+    text += pad(settings?.name || "NAIL PRO BEAUTY STUDIO", C, 'center') + '\n';
   }
-  html += `<div style="font-weight: bold; font-size: 14px; margin-bottom: 4px;">CONSOLIDATED SALES REPORT</div>`;
-  html += `<div>From: ${from}</div>`;
-  html += `<div>To: ${to}</div>`;
-  html += `</div>`;
-
-  html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
-
-  let grandTotal = 0;
+  text += pad("CONSOLIDATED SALES REPORT", C, 'center') + '\n';
+  text += `From: ${from}\n`;
+  text += `To: ${to}\n`;
+  text += '-'.repeat(C) + '\n';
   
+  let grandTotal = 0;
   sales.forEach((sale, idx) => {
-    html += `<div style="margin-bottom: 4px; font-weight: bold;">Sale #${idx + 1}</div>`;
-    html += `<div style="margin-bottom: 8px;">`;
-    if (!settings?.hideDateTimeOnReceipt) {
-      html += `<div><strong>Time:</strong> ${new Date(sale.dateTime).toLocaleTimeString()}</div>`;
-    }
+    text += `Sale #${idx + 1}\n`;
+    if (!settings?.hideDateTimeOnReceipt) text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\n`;
+    
     if (!settings?.hideStaffNameOnReceipt) {
       let itemStaffNames: string[] = [];
       sale.items.forEach((item) => {
@@ -449,24 +424,12 @@ const generateConsolidatedReceiptHTML = (sales: Sale[], settings: ShopSettings |
         }
       });
       const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
-      if (uniqueStaff.length > 0) {
-        html += `<div><strong>Staff:</strong> ${uniqueStaff.join(', ')}</div>`;
-      } else if (sale.staff) {
-        html += `<div><strong>Staff:</strong> ${sale.staff}</div>`;
-      }
+      if (uniqueStaff.length > 0) text += `Staff: ${uniqueStaff.join(', ')}\n`;
+      else if (sale.staff) text += `Staff: ${sale.staff}\n`;
     }
-    html += `</div>`;
     
-    html += `<table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px;">`;
-    html += `<thead>`;
-    html += `<tr>`;
-    html += `<th style="text-align: left; width: 40%; padding: 4px 0; border-bottom: 1px solid #000;">Item</th>`;
-    html += `<th style="text-align: center; width: 15%; padding: 4px 0; border-bottom: 1px solid #000;">Qty</th>`;
-    html += `<th style="text-align: right; width: 20%; padding: 4px 0; border-bottom: 1px solid #000;">Price</th>`;
-    html += `<th style="text-align: right; width: 25%; padding: 4px 0; border-bottom: 1px solid #000;">Amount</th>`;
-    html += `</tr>`;
-    html += `</thead>`;
-    html += `<tbody>`;
+    text += pad('Item', 14) + pad('Qty', 4, 'center') + pad('Price', 6, 'right') + pad('Amt', 8, 'right') + '\n';
+    text += '-'.repeat(C) + '\n';
     
     let subTotal = 0;
     let totalDiscount = 0;
@@ -475,55 +438,31 @@ const generateConsolidatedReceiptHTML = (sales: Sale[], settings: ShopSettings |
       const netSub = sub - (sub * ((item.disP || 0) / 100));
       subTotal += sub;
       totalDiscount += (sub - netSub);
-      let fullItemName = item.name + ((item.disP || 0) > 0 ? ` <br/><small>(-${item.disP}%)</small>` : "");
-      html += `<tr>`;
-      html += `<td style="text-align: left; padding: 6px 0; word-wrap: break-word; vertical-align: top;">${fullItemName}</td>`;
-      html += `<td style="text-align: center; padding: 6px 0; vertical-align: top;">${item.qty}</td>`;
-      html += `<td style="text-align: right; padding: 6px 0; vertical-align: top;">${item.price.toLocaleString()}</td>`;
-      html += `<td style="text-align: right; padding: 6px 0; vertical-align: top;">${netSub.toLocaleString()}</td>`;
-      html += `</tr>`;
+      let name = item.name.substring(0, 14);
+      text += pad(name, 14) + pad(String(item.qty), 4, 'center') + pad(String(item.price), 6, 'right') + pad(String(netSub), 8, 'right') + '\n';
+      if ((item.disP || 0) > 0) {
+        text += `  (-${item.disP}%)\n`;
+      }
     });
     
-    html += `<tr><td colspan="4" style="border-top: 1px dashed #000; padding-top: 4px;"></td></tr>`;
-    
     if (totalDiscount > 0) {
-      html += `<tr>`;
-      html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Sub Total</td>`;
-      html += `<td style="text-align: right; padding: 4px 0;">${subTotal.toLocaleString()} Ks</td>`;
-      html += `</tr>`;
-      html += `<tr>`;
-      html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Total Discount</td>`;
-      html += `<td style="text-align: right; padding: 4px 0;">-${totalDiscount.toLocaleString()} Ks</td>`;
-      html += `</tr>`;
+      text += pad('Sub Total', 20, 'right') + pad(`${subTotal} Ks`, 12, 'right') + '\n';
+      text += pad('Discount', 20, 'right') + pad(`-${totalDiscount} Ks`, 12, 'right') + '\n';
     }
-    
-    html += `<tr style="font-weight: bold;">`;
-    html += `<td colspan="3" style="text-align: right; padding: 4px 0; padding-right: 8px;">Sale Total</td>`;
-    html += `<td style="text-align: right; padding: 4px 0;">${sale.total.toLocaleString()} Ks</td>`;
-    html += `</tr>`;
-    html += `</tbody>`;
-    html += `</table>`;
-    html += `<hr style="border: 0; border-top: 1px dashed #000; margin: 8px 0;" />`;
-    
+    text += pad('Sale Total', 20, 'right') + pad(`${sale.total} Ks`, 12, 'right') + '\n';
+    text += '-'.repeat(C) + '\n';
     grandTotal += sale.total;
   });
-
-  html += `<table style="width: 100%; border-collapse: collapse; font-size: 14px; font-weight: bold; margin-top: 12px; margin-bottom: 12px;">`;
-  html += `<tr>`;
-  html += `<td style="text-align: left; padding: 6px 0;">GRAND TOTAL</td>`;
-  html += `<td style="text-align: right; padding: 6px 0;">${grandTotal.toLocaleString()} Ks</td>`;
-  html += `</tr>`;
-  html += `</table>`;
-
-  html += `<div style="text-align: center; font-style: italic; color: #666; margin-bottom: 12px;">Generated on: ${new Date().toLocaleString()}</div>`;
   
-  if (settings?.receiptFooter) {
-    html += `<div style="text-align: center;">${settings.receiptFooter.replace(/\n/g, '<br/>')}</div>`;
-  }
-  
-  html += `</div>`;
-  return html;
+  text += pad('GRAND TOTAL', 16) + pad(`${grandTotal} Ks`, 16, 'right') + '\n';
+  text += '-'.repeat(C) + '\n';
+  const footerText = settings?.receiptFooter || "Thank You! Please Come Again";
+  text += footerText.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
+  text += '\n\n';
+  return text;
 };
+
+
 
 // Removed redundant handleFirestoreError definition (moved to firebase.ts)
 
@@ -2403,8 +2342,13 @@ export const POSPage: React.FC = () => {
             alert('Failed to print: ' + String(e));
           });
         } else {
-          const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(printText))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
-          window.location.href = rawbtUrl;
+          const isAndroid = /android/i.test(navigator.userAgent);
+          if (isAndroid) {
+            const rawText = generateReceiptText(sale, shopSettings);
+            triggerRawbtPrint(rawText);
+          } else {
+            window.dispatchEvent(new CustomEvent('print-html', { detail: printText }));
+          }
         }
       }
 
@@ -4199,14 +4143,19 @@ export const HistoryPage: React.FC = () => {
     const printText = generateConsolidatedReceiptHTML(filteredSales, shopSettings, dateFrom, dateTo);
     
     if (Capacitor.isNativePlatform()) {
-      const htmlStr = "<html><body style='margin:0;padding:10px;'><pre style='font-family:monospace;font-size:12px;'>" + printText.replace(/</g, '&lt;').replace(/>/g, '&gt;') + "</pre></body></html>";
+      const htmlStr = `<html><body style='margin:0;padding:10px;'>${printText}</body></html>`;
       CapPrinter.printHtml({ name: 'Consolidated_Report', html: htmlStr }).catch(e => {
         console.error('Printer error:', e);
         alert('Failed to print: ' + String(e));
       });
     } else {
-      const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(printText))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
-      window.location.href = rawbtUrl;
+      const isAndroid = /android/i.test(navigator.userAgent);
+      if (isAndroid) {
+        const rawText = generateConsolidatedReceiptText(filteredSales, shopSettings, dateFrom, dateTo);
+        triggerRawbtPrint(rawText);
+      } else {
+        window.dispatchEvent(new CustomEvent('print-html', { detail: printText }));
+      }
     }
   };
 
@@ -10194,6 +10143,28 @@ const AppRoutes = () => {
 
 // --- App ---
 
+const PrintRoot = () => {
+  const [printContent, setPrintContent] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handlePrint = (e: CustomEvent) => {
+      setPrintContent(e.detail);
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => setPrintContent(null), 500);
+      }, 100);
+    };
+    window.addEventListener('print-html', handlePrint as EventListener);
+    return () => window.removeEventListener('print-html', handlePrint as EventListener);
+  }, []);
+
+  if (!printContent) return null;
+
+  return (
+    <div id="print-root" dangerouslySetInnerHTML={{ __html: printContent }} />
+  );
+};
+
 export function AppCore() {
   return (
     <ErrorBoundary>
@@ -10203,6 +10174,7 @@ export function AppCore() {
           <Layout>
             <AppRoutes />
           </Layout>
+          <PrintRoot />
         </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
