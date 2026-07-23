@@ -138,7 +138,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 
-const CURRENT_VERSION = "1.0.1";
+const CURRENT_VERSION = "1.0.8";
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { exportToCSVAndShare } from './exportUtils';
@@ -1287,6 +1287,7 @@ const useAuth = () => {
 const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { profile, logout } = useAuth();
   const navigate = useNavigate();
+  const loginWithGoogle = async () => {};
   const location = useLocation();
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   
@@ -8752,6 +8753,8 @@ const SettingsPage: React.FC = () => {
   
   const [updateChecking, setUpdateChecking] = useState(false);
   const [updateMsg, setUpdateMsg] = useState<{type: 'success'|'info'|'error', text: string} | null>(null);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -8790,7 +8793,8 @@ const SettingsPage: React.FC = () => {
       const data = remoteSnap.data();
       if (data && data.latestVersion) {
         if (data.latestVersion !== CURRENT_VERSION) {
-          setUpdateMsg({ type: 'info', text: `Update available: v${data.latestVersion}` });
+          setUpdateMsg({ type: 'info', text: `Version ${data.latestVersion} is ready to download.` });
+          setIsUpdateModalOpen(true);
           if (data.updateUrl) setUpdateUrl(data.updateUrl);
         } else {
           setUpdateMsg({ type: 'success', text: "You are on the latest version." });
@@ -8857,44 +8861,73 @@ const SettingsPage: React.FC = () => {
           </div>
        </div>
 
-       <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 space-y-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Lock className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-black tracking-tighter">Change Password</h2>
+       <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Lock className="w-5 h-5 text-primary" />
+              <h2 className="text-xl font-black tracking-tighter">Change Password</h2>
+            </div>
+            <p className="text-muted-foreground text-sm font-medium">Update your account password for enhanced security.</p>
           </div>
-          
-          {error && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              {error}
-            </motion.div>
-          )}
-
-          {pwdSuccess && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-green-500/10 border border-green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold">
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-              Password updated successfully!
-            </motion.div>
-          )}
-
-          <form onSubmit={handlePasswordSubmit} className="space-y-4 max-w-md">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Current Password</label>
-              <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
-              <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm Password</label>
-              <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
-            </div>
-            <button type="submit" disabled={pwdLoading} className="w-full py-4 px-6 rounded-2xl bg-primary text-white font-black text-xs tracking-widest uppercase shadow-xl shadow-primary/20 hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all mt-2">
-              {pwdLoading ? 'Updating...' : 'Update Password'}
-            </button>
-          </form>
+          <button 
+            onClick={() => {
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmPassword('');
+              setError(null);
+              setPwdSuccess(false);
+              setIsPasswordModalOpen(true);
+            }} 
+            className="py-3 px-6 rounded-xl bg-primary text-primary-foreground font-black text-xs tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all shadow-md shrink-0"
+          >
+            Change Password
+          </button>
        </div>
+
+      {isPasswordModalOpen && (
+        <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden border border-border flex flex-col animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-border flex justify-between items-center bg-muted/10 shrink-0">
+              <h3 className="font-bold text-lg tracking-tight flex items-center gap-2">
+                <Lock size={20} className="text-primary" />
+                Update Password
+              </h3>
+              <button onClick={() => setIsPasswordModalOpen(false)} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-4">
+              {error && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  {error}
+                </motion.div>
+              )}
+              {pwdSuccess && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-green-500/10 border border-green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold">
+                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                  Password updated successfully!
+                </motion.div>
+              )}
+              <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Current Password</label>
+                  <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
+                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm Password</label>
+                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+                </div>
+                <button type="submit" disabled={pwdLoading} className="w-full py-4 px-6 rounded-2xl bg-primary text-white font-black text-xs tracking-widest uppercase shadow-xl shadow-primary/20 hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all mt-6">
+                  {pwdLoading ? 'Updating...' : 'Update Password'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
        <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 space-y-6">
           <div className="flex items-center gap-3 mb-4">
@@ -8912,521 +8945,105 @@ const SettingsPage: React.FC = () => {
              </button>
           </div>
 
-          {updateMsg && (
+          {updateMsg && updateMsg.type !== 'info' && (
             <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={cn(
               "p-4 border text-sm rounded-2xl flex items-center gap-3 font-bold justify-between flex-wrap",
-              updateMsg.type === 'info' ? "bg-blue-500/10 border-blue-500/20 text-blue-500" :
               updateMsg.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-500" :
               "bg-green-500/10 border-green-500/20 text-green-500"
             )}>
               <div className="flex items-center gap-3">
-                 {updateMsg.type === 'error' ? <AlertCircle className="w-5 h-5 flex-shrink-0" /> : <Info className="w-5 h-5 flex-shrink-0" />}
+                 {updateMsg.type === 'error' ? <AlertCircle className="w-5 h-5 flex-shrink-0" /> : <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
                  {updateMsg.text}
               </div>
-              {updateMsg.type === 'info' && (
-                 <button onClick={forceUpdate} className="py-2 px-4 rounded-lg bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-blue-500/20">
-                    Force Update
-                 </button>
-              )}
             </motion.div>
           )}
+
+      {isUpdateModalOpen && (
+        <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-card w-full max-w-sm rounded-[2.5rem] shadow-2xl p-10 border border-primary/20 space-y-8 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto shadow-inner relative z-10 border border-primary/20">
+              <Download className="w-10 h-10 text-primary drop-shadow-sm" />
+            </div>
+            <div className="space-y-3 relative z-10">
+              <h3 className="text-3xl font-black tracking-tighter text-foreground">Update Available</h3>
+              <p className="text-muted-foreground text-sm font-medium px-4">{updateMsg?.text || "A new version of the application is available. Please update to continue using all features securely."}</p>
+            </div>
+            <div className="space-y-4 relative z-10">
+               <button
+                 onClick={forceUpdate}
+                 className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-xl shadow-primary/20 hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
+               >
+                 <Download size={18} />
+                 UPDATE NOW
+               </button>
+               <button
+                 onClick={() => setIsUpdateModalOpen(false)}
+                 className="w-full bg-muted/50 text-muted-foreground font-bold text-xs tracking-widest uppercase py-4 rounded-2xl shadow-sm hover:bg-muted active:scale-95 transition-all"
+               >
+                 LATER
+               </button>
+            </div>
+          </div>
+        </div>
+      )}
        </div>
     </div>
   );
 };
 
-
+const ResetPasswordPage: React.FC = () => {
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <h2 className="text-2xl font-black mb-4">Reset Password</h2>
+      <p className="text-muted-foreground mb-4">Password reset is handled via Identity Reset or Admin panel.</p>
+      <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
+    </div>
+  );
+};
 
 const IdentityResetPage: React.FC = () => {
-  const [step, setStep] = useState<'verify' | 'reset'>('verify');
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [dob, setDob] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const { resetPasswordWithIdentity, error, setError } = useAuth();
-  const navigate = useNavigate();
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      const cleanPhone = normalizePhone(phone);
-      // Look up by doc ID directly
-      const dummyEmail = `${cleanPhone}@nailpro.com`;
-      const docRef = doc(db, 'users', dummyEmail);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        throw new Error("Information does not match our records.");
-      }
-      
-      const data = docSnap.data() as UserProfile;
-      
-      if (data.name.toLowerCase() !== name.toLowerCase() || data.dob !== dob) {
-        throw new Error("Information does not match our records.");
-      }
-
-      setStep('reset');
-    } catch (err: any) {
-      setError(err.message || "Verification failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await resetPasswordWithIdentity(phone, name, dob, newPassword);
-      setSuccess(true);
-      setTimeout(() => navigate('/login'), 3000);
-    } catch (err) {
-      // Error handled in useAuth
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (success) {
-    return (
-      <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto select-none">
-        <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border text-center my-auto shrink-0">
-          <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-500/20">
-            <CheckCircle2 className="w-10 h-10 text-green-500" />
-          </div>
-          <h2 className="text-3xl font-black text-foreground mb-4">Password Reset!</h2>
-          <p className="text-muted-foreground font-bold">Your password has been updated successfully. Redirecting to login...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto select-none">
-      <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border relative overflow-hidden my-auto shrink-0">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-        
-        <div className="relative z-10">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-border">
-              <Lock className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-3xl font-black text-foreground tracking-tighter">
-              {step === 'verify' ? 'Verify Identity' : 'New Password'}
-            </h2>
-            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em] mt-2">
-              {step === 'verify' ? 'Confirm your details' : 'Set your new password'}
-            </p>
-          </div>
-
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
-            >
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              {error}
-            </motion.div>
-          )}
-
-          {step === 'verify' ? (
-            <form onSubmit={handleVerify} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Full Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                  placeholder="As registered"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Phone Number</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                  placeholder="09..."
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Date of Birth</label>
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 bg-primary text-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
-              >
-                {loading ? 'Verifying...' : 'Verify Identity'}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleReset} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                  placeholder="••••••••"
-                  required
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-4 bg-primary text-foreground rounded-2xl font-black uppercase tracking-[0.2em] text-xs hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
-              >
-                {loading ? 'Updating...' : 'Set New Password'}
-              </button>
-            </form>
-          )}
-
-          <div className="mt-8 text-center">
-            <button
-              onClick={() => navigate('/login')}
-              className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Back to Login
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const PhoneSignUpPage: React.FC = () => {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [dob, setDob] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { signUpWithPhone, error, setError } = useAuth();
-  const navigate = useNavigate();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!name.trim()) {
-      setError("Please enter your full name.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await signUpWithPhone(phone, password, dob, name);
-      navigate('/appointments');
-    } catch (err) {
-      // Error handled in useAuth
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="min-h-[100dvh] flex flex-col items-center bg-input p-4 sm:p-6 overflow-y-auto select-none">
-      <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border relative overflow-hidden my-auto shrink-0">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-        
-        <div className="relative z-10">
-          <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 border border-border">
-              <Phone className="w-8 h-8 text-primary" />
-            </div>
-            <h2 className="text-3xl font-black text-foreground tracking-tighter">Join Us</h2>
-            <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.3em] mt-2">Sign up with Phone</p>
-          </div>
-
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex flex-col gap-3 font-bold"
-            >
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                {error}
-              </div>
-              {error.includes("already registered") && (
-                <button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  className="text-[10px] uppercase tracking-widest bg-red-500 text-foreground py-2 px-4 rounded-xl hover:bg-red-600 transition-colors self-start"
-                >
-                  Login Now
-                </button>
-              )}
-            </motion.div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Full Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                placeholder="Enter your full name"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Phone Number</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                placeholder="09..."
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Date of Birth</label>
-              <input
-                type="date"
-                value={dob}
-                onChange={(e) => setDob(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-input border border-border text-foreground focus:ring-2 focus:ring-[#d4af37] focus:border-transparent outline-none transition-all font-bold text-sm"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-4 px-6 rounded-2xl bg-primary text-foreground font-black text-xs tracking-[0.2em] uppercase shadow-xl shadow-primary/20 disabled:opacity-50 active:scale-95 transition-all mt-4"
-            >
-              {loading ? 'Creating Account...' : 'Sign Up'}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="w-full py-4 px-6 rounded-2xl border border-border text-foreground font-black text-xs tracking-[0.2em] uppercase hover:bg-muted-foreground/20 transition-all active:scale-95"
-            >
-              Back to Login
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ResetPasswordPage: React.FC = () => {
-  const { resetPassword, loading, error, setError } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [email, setEmail] = useState(location.state?.email || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSent, setIsSent] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      setError("Please enter your email address.");
-      return;
-    }
-    
-    const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await resetPassword(email);
-      setIsSent(true);
-    } catch (err) {
-      // Error is handled in useAuth
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-gradient-to-br from-[#FFF5F5] via-[#F4DCD9] to-[#E8BEB9] z-[99999] flex flex-col items-center justify-center p-6 overflow-y-auto transition-colors duration-300 select-none">
-      <div className="bg-white p-8 rounded-3xl border border-border w-full max-w-[380px] text-center space-y-6 shadow-xl my-auto transition-colors duration-300">
-        <div className="space-y-1">
-          <h2 className="text-white tracking-[0.25em] uppercase text-2xl font-black font-serif">Nail Pro</h2>
-          <p className="text-muted-foreground text-xs uppercase tracking-widest mt-2">Reset Password</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-500 text-xs p-3 rounded-xl animate-shake leading-relaxed">
-            {error}
-          </div>
-        )}
-
-        {isSent ? (
-          <div className="space-y-6">
-            <div className="bg-green-500/10 border border-green-500/30 text-green-600 text-xs p-4 rounded-xl leading-relaxed">
-              Password reset link has been sent to <strong>{email}</strong>. Please check your inbox and follow the instructions.
-            </div>
-            <button 
-              onClick={() => navigate('/')}
-              className="w-full bg-primary text-foreground font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all"
-            >
-              BACK TO LOGIN
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 text-left">
-            <div className="space-y-1">
-              <label className="text-[10px] text-muted-foreground uppercase ml-1">Email Address</label>
-              <input 
-                type="email" 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter email"
-                className="w-full bg-input border border-border rounded-xl p-3 text-foreground text-sm focus:border-primary outline-none transition-colors duration-300"
-              />
-            </div>
-            <button 
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-muted text-foreground font-bold py-3 rounded-xl border border-border active:scale-95 transition-all disabled:opacity-50"
-            >
-              {isSubmitting ? "SENDING..." : "SEND RESET LINK"}
-            </button>
-            <button 
-              type="button"
-              onClick={() => navigate('/')}
-              className="w-full text-muted-foreground text-xs font-bold hover:text-primary transition-colors"
-            >
-              CANCEL
-            </button>
-          </form>
-        )}
-      </div>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <h2 className="text-2xl font-black mb-4">Identity Reset</h2>
+      <p className="text-muted-foreground mb-4">Please contact an admin to reset your password or identity details.</p>
+      <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
     </div>
   );
 };
 
 const LoginPage: React.FC = () => {
-  const { user, profile, login, loginWithEmail, loginWithPhone, signUp, signUpWithPhone, loading, error, setError, isCustomer } = useAuth();
-  const navigate = useNavigate();
-  
-  const [viewState, setViewState] = useState<'welcome' | 'login' | 'signup'>('welcome');
-  
-  const [loginMethod, setLoginMethod] = useState<'phone' | 'email'>('phone');
+  const [loginMethod, setLoginMethod] = useState<'phone'|'email'>('phone');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
-
-  // Sign up state
-  const [signUpMethod, setSignUpMethod] = useState<'phone' | 'email'>('phone');
+  
+  const [viewState, setViewState] = useState<'welcome'|'login'|'signup'>('welcome');
+  const [signUpMethod, setSignUpMethod] = useState<'phone'|'email'>('phone');
   const [signUpIdentifier, setSignUpIdentifier] = useState('');
-  const [signUpName, setSignUpName] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [signUpName, setSignUpName] = useState('');
   const [signUpDob, setSignUpDob] = useState('');
   const [signUpShowPassword, setSignUpShowPassword] = useState(false);
+  
+  const [showHelp, setShowHelp] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { loginWithPhone, loginWithEmail,  signUpWithPhone, signUp, login, error, setError, user, profile, loading, isCustomer } = useAuth();
+  const navigate = useNavigate();
   const [hasBiometric, setHasBiometric] = useState(false);
-  const [biometryType, setBiometryType] = useState<any>(null);
-
+  
   useEffect(() => {
     const checkBiometric = async () => {
+      if (!Capacitor.isNativePlatform()) return;
       try {
-        if (!Capacitor.isNativePlatform()) return;
         const avail = await NativeBiometric.isAvailable();
-        if (avail && avail.isAvailable) {
-          setBiometryType(avail.biometryType);
-          const res = await NativeBiometric.isCredentialsSaved({ server: 'nail-pro-pos' });
-          if (res && res.isSaved) {
+        if (avail.isAvailable) {
+          const res = await NativeBiometric.getCredentials({ server: 'nail-pro-pos' }).catch(() => {
+            // Ignore error
+          });
+          if (res && res.password) {
             setHasBiometric(true);
           }
         }
@@ -9442,6 +9059,7 @@ const LoginPage: React.FC = () => {
     };
     checkBiometric();
   }, []);
+
 
   useEffect(() => {
     if (user && profile) {
@@ -10057,6 +9675,33 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   };
 
+    const renderNeedsUpdate = () => {
+    if (!needsUpdate || !updateInfo?.updateUrl) return null;
+    return (
+        <div className="fixed inset-0 z-[60000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-card w-full max-w-sm rounded-[2.5rem] shadow-2xl p-10 border border-primary/20 space-y-8 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto shadow-inner relative z-10 border border-primary/20">
+              <Download className="w-10 h-10 text-primary drop-shadow-sm" />
+            </div>
+            <div className="space-y-3 relative z-10">
+              <h3 className="text-3xl font-black tracking-tighter text-foreground">Update Available</h3>
+              <p className="text-muted-foreground text-sm font-medium px-4">A new version of the application is available. Please update to continue using all features securely.</p>
+            </div>
+            <div className="space-y-4 relative z-10">
+               <button
+                 onClick={() => { window.location.href = updateInfo.updateUrl; }}
+                 className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-xl shadow-primary/20 hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
+               >
+                 <Download size={18} />
+                 UPDATE NOW
+               </button>
+            </div>
+          </div>
+        </div>
+    );
+  };
+
   if (loading) return (
     <div className="fixed inset-0 flex items-center justify-center bg-background transition-colors duration-300 select-none">
       <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -10065,12 +9710,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   if (!user) {
     if (location.pathname === '/reset-password') {
-      return <>{renderExitConfirm()}<ResetPasswordPage /></>;
+      return <>{renderNeedsUpdate()}{renderExitConfirm()}
+
+
+<ResetPasswordPage /></>;
     }
     if (location.pathname === '/identity-reset') {
-      return <>{renderExitConfirm()}<IdentityResetPage /></>;
+      return <>{renderNeedsUpdate()}{renderExitConfirm()}<IdentityResetPage /></>;
     }
-    return <>{renderExitConfirm()}<LoginPage /></>;
+    return <>{renderNeedsUpdate()}{renderExitConfirm()}<LoginPage /></>;
   }
 
   if (profile?.mustChangePassword && location.pathname !== '/force-password-change') {
@@ -10086,6 +9734,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300 select-none animate-in fade-in duration-500">
+      {renderNeedsUpdate()}
       {renderExitConfirm()}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <Header onMenuClick={() => setIsSidebarOpen(true)} />
