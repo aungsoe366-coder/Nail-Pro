@@ -92,6 +92,12 @@ export interface UserProfile {
   totalSalesCount?: number;
   createdAt?: string;
   updatedAt?: string;
+  preferences?: {
+    dateFormat?: string;
+    timeFormat?: string;
+    pushNotifications?: boolean;
+    emailAlerts?: boolean;
+  };
 }
 
 export interface AuditLog {
@@ -124,6 +130,13 @@ export interface ShopSettings {
   hideDateTimeOnReceipt?: boolean;
   hideStaffNameOnReceipt?: boolean;
   hideLoyaltyPointsOnReceipt?: boolean;
+  email?: string;
+  website?: string;
+  businessRegNo?: string;
+  returnPolicy?: string;
+  taxRate?: number;
+  taxName?: string;
+  currencySymbol?: string;
 }
 
 export interface Customer {

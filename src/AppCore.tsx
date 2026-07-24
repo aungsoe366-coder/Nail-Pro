@@ -131,7 +131,7 @@ import {
   Fingerprint,
   ScanFace,
   Camera
-, Info} from 'lucide-react';
+, Info, Bell, Globe, RefreshCw, ShieldCheck} from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'motion/react';
@@ -6877,7 +6877,7 @@ const Modal: React.FC<{
 export const ManagePage: React.FC = () => {
   const { user, profile, isAdmin, isSuperAdmin, isCashier, loading } = useAuth();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'shop' | 'categories' | 'services' | 'staff' | 'customers'>('shop');
+  const [activeTab, setActiveTab] = useState<'shop' | 'categories' | 'services' | 'staff' | 'customers' | 'financials' | 'data'>('shop');
   const [shopSettings, setShopSettings] = useState<ShopSettings>({ name: '', addr: '', ph: '', receiptHeader: '', receiptFooter: '' });
   const [services, setServices] = useState<Service[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -7168,6 +7168,54 @@ export const ManagePage: React.FC = () => {
       setShowConfirm(null); // Close the modal even on error so they can see the message
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleExportSales = async () => {
+    try {
+      const headers = [
+        'ID', 'Date', 'Time', 'Customer', 'Customer Phone',
+        'Services', 'Total Amount', 'Payment Methods', 'Points Earned'
+      ];
+      
+      const data = sales.map(s => [
+        s.id,
+        s.date,
+        s.dateTime.split('T')[1]?.substring(0,5) || '',
+        s.customerName || '',
+        s.customerPhone || '',
+        s.items.map(i => `${i.name} (x${i.qty})`).join(' | '),
+        s.total.toFixed(2),
+        s.payments ? s.payments.map(p => `${p.method}: ${p.amount}`).join(' | ') : (s.method || ''),
+        s.pointsEarned || 0
+      ]);
+      
+      await exportToCSVAndShare('sales_history_export.csv', headers, data);
+      setStatusMsg({ type: 'success', text: 'Sales data exported successfully' });
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: 'Failed to export sales data' });
+    }
+  };
+
+  const handleExportCustomers = async () => {
+    try {
+      const headers = ['ID', 'Name', 'Phone', 'Email', 'Address', 'Points', 'Joined Date', 'Notes'];
+      
+      const data = customers.map(c => [
+        c.id,
+        c.name,
+        c.phone,
+        c.email || '',
+        c.address || '',
+        c.points || 0,
+        c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '',
+        c.notes || ''
+      ]);
+      
+      await exportToCSVAndShare('customers_export.csv', headers, data);
+      setStatusMsg({ type: 'success', text: 'Customers exported successfully' });
+    } catch (err) {
+      setStatusMsg({ type: 'error', text: 'Failed to export customers' });
     }
   };
 
@@ -7469,6 +7517,8 @@ export const ManagePage: React.FC = () => {
       <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
         {[
           { id: 'shop', label: 'Shop', icon: <Store size={16} /> },
+          { id: 'financials', label: 'Tax & Finance', icon: <DollarSign size={16} /> },
+          { id: 'data', label: 'Data & Export', icon: <Database size={16} /> },
           { id: 'categories', label: 'Categories', icon: <Menu size={16} /> },
           { id: 'services', label: 'Services', icon: <Briefcase size={16} /> },
           { id: 'staff', label: 'Staff', icon: <UserIcon size={16} /> },
@@ -7491,8 +7541,8 @@ export const ManagePage: React.FC = () => {
       </div>
 
       <div className="bg-card border border-border rounded-3xl p-6 space-y-8 shadow-xl transition-all duration-300">
-        {activeTab === 'shop' && (
-          <div className="space-y-8">
+{activeTab === 'shop' && (
+          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
             {isSuperAdmin && profile?.role !== 'super_admin' && (
               <div className="bg-primary/10 p-6 rounded-[2rem] border border-border flex items-center justify-between gap-4">
                 <div>
@@ -7510,132 +7560,251 @@ export const ManagePage: React.FC = () => {
             <div className="flex items-center justify-between px-1">
               <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
                 <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                Shop Settings
+                Business Profile / Store Details
               </h4>
             </div>
             
             <div className="space-y-4">
-              <FloatingInput 
-                label="Shop Name"
-                value={shopSettings.name}
-                onChange={(val) => setShopSettings({ ...shopSettings, name: val })}
-                onFocusClear
-              />
-              <FloatingInput 
-                label="Address"
-                value={shopSettings.addr}
-                onChange={(val) => setShopSettings({ ...shopSettings, addr: val })}
-                onFocusClear
-              />
-              <FloatingInput 
-                label="Phone"
-                value={shopSettings.ph}
-                onChange={(val) => setShopSettings({ ...shopSettings, ph: val })}
-                onFocusClear
-              />
-              <FloatingInput 
-                label="Receipt Header"
-                value={shopSettings.receiptHeader || ''}
-                onChange={(val) => setShopSettings({ ...shopSettings, receiptHeader: val })}
-                onFocusClear
-              />
-              <FloatingInput 
-                label="Receipt Footer"
-                value={shopSettings.receiptFooter || ''}
-                onChange={(val) => setShopSettings({ ...shopSettings, receiptFooter: val })}
-                onFocusClear
-              />
-
-              <div className="space-y-4 pt-4 border-t border-border">
-                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Printer size={14} className="text-primary" /> Receipt Settings
-                </h4>
-                
-                <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
-                  <div>
-                    <span className="block text-sm font-bold text-foreground">Hide Shop Name</span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Do not print shop name on receipts</span>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => setShopSettings({ ...shopSettings, hideShopNameOnReceipt: !shopSettings.hideShopNameOnReceipt })}
-                    className={cn(
-                      "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                      shopSettings.hideShopNameOnReceipt ? "bg-primary" : "bg-muted/30"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
-                      shopSettings.hideShopNameOnReceipt ? "translate-x-6" : "translate-x-0"
-                    )} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
-                  <div>
-                    <span className="block text-sm font-bold text-foreground">Hide Date & Time</span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Do not print date and time on receipts</span>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => setShopSettings({ ...shopSettings, hideDateTimeOnReceipt: !shopSettings.hideDateTimeOnReceipt })}
-                    className={cn(
-                      "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                      shopSettings.hideDateTimeOnReceipt ? "bg-primary" : "bg-muted/30"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
-                      shopSettings.hideDateTimeOnReceipt ? "translate-x-6" : "translate-x-0"
-                    )} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
-                  <div>
-                    <span className="block text-sm font-bold text-foreground">Hide Staff Name</span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Do not print staff name on receipts</span>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => setShopSettings({ ...shopSettings, hideStaffNameOnReceipt: !shopSettings.hideStaffNameOnReceipt })}
-                    className={cn(
-                      "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                      shopSettings.hideStaffNameOnReceipt ? "bg-primary" : "bg-muted/30"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
-                      shopSettings.hideStaffNameOnReceipt ? "translate-x-6" : "translate-x-0"
-                    )} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
-                  <div>
-                    <span className="block text-sm font-bold text-foreground">Hide Loyalty Points</span>
-                    <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Do not print points on receipts</span>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => setShopSettings({ ...shopSettings, hideLoyaltyPointsOnReceipt: !shopSettings.hideLoyaltyPointsOnReceipt })}
-                    className={cn(
-                      "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                      shopSettings.hideLoyaltyPointsOnReceipt ? "bg-primary" : "bg-muted/30"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
-                      shopSettings.hideLoyaltyPointsOnReceipt ? "translate-x-6" : "translate-x-0"
-                    )} />
-                  </button>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <FloatingInput 
+                   label="Shop Name"
+                   value={shopSettings.name}
+                   onChange={(val) => setShopSettings({ ...shopSettings, name: val })}
+                   onFocusClear
+                 />
+                 <FloatingInput 
+                   label="Business Registration No."
+                   value={shopSettings.businessRegNo || ''}
+                   onChange={(val) => setShopSettings({ ...shopSettings, businessRegNo: val })}
+                   onFocusClear
+                 />
+                 <FloatingInput 
+                   label="Phone"
+                   value={shopSettings.ph}
+                   onChange={(val) => setShopSettings({ ...shopSettings, ph: val })}
+                   onFocusClear
+                 />
+                 <FloatingInput 
+                   label="Email Address"
+                   value={shopSettings.email || ''}
+                   onChange={(val) => setShopSettings({ ...shopSettings, email: val })}
+                   onFocusClear
+                 />
+                 <div className="md:col-span-2">
+                    <FloatingInput 
+                      label="Address"
+                      value={shopSettings.addr}
+                      onChange={(val) => setShopSettings({ ...shopSettings, addr: val })}
+                      onFocusClear
+                    />
+                 </div>
+                 <div className="md:col-span-2">
+                    <FloatingInput 
+                      label="Website"
+                      value={shopSettings.website || ''}
+                      onChange={(val) => setShopSettings({ ...shopSettings, website: val })}
+                      onFocusClear
+                    />
+                 </div>
               </div>
 
+              <div className="space-y-4 pt-6 border-t border-border">
+                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <Printer size={14} className="text-primary" /> Receipt Customization
+                </h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <FloatingInput 
+                     label="Receipt Header"
+                     value={shopSettings.receiptHeader || ''}
+                     onChange={(val) => setShopSettings({ ...shopSettings, receiptHeader: val })}
+                     onFocusClear
+                   />
+                   <FloatingInput 
+                     label="Receipt Footer / Thank You Message"
+                     value={shopSettings.receiptFooter || ''}
+                     onChange={(val) => setShopSettings({ ...shopSettings, receiptFooter: val })}
+                     onFocusClear
+                   />
+                   <div className="md:col-span-2">
+                      <FloatingInput 
+                        label="Return Policy"
+                        value={shopSettings.returnPolicy || ''}
+                        onChange={(val) => setShopSettings({ ...shopSettings, returnPolicy: val })}
+                        onFocusClear
+                      />
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
+                    <div>
+                      <span className="block text-sm font-bold text-foreground">Hide Shop Name</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => setShopSettings({ ...shopSettings, hideShopNameOnReceipt: !shopSettings.hideShopNameOnReceipt })}
+                      className={cn(
+                        "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                        shopSettings.hideShopNameOnReceipt ? "bg-primary" : "bg-muted/30"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
+                        shopSettings.hideShopNameOnReceipt ? "translate-x-6" : "translate-x-0"
+                      )} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
+                    <div>
+                      <span className="block text-sm font-bold text-foreground">Hide Date & Time</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => setShopSettings({ ...shopSettings, hideDateTimeOnReceipt: !shopSettings.hideDateTimeOnReceipt })}
+                      className={cn(
+                        "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                        shopSettings.hideDateTimeOnReceipt ? "bg-primary" : "bg-muted/30"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
+                        shopSettings.hideDateTimeOnReceipt ? "translate-x-6" : "translate-x-0"
+                      )} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
+                    <div>
+                      <span className="block text-sm font-bold text-foreground">Hide Staff Name</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => setShopSettings({ ...shopSettings, hideStaffNameOnReceipt: !shopSettings.hideStaffNameOnReceipt })}
+                      className={cn(
+                        "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                        shopSettings.hideStaffNameOnReceipt ? "bg-primary" : "bg-muted/30"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
+                        shopSettings.hideStaffNameOnReceipt ? "translate-x-6" : "translate-x-0"
+                      )} />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
+                    <div>
+                      <span className="block text-sm font-bold text-foreground">Hide Loyalty Points</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => setShopSettings({ ...shopSettings, hideLoyaltyPointsOnReceipt: !shopSettings.hideLoyaltyPointsOnReceipt })}
+                      className={cn(
+                        "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+                        shopSettings.hideLoyaltyPointsOnReceipt ? "bg-primary" : "bg-muted/30"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
+                        shopSettings.hideLoyaltyPointsOnReceipt ? "translate-x-6" : "translate-x-0"
+                      )} />
+                    </button>
+                  </div>
+                </div>
+              </div>
               <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Settings</button>
             </div>
+          </div>
+        )}
+        
+        {activeTab === 'financials' && (
+          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+             <div className="flex items-center justify-between px-1">
+                <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+                   <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+                   Tax & Financial Configuration
+                </h4>
+             </div>
+             <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Tax Name (e.g., VAT, GST)</label>
+                     <input 
+                       type="text" 
+                       value={shopSettings.taxName || ''} 
+                       onChange={(e) => setShopSettings({ ...shopSettings, taxName: e.target.value })} 
+                       className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+                       placeholder="VAT" 
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Default Tax Rate (%)</label>
+                     <input 
+                       type="number" 
+                       value={shopSettings.taxRate || ''} 
+                       onChange={(e) => setShopSettings({ ...shopSettings, taxRate: parseFloat(e.target.value) || 0 })} 
+                       className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+                       placeholder="0.00" 
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Currency Symbol</label>
+                     <input 
+                       type="text" 
+                       value={shopSettings.currencySymbol || '$'} 
+                       onChange={(e) => setShopSettings({ ...shopSettings, currencySymbol: e.target.value })} 
+                       className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+                       placeholder="$" 
+                     />
+                   </div>
+                </div>
+                <div className="p-4 bg-muted/20 border border-border rounded-2xl mt-4">
+                   <h3 className="text-sm font-bold mb-1">Financial Year</h3>
+                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mb-3">Define the start of your fiscal year for reporting purposes.</p>
+                   <select className="w-full md:w-1/2 p-3 rounded-xl bg-card border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" defaultValue="jan">
+                      <option value="jan">January - December</option>
+                      <option value="apr">April - March</option>
+                      <option value="jul">July - June</option>
+                      <option value="oct">October - September</option>
+                   </select>
+                </div>
+                <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Financial Settings</button>
+             </div>
+          </div>
+        )}
 
-            {isSuperAdmin && (
+        {activeTab === 'data' && (
+          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+             <div className="flex items-center justify-between px-1">
+                <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+                   <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+                   Data Management & Export
+                </h4>
+             </div>
+             
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-6 bg-card border border-border rounded-2xl flex flex-col items-start gap-4 hover:border-primary/50 transition-all group">
+                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                      <Database className="w-6 h-6" />
+                   </div>
+                   <div>
+                     <h3 className="text-base font-black">Export All Sales Data</h3>
+                     <p className="text-xs text-muted-foreground font-medium mt-1">Download a complete backup of all transaction history in CSV format.</p>
+                   </div>
+                   <button onClick={handleExportSales} className="py-2 px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
+                </div>
+                <div className="p-6 bg-card border border-border rounded-2xl flex flex-col items-start gap-4 hover:border-primary/50 transition-all group">
+                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                      <UsersIcon className="w-6 h-6" />
+                   </div>
+                   <div>
+                     <h3 className="text-base font-black">Export Customer List</h3>
+                     <p className="text-xs text-muted-foreground font-medium mt-1">Download your complete customer database for marketing.</p>
+                   </div>
+                   <button onClick={handleExportCustomers} className="py-2 px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
+                </div>
+             </div>
+
+             {isSuperAdmin && (
               <div className="pt-8 border-t border-border space-y-4">
                 <h4 className="text-red-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
                   <div className="w-1.5 h-4 bg-red-500 rounded-full"></div>
@@ -7648,7 +7817,6 @@ export const ManagePage: React.FC = () => {
                 >
                   CLEAR ALL SALES HISTORY
                 </button>
-
                 <div className="pt-6 border-t border-border space-y-4">
                   <h4 className="text-blue-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
                     <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
@@ -7675,7 +7843,7 @@ export const ManagePage: React.FC = () => {
             )}
           </div>
         )}
-        {activeTab === 'categories' && (
+{activeTab === 'categories' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
@@ -8749,7 +8917,27 @@ const SettingsPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
   const [pwdSuccess, setPwdSuccess] = useState(false);
-  const { changePassword, error, setError } = useAuth();
+  const { changePassword, error, setError, profile } = useAuth();
+  
+  const [preferences, setPreferences] = useState(profile?.preferences || {
+    dateFormat: 'MM/DD/YYYY',
+    timeFormat: '12h',
+    pushNotifications: false,
+    emailAlerts: false
+  });
+
+  const handleUpdatePreferences = async (newPrefs: any) => {
+    const updated = { ...preferences, ...newPrefs };
+    setPreferences(updated);
+    if (profile?.id) {
+      try {
+        await updateDoc(doc(db, 'users', profile.id), { preferences: updated });
+      } catch (err) {
+        console.error("Failed to update preferences", err);
+      }
+    }
+  };
+
   
   const [updateChecking, setUpdateChecking] = useState(false);
   const [updateMsg, setUpdateMsg] = useState<{type: 'success'|'info'|'error', text: string} | null>(null);
@@ -8792,7 +8980,7 @@ const SettingsPage: React.FC = () => {
       const remoteSnap = await getDoc(doc(db, 'app_config', 'version_control'));
       const data = remoteSnap.data();
       if (data && data.latestVersion) {
-        if (data.latestVersion !== CURRENT_VERSION) {
+        if (isOlderVersion(CURRENT_VERSION, data.latestVersion)) {
           setUpdateMsg({ type: 'info', text: `Version ${data.latestVersion} is ready to download.` });
           setIsUpdateModalOpen(true);
           if (data.updateUrl) setUpdateUrl(data.updateUrl);
@@ -8820,37 +9008,37 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
-       <div className="flex items-center gap-4 mb-8 p-6 bg-card rounded-3xl shadow-sm border border-border/50 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-          <div className="p-4 bg-primary/10 rounded-2xl border border-border text-primary relative z-10">
-            <Settings className="w-8 h-8" />
+    <div className="max-w-4xl mx-auto space-y-3 pb-20">
+       <div className="flex items-center gap-3 p-4 bg-card rounded-2xl shadow-sm border border-border/50 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 blur-2xl" />
+          <div className="p-2 bg-primary/10 rounded-xl border border-border text-primary relative z-10">
+            <Settings className="w-5 h-5" />
           </div>
           <div className="relative z-10">
-            <h1 className="text-3xl font-black tracking-tighter">Settings</h1>
-            <p className="text-sm text-muted-foreground font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
+            <h1 className="text-xl font-black tracking-tighter">Settings</h1>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
           </div>
        </div>
 
-       <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 space-y-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Moon className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-black tracking-tighter">App Theme</h2>
+       <div className="p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Moon className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-black tracking-tighter uppercase">App Theme</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
             {(['gold', 'rose', 'midnight'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setTheme(t)}
                 className={cn(
-                  "py-4 px-6 rounded-2xl border-2 transition-all font-black text-xs tracking-widest uppercase flex flex-col items-center gap-3",
+                  "py-2 px-3 rounded-xl border transition-all font-black text-[10px] tracking-widest uppercase flex items-center gap-2 shrink-0",
                   theme === t 
-                    ? "border-primary bg-primary/10 text-primary scale-[1.02] shadow-xl shadow-primary/20" 
+                    ? "border-primary bg-primary/10 text-primary shadow-sm" 
                     : "border-border/50 text-muted-foreground hover:bg-muted"
                 )}
               >
                 <div className={cn(
-                  "w-8 h-8 rounded-full shadow-inner",
+                  "w-3 h-3 rounded-full shadow-inner",
                   t === 'gold' ? "bg-gradient-to-br from-amber-200 to-yellow-600" :
                   t === 'rose' ? "bg-gradient-to-br from-rose-300 to-pink-600" :
                   "bg-gradient-to-br from-slate-700 to-slate-900"
@@ -8861,16 +9049,65 @@ const SettingsPage: React.FC = () => {
           </div>
        </div>
 
-       <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <Lock className="w-5 h-5 text-primary" />
-              <h2 className="text-xl font-black tracking-tighter">Change Password</h2>
-            </div>
-            <p className="text-muted-foreground text-sm font-medium">Update your account password for enhanced security.</p>
+       
+       <div className="p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col space-y-4">
+          <div className="flex items-center gap-2">
+            <Globe className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-black tracking-tighter uppercase">Localization</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+             <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Date Format</label>
+                <select className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.dateFormat || 'MM/DD/YYYY'} onChange={(e) => handleUpdatePreferences({ dateFormat: e.target.value })}>
+                   <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                   <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                   <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                </select>
+             </div>
+             <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Time Format</label>
+                <select className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.timeFormat || '12h'} onChange={(e) => handleUpdatePreferences({ timeFormat: e.target.value })}>
+                   <option value="12h">12-Hour (AM/PM)</option>
+                   <option value="24h">24-Hour</option>
+                </select>
+             </div>
+          </div>
+       </div>
+
+       <div className="p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col space-y-4">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-black tracking-tighter uppercase">Notification Preferences</h2>
+          </div>
+          <div className="space-y-3 pt-2">
+             <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl border border-border/50">
+                <div>
+                   <h3 className="text-xs font-bold">Push Notifications</h3>
+                   <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Receive alerts on your device.</p>
+                </div>
+                <button onClick={() => handleUpdatePreferences({ pushNotifications: !preferences.pushNotifications })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.pushNotifications ? "bg-primary/20" : "bg-muted/50")}>
+                   <div className={cn("pointer-events-none inline-block h-4 w-4 transform rounded-full shadow-sm ring-0 transition duration-200 ease-in-out", preferences.pushNotifications ? "translate-x-2 bg-primary" : "-translate-x-2 bg-white")}></div>
+                </button>
+             </div>
+             <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl border border-border/50">
+                <div>
+                   <h3 className="text-xs font-bold">Email Alerts</h3>
+                   <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Receive weekly reports and alerts via email.</p>
+                </div>
+                <button onClick={() => handleUpdatePreferences({ emailAlerts: !preferences.emailAlerts })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.emailAlerts ? "bg-primary/20" : "bg-muted/50")}>
+                   <div className={cn("pointer-events-none inline-block h-4 w-4 transform rounded-full shadow-sm ring-0 transition duration-200 ease-in-out", preferences.emailAlerts ? "translate-x-2 bg-primary" : "-translate-x-2 bg-white")}></div>
+                </button>
+             </div>
+          </div>
+       </div>
+
+       <div className="p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Lock className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-black tracking-tighter uppercase">Change Password</h2>
           </div>
           <button 
-            onClick={() => {
+             onClick={() => {
               setCurrentPassword('');
               setNewPassword('');
               setConfirmPassword('');
@@ -8878,9 +9115,9 @@ const SettingsPage: React.FC = () => {
               setPwdSuccess(false);
               setIsPasswordModalOpen(true);
             }} 
-            className="py-3 px-6 rounded-xl bg-primary text-primary-foreground font-black text-xs tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all shadow-md shrink-0"
+             className="py-2 px-4 rounded-xl bg-primary text-primary-foreground font-black text-[10px] tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all shadow-sm shrink-0"
           >
-            Change Password
+            Update
           </button>
        </div>
 
@@ -8929,59 +9166,122 @@ const SettingsPage: React.FC = () => {
         </div>
       )}
 
-       <div className="p-8 bg-card rounded-3xl shadow-sm border border-border/50 space-y-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Info className="w-5 h-5 text-primary" />
-            <h2 className="text-xl font-black tracking-tighter">System Version</h2>
-          </div>
-
-          <div className="flex items-center justify-between p-6 rounded-2xl bg-muted/20 border border-border/50 flex-wrap gap-4">
-             <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-1">Current Version</p>
-                <p className="text-2xl font-black tracking-tighter">v{CURRENT_VERSION}</p>
+       <div className="p-5 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col space-y-4 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+             <div className="flex items-center gap-3">
+               <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20 text-primary">
+                 <ShieldCheck className="w-5 h-5" />
+               </div>
+               <div>
+                 <div className="flex items-center gap-2">
+                   <h2 className="text-sm font-black tracking-tight uppercase">System Version & Updates</h2>
+                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                     Stable
+                   </span>
+                 </div>
+                 <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
+                   Keep your system software up to date for optimal security and features.
+                 </p>
+               </div>
              </div>
-             <button onClick={checkForUpdates} disabled={updateChecking} className="py-3 px-6 rounded-xl border-2 border-primary text-primary font-black text-xs tracking-widest uppercase hover:bg-primary/10 active:scale-95 transition-all disabled:opacity-50">
-               {updateChecking ? 'Checking...' : 'Check for Updates'}
-             </button>
+
+             <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                <div className="px-3 py-1.5 rounded-xl bg-muted/40 border border-border/60 text-xs font-black tracking-tight text-foreground flex items-center gap-1.5">
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Version:</span>
+                  <span>v{CURRENT_VERSION}</span>
+                </div>
+                <button 
+                  onClick={checkForUpdates} 
+                  disabled={updateChecking} 
+                  className="py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-black text-[10px] tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2 shrink-0"
+                >
+                  <RefreshCw className={cn("w-3.5 h-3.5", updateChecking && "animate-spin")} />
+                  {updateChecking ? 'Checking...' : 'Check for updates'}
+                </button>
+             </div>
           </div>
 
           {updateMsg && updateMsg.type !== 'info' && (
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={cn(
-              "p-4 border text-sm rounded-2xl flex items-center gap-3 font-bold justify-between flex-wrap",
-              updateMsg.type === 'error' ? "bg-red-500/10 border-red-500/20 text-red-500" :
-              "bg-green-500/10 border-green-500/20 text-green-500"
-            )}>
-              <div className="flex items-center gap-3">
-                 {updateMsg.type === 'error' ? <AlertCircle className="w-5 h-5 flex-shrink-0" /> : <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
-                 {updateMsg.text}
+            <motion.div 
+              initial={{ opacity: 0, y: -6 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className={cn(
+               "p-3.5 rounded-xl text-xs font-bold border flex items-center justify-between gap-3",
+               updateMsg.type === 'success' 
+                 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                 : "bg-red-500/10 text-red-500 border-red-500/20"
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                {updateMsg.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                )}
+                <span>{updateMsg.text}</span>
               </div>
+              <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-70">
+                {updateMsg.type === 'success' ? 'Up to date' : 'Check failed'}
+              </span>
             </motion.div>
           )}
 
       {isUpdateModalOpen && (
-        <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-card w-full max-w-sm rounded-[2.5rem] shadow-2xl p-10 border border-primary/20 space-y-8 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto shadow-inner relative z-10 border border-primary/20">
-              <Download className="w-10 h-10 text-primary drop-shadow-sm" />
+        <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+          <div className="bg-card w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-primary/30 space-y-6 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
+            
+            <div className="relative z-10 flex flex-col items-center">
+              <div className="w-20 h-20 bg-primary/15 rounded-full flex items-center justify-center shadow-lg relative border border-primary/30 mb-4 animate-bounce duration-1000">
+                <Download className="w-10 h-10 text-primary drop-shadow-md" />
+              </div>
+
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/30 mb-2">
+                <Sparkles className="w-3 h-3" />
+                New Release Ready
+              </span>
+
+              <h3 className="text-2xl font-black tracking-tight text-foreground">Software Update Available</h3>
+              <p className="text-muted-foreground text-xs font-medium px-2 mt-2 leading-relaxed">
+                {updateMsg?.text || "A new version of the application is available. Upgrade now for the latest features, security enhancements, and stability improvements."}
+              </p>
             </div>
-            <div className="space-y-3 relative z-10">
-              <h3 className="text-3xl font-black tracking-tighter text-foreground">Update Available</h3>
-              <p className="text-muted-foreground text-sm font-medium px-4">{updateMsg?.text || "A new version of the application is available. Please update to continue using all features securely."}</p>
+
+            <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 text-left space-y-2 relative z-10">
+              <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                <span>Release Highlights</span>
+                <span className="text-primary font-bold">Stable Channel</span>
+              </div>
+              <ul className="text-xs font-medium space-y-1.5 text-foreground/80">
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  Performance optimizations and faster startup
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  Enhanced system security and data sync
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                  General bug fixes and UI refinements
+                </li>
+              </ul>
             </div>
-            <div className="space-y-4 relative z-10">
+
+            <div className="space-y-3 relative z-10 pt-2">
                <button
                  onClick={forceUpdate}
-                 className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-xl shadow-primary/20 hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
+                 className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-xl shadow-primary/25 hover:opacity-95 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2.5 uppercase"
                >
                  <Download size={18} />
-                 UPDATE NOW
+                 Install Update Now
                </button>
                <button
                  onClick={() => setIsUpdateModalOpen(false)}
-                 className="w-full bg-muted/50 text-muted-foreground font-bold text-xs tracking-widest uppercase py-4 rounded-2xl shadow-sm hover:bg-muted active:scale-95 transition-all"
+                 className="w-full bg-muted/60 text-muted-foreground font-bold text-xs tracking-widest uppercase py-3.5 rounded-2xl border border-border/40 hover:bg-muted active:scale-95 transition-all"
                >
-                 LATER
+                 Remind Me Later
                </button>
             </div>
           </div>
@@ -9599,7 +9899,20 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     fetchUpdateConfig();
   }, []);
 
-  const needsUpdate = updateInfo && CURRENT_VERSION !== updateInfo.latestVersion;
+  
+  const isOlderVersion = (current: string, latest: string) => {
+    const cParts = current.split('.').map(Number);
+    const lParts = latest.split('.').map(Number);
+    for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
+      const c = cParts[i] || 0;
+      const l = lParts[i] || 0;
+      if (c < l) return true;
+      if (c > l) return false;
+    }
+    return false;
+  };
+
+  const needsUpdate = Capacitor.isNativePlatform() && updateInfo && isOlderVersion(CURRENT_VERSION, updateInfo.latestVersion);
 
   useEffect(() => {
     let listener: any = null;

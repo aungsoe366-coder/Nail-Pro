@@ -11,7 +11,7 @@ export const auth = Capacitor.isNativePlatform()
   : getAuth(app);
 
 
-export const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true, localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}) }, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(app, { experimentalForceLongPolling: true, localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}) }, firebaseConfig.firestoreDatabaseId);
 
 
 export enum OperationType {
