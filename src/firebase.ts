@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
 
 import { getAuth, initializeAuth, indexedDBLocalPersistence } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, getDocFromServer, doc } from 'firebase/firestore';
+import { initializeFirestore, memoryLocalCache, getDocFromServer, doc } from 'firebase/firestore';
 import { Capacitor } from '@capacitor/core';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -10,8 +10,9 @@ export const auth = Capacitor.isNativePlatform()
   ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
   : getAuth(app);
 
-
-export const db = initializeFirestore(app, { experimentalForceLongPolling: true, localCache: persistentLocalCache({tabManager: persistentMultipleTabManager()}) }, firebaseConfig.firestoreDatabaseId);
+export const db = initializeFirestore(app, {
+  localCache: memoryLocalCache()
+}, firebaseConfig.firestoreDatabaseId);
 
 
 export enum OperationType {

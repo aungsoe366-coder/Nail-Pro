@@ -20,13 +20,15 @@ export default defineConfig(({mode}) => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
+    optimizeDeps: {
+      include: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+    },
     build: {
       chunkSizeWarningLimit: 2000,
       rollupOptions: {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom', 'react-router-dom'],
-            firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
             charts: ['recharts'],
             calendar: ['react-big-calendar', 'moment', 'date-fns'],
             motion: ['motion'],

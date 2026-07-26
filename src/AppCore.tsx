@@ -131,14 +131,27 @@ import {
   Fingerprint,
   ScanFace,
   Camera
-, Info, Bell, Globe, RefreshCw, ShieldCheck} from 'lucide-react';
+, Info, Bell, Globe, RefreshCw, ShieldCheck, Key} from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { motion, AnimatePresence } from 'motion/react';
 import { Calendar as BigCalendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 
-const CURRENT_VERSION = "1.0.8";
+const CURRENT_VERSION = "1.1.1";
+
+export const isOlderVersion = (current: string, latest: string) => {
+  if (!current || !latest) return false;
+  const cParts = current.split(".").map(Number);
+  const lParts = latest.split(".").map(Number);
+  for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
+    const c = cParts[i] || 0;
+    const l = lParts[i] || 0;
+    if (c < l) return true;
+    if (c > l) return false;
+  }
+  return false;
+};
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { exportToCSVAndShare } from './exportUtils';
@@ -162,7 +175,7 @@ const locales = {
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek,
+  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 0 }),
   getDay,
   locales,
 });
@@ -1626,13 +1639,15 @@ export const CustomerDashboardPage: React.FC = () => {
 };
 
 export const DashboardPage: React.FC = () => {
-  const { profile, isAdmin, isCustomer } = useAuth();
+  const { profile, isAdmin, isOwner, isSuperAdmin, isCustomer } = useAuth();
   const navigate = useNavigate();
   const [sales, setSales] = useState<Sale[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [last7DaysSales, setLast7DaysSales] = useState<{ date: string; amount: number }[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const isOwnerOrAdmin = isAdmin || isOwner || (profile?.role as string) === 'admin';
 
   const today = getLocalISODate();
 
@@ -1647,7 +1662,7 @@ export const DashboardPage: React.FC = () => {
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
     let unsubExp = () => {};
-    if (isAdmin) {
+    if (isOwnerOrAdmin) {
       const qExp = query(collection(db, 'expenses'), where('date', '==', today));
       unsubExp = onSnapshot(qExp, (snapshot) => {
         setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
@@ -1663,41 +1678,68 @@ export const DashboardPage: React.FC = () => {
       setAppointments(data);
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
 
-    // Fetch last 7 days for chart
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const sevenDaysAgoStr = getLocalISODate(sevenDaysAgo);
+    let unsubChart = () => {};
+    if (isOwnerOrAdmin) {
+      // Fetch last 7 days for chart
+      const qChart = query(collection(db, 'sales'));
 
-    const qChart = query(
-      collection(db, 'sales'), 
-      where('date', '>=', sevenDaysAgoStr),
-      orderBy('date', 'asc')
-    );
-
-    const unsubChart = onSnapshot(qChart, (snapshot) => {
-      const data = snapshot.docs.map(doc => doc.data() as Sale);
-      const chartData: { [key: string]: number } = {};
-      
-      // Initialize last 7 days with 0
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const dStr = getLocalISODate(d);
-        chartData[dStr] = 0;
-      }
-
-      data.forEach(s => {
-        if (chartData[s.date] !== undefined) {
-          chartData[s.date] += s.total;
+      unsubChart = onSnapshot(qChart, (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data() as Sale);
+        const chartData: { [key: string]: number } = {};
+        
+        // Initialize last 7 days with 0
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const dStr = getLocalISODate(d);
+          chartData[dStr] = 0;
         }
-      });
 
-      setLast7DaysSales(Object.entries(chartData).map(([date, amount]) => ({
-        date: format(parse(date, 'yyyy-MM-dd', new Date()), 'MMM dd'),
-        amount
-      })));
-      setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+        data.forEach(s => {
+          if (s.date && chartData[s.date] !== undefined) {
+            chartData[s.date] += (Number(s.total) || 0);
+          }
+        });
+
+        const sortedDates = Object.keys(chartData).sort();
+        const formattedChart = sortedDates.map(date => {
+          let label = date;
+          try {
+            const parts = date.split('-');
+            if (parts.length === 3) {
+              const [y, m, d] = parts.map(Number);
+              label = format(new Date(y, m - 1, d), 'MMM dd');
+            }
+          } catch (e) {
+            console.error("Error formatting chart date:", e);
+          }
+          return {
+            date: label,
+            amount: chartData[date] || 0
+          };
+        });
+
+        setLast7DaysSales(formattedChart);
+        setLoading(false);
+      }, (error) => {
+        console.warn("Error fetching chart sales:", error);
+        // Fallback 7 days
+        const chartData: { [key: string]: number } = {};
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          chartData[getLocalISODate(d)] = 0;
+        }
+        setLast7DaysSales(Object.keys(chartData).sort().map(date => {
+          const [y, m, d] = date.split('-').map(Number);
+          return {
+            date: format(new Date(y, m - 1, d), 'MMM dd'),
+            amount: 0
+          };
+        }));
+        setLoading(false);
+      });
+    }
 
     return () => {
       unsubSales();
@@ -1705,7 +1747,7 @@ export const DashboardPage: React.FC = () => {
       unsubAppts();
       unsubChart();
     };
-  }, [profile, today]);
+  }, [profile, today, isOwnerOrAdmin]);
 
   const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
   const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -1769,89 +1811,99 @@ export const DashboardPage: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Sales Chart */}
-        <div className="lg:col-span-2 bg-card rounded-[2.5rem] border border-border p-8 shadow-sm space-y-6 flex flex-col">
-          <div className="flex justify-between items-center">
-            <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-              Revenue Trend (Last 7 Days)
-            </h4>
+      {isOwnerOrAdmin && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Sales Chart */}
+          <div className="lg:col-span-2 bg-card rounded-[2.5rem] border border-border p-8 shadow-sm space-y-6 flex flex-col">
+            <div className="flex justify-between items-center">
+              <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+                Revenue Trend (Last 7 Days)
+              </h4>
+            </div>
+            <div className="flex-1 h-[300px] w-full min-h-[280px]">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
+                <AreaChart data={last7DaysSales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#d4af37" stopOpacity={0.4}/>
+                      <stop offset="95%" stopColor="#d4af37" stopOpacity={0.0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.15)" />
+                  <XAxis 
+                    dataKey="date" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--muted-foreground)' }}
+                    dy={10}
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--muted-foreground)' }}
+                    tickFormatter={(val) => {
+                      if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+                      if (val >= 1000) return `${(val / 1000).toFixed(0)}k`;
+                      return `${val}`;
+                    }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'var(--card)', 
+                      borderColor: 'var(--border-color)', 
+                      borderRadius: '1rem',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)'
+                    }}
+                    formatter={(value: any) => [`${Number(value || 0).toLocaleString()} Ks`, 'Revenue']}
+                    labelStyle={{ color: 'var(--fg)', fontWeight: 800, marginBottom: '4px' }}
+                    itemStyle={{ color: '#d4af37', fontWeight: 800 }}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="amount" 
+                    stroke="#d4af37" 
+                    strokeWidth={3.5}
+                    fillOpacity={1} 
+                    fill="url(#colorSales)" 
+                    activeDot={{ r: 6, fill: '#d4af37', stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="flex-1 h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={last7DaysSales}>
-                <defs>
-                  <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis 
-                  dataKey="date" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--color-muted)' }}
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--color-muted)' }}
-                  tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'var(--color-card)', 
-                    borderColor: 'var(--color-border)', 
-                    borderRadius: '1rem',
-                    fontSize: '12px',
-                    fontWeight: 'bold'
-                  }}
-                  itemStyle={{ color: 'var(--color-primary)' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="amount" 
-                  stroke="var(--color-primary)" 
-                  strokeWidth={4}
-                  fillOpacity={1} 
-                  fill="url(#colorSales)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+
+          {/* Quick Stats / Info */}
+          <div className="bg-primary rounded-[2.5rem] p-8 text-white space-y-8 relative overflow-hidden shadow-2xl shadow-primary/20">
+            <div className="relative z-10 space-y-2">
+              <h4 className="text-xs font-black uppercase tracking-[0.3em] opacity-60">Today's Performance</h4>
+              <h2 className="text-4xl font-black tracking-tighter leading-none">
+                {netProfit > 0 ? "+" : ""}{netProfit.toLocaleString()} <span className="text-lg opacity-60">Ks</span>
+              </h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Net Profit after expenses</p>
+            </div>
+
+            <div className="relative z-10 space-y-4">
+              <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Sales Count</span>
+                <span className="text-lg font-black">{sales.length}</span>
+              </div>
+              <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Avg. Ticket</span>
+                <span className="text-lg font-black">{sales.length > 0 ? Math.floor(totalSales / sales.length).toLocaleString() : 0} Ks</span>
+              </div>
+              <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Expense Ratio</span>
+                <span className="text-lg font-black">{totalSales > 0 ? Math.floor((totalExpenses / totalSales) * 100) : 0}%</span>
+              </div>
+            </div>
+
+            <div className="absolute bottom-0 right-0 w-64 h-64 bg-input rounded-full -mr-32 -mb-32 blur-3xl" />
           </div>
         </div>
-
-        {/* Quick Stats / Info */}
-        <div className="bg-primary rounded-[2.5rem] p-8 text-white space-y-8 relative overflow-hidden shadow-2xl shadow-primary/20">
-          <div className="relative z-10 space-y-2">
-            <h4 className="text-xs font-black uppercase tracking-[0.3em] opacity-60">Today's Performance</h4>
-            <h2 className="text-4xl font-black tracking-tighter leading-none">
-              {netProfit > 0 ? "+" : ""}{netProfit.toLocaleString()} <span className="text-lg opacity-60">Ks</span>
-            </h2>
-            <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Net Profit after expenses</p>
-          </div>
-
-          <div className="relative z-10 space-y-4">
-            <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Sales Count</span>
-              <span className="text-lg font-black">{sales.length}</span>
-            </div>
-            <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Avg. Ticket</span>
-              <span className="text-lg font-black">{sales.length > 0 ? Math.floor(totalSales / sales.length).toLocaleString() : 0} Ks</span>
-            </div>
-            <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
-              <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Expense Ratio</span>
-              <span className="text-lg font-black">{totalSales > 0 ? Math.floor((totalExpenses / totalSales) * 100) : 0}%</span>
-            </div>
-          </div>
-
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-input rounded-full -mr-32 -mb-32 blur-3xl" />
-        </div>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Sales */}
@@ -3221,40 +3273,6 @@ export const MonthlySummaryPage: React.FC = () => {
   const gExp = monthlyData.reduce((sum, d) => sum + d.totalExp, 0);
   const gProfit = gIncome - gExp;
 
-  const [isExporting, setIsExporting] = useState(false);
-
-  const handleExportCSV = async () => {
-    if (monthlyData.length === 0) {
-      alert("No data to export");
-      return;
-    }
-    setIsExporting(true);
-    
-    try {
-      const headers = ['Month', 'Total Revenue (Ks)', 'Total Commission (Ks)', 'Shop Expenses (Ks)', 'Total Expenses (Ks)', 'Net Income (Ks)'];
-      
-      const csvData = monthlyData.map(d => [
-        d.mName,
-        d.income,
-        d.comms,
-        d.shopExp,
-        d.totalExp,
-        d.profit
-      ]);
-      
-      await exportToCSVAndShare(
-        `Monthly_Summary_${year}.xlsx`,
-        headers,
-        csvData
-      );
-    } catch (error) {
-      console.error('Error exporting monthly summary:', error);
-      alert('Failed to export. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
@@ -3271,26 +3289,6 @@ export const MonthlySummaryPage: React.FC = () => {
               options={years.map(y => ({ value: y, label: y }))}
             />
           </div>
-          {monthlyData.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
-            <button 
-              onClick={handleExportCSV}
-              disabled={isExporting}
-              className="px-4 py-2 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 z-20 mr-2"
-              title="Export to Excel"
-            >
-              {isExporting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  <span className="text-[10px] uppercase tracking-widest">Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={16} />
-                  <span className="text-[10px] uppercase tracking-widest">Export Excel</span>
-                </>
-              )}
-            </button>
-          )}
         </div>
       </div>
 
@@ -3299,7 +3297,7 @@ export const MonthlySummaryPage: React.FC = () => {
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
             <TrendingUp size={48} className="text-green-500" />
           </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Revenue</p>
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Incomes</p>
           <h2 className="text-3xl font-mono tracking-tighter text-foreground">{gIncome.toLocaleString()} <span className="text-sm font-sans font-normal text-muted-foreground uppercase">Ks</span></h2>
           <div className="h-1 w-12 bg-green-500/30 rounded-full" />
         </div>
@@ -4796,45 +4794,12 @@ export const SalesReportPage: React.FC = () => {
   const grandComm = reportData.reduce((sum, d) => sum + d.totalComm, 0);
   const totalCount = reportData.reduce((sum, d) => sum + d.count, 0);
 
-  const [isExporting, setIsExporting] = useState(false);
-
-  const handleExportCSV = async () => {
-    const activeData = reportData.filter(d => d.count > 0);
-    if (activeData.length === 0) {
-      alert("No data to export");
-      return;
-    }
-    setIsExporting(true);
-    
-    try {
-      const headers = ['Month', 'Transactions Count', 'Total Sales (Ks)', 'Total Commission (Ks)'];
-      
-      const csvData = activeData.map(d => [
-        d.mName,
-        d.count,
-        d.totalSales,
-        d.totalComm
-      ]);
-      
-      await exportToCSVAndShare(
-        `Sales_Report_${year}.xlsx`,
-        headers,
-        csvData
-      );
-    } catch (error) {
-      console.error('Error exporting sales report:', error);
-      alert('Failed to export. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <div className="p-4 space-y-6 relative">
       <h3 className="text-primary text-2xl font-bold tracking-tight">Sales Report</h3>
       
-      <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative overflow-hidden group">
-        <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative group">
+        <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem] pointer-events-none" />
         <div className="flex flex-col p-6 space-y-4">
            <div className="flex flex-col max-w-[200px]">
              <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
@@ -4846,29 +4811,6 @@ export const SalesReportPage: React.FC = () => {
                options={years.map(y => ({ value: y, label: y }))}
              />
            </div>
-           
-           {reportData.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
-            <div className="relative z-10 flex pt-2">
-              <button 
-                onClick={handleExportCSV}
-                disabled={isExporting}
-                className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                title="Export to Excel"
-              >
-                {isExporting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download size={18} />
-                    <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -5461,7 +5403,16 @@ export const AppointmentsPage: React.FC = () => {
     });
 
   const calendarEvents = appointments
-    .filter(a => profile?.role !== 'customer' || a.creatorEmail === profile?.email)
+    .filter(a => {
+      const matchesUser = profile?.role !== 'customer' || a.creatorEmail === profile?.email;
+      const matchesStaff = selectedStaffFilter === 'all' || a.staffEmail === selectedStaffFilter;
+      const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+      const matchesSearch = !apptSearch.trim() || 
+        a.customerName.toLowerCase().includes(apptSearch.toLowerCase()) ||
+        a.customerPhone.includes(apptSearch) ||
+        a.serviceName.toLowerCase().includes(apptSearch.toLowerCase());
+      return matchesUser && matchesStaff && matchesStatus && matchesSearch;
+    })
     .map(appt => {
       try {
         if (!appt.date || !appt.time) return null;
@@ -5514,9 +5465,6 @@ export const AppointmentsPage: React.FC = () => {
     })
     .filter((e): e is any => e !== null);
 
-  if (calendarEvents.length > 0) {
-  }
-
   const handleSelectEvent = (event: any) => {
     const appt = event.resource;
     if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
@@ -5533,71 +5481,169 @@ export const AppointmentsPage: React.FC = () => {
 
   const eventPropGetter = (event: any) => {
     const appt = event.resource;
-    let backgroundColor = '#d4af37'; // default primary
-    if (appt.status === 'pending') backgroundColor = '#eab308'; // yellow-600
-    if (appt.status === 'confirmed') backgroundColor = '#2563eb'; // blue-600
-    if (appt.status === 'completed') backgroundColor = '#16a34a'; // green-600
-    if (appt.status === 'cancelled') backgroundColor = '#dc2626'; // red-600
-    
+    let backgroundColor = 'rgba(212, 175, 55, 0.15)';
+    let borderColor = '#d4af37';
+    let textColor = '#d4af37';
+
+    if (appt.status === 'pending') {
+      backgroundColor = 'rgba(234, 179, 8, 0.18)';
+      borderColor = '#eab308';
+      textColor = '#ca8a04';
+    } else if (appt.status === 'confirmed') {
+      backgroundColor = 'rgba(37, 99, 235, 0.18)';
+      borderColor = '#2563eb';
+      textColor = '#1d4ed8';
+    } else if (appt.status === 'completed') {
+      backgroundColor = 'rgba(22, 163, 74, 0.18)';
+      borderColor = '#16a34a';
+      textColor = '#15803d';
+    } else if (appt.status === 'cancelled') {
+      backgroundColor = 'rgba(220, 38, 38, 0.18)';
+      borderColor = '#dc2626';
+      textColor = '#b91c1c';
+    }
+
     return {
       style: {
         backgroundColor,
-        borderRadius: '8px',
-        opacity: 0.8,
-        color: 'white',
-        border: '0px',
-        display: 'block'
+        borderLeft: `4px solid ${borderColor}`,
+        borderRadius: '10px',
+        color: textColor,
+        borderTop: '1px solid rgba(0,0,0,0.05)',
+        borderRight: '1px solid rgba(0,0,0,0.05)',
+        borderBottom: '1px solid rgba(0,0,0,0.05)',
+        boxShadow: '0 2px 8px -2px rgba(0,0,0,0.08)',
+        display: 'block',
+        overflow: 'hidden'
       }
     };
   };
 
+  const CustomCalendarEvent = ({ event }: { event: any }) => {
+    const appt = event.resource;
+    const isMonthView = calendarView === 'month';
+
+    const statusBg = 
+      appt.status === 'confirmed' ? 'bg-blue-500' :
+      appt.status === 'completed' ? 'bg-emerald-500' :
+      appt.status === 'cancelled' ? 'bg-rose-500' : 'bg-amber-500';
+
+    if (isMonthView) {
+      return (
+        <div className="flex items-center gap-1 px-1 py-0.5 truncate text-[10px] font-bold">
+          <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-sm", statusBg)} />
+          <span className="font-mono text-[9px] opacity-75 shrink-0">{format(event.start, 'h:mm a')}</span>
+          <span className="truncate">{appt.serviceName || appt.customerName}</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="p-1.5 h-full flex flex-col justify-between overflow-hidden text-[11px] font-medium leading-tight">
+        <div>
+          <div className="flex items-center justify-between gap-1 mb-0.5">
+            <span className="font-extrabold truncate text-foreground/90">{appt.serviceName}</span>
+            <span className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-md text-white shrink-0 shadow-sm", statusBg)}>
+              {appt.status}
+            </span>
+          </div>
+          <div className="text-[10px] opacity-90 truncate font-bold">
+            {appt.customerName}
+          </div>
+          {appt.staffName && (
+            <div className="text-[9px] opacity-75 truncate italic">
+              Staff: {appt.staffName}
+            </div>
+          )}
+        </div>
+        <div className="text-[9px] font-mono opacity-80 mt-1 font-semibold">
+          {format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}
+        </div>
+      </div>
+    );
+  };
+
   const CustomCalendarToolbar = (toolbar: any) => {
     const goToBack = () => {
+      const prevDate = new Date(toolbar.date);
+      if (toolbar.view === 'month') prevDate.setMonth(prevDate.getMonth() - 1);
+      else if (toolbar.view === 'week') prevDate.setDate(prevDate.getDate() - 7);
+      else if (toolbar.view === 'day') prevDate.setDate(prevDate.getDate() - 1);
+      
       toolbar.onNavigate('PREV');
+      setCalendarDate(prevDate);
+      setFilterDate(format(prevDate, 'yyyy-MM-dd'));
     };
+
     const goToNext = () => {
+      const nextDate = new Date(toolbar.date);
+      if (toolbar.view === 'month') nextDate.setMonth(nextDate.getMonth() + 1);
+      else if (toolbar.view === 'week') nextDate.setDate(nextDate.getDate() + 7);
+      else if (toolbar.view === 'day') nextDate.setDate(nextDate.getDate() + 1);
+
       toolbar.onNavigate('NEXT');
+      setCalendarDate(nextDate);
+      setFilterDate(format(nextDate, 'yyyy-MM-dd'));
     };
+
     const goToToday = () => {
+      const today = new Date();
       toolbar.onNavigate('TODAY');
+      setCalendarDate(today);
+      setFilterDate(format(today, 'yyyy-MM-dd'));
     };
 
     return (
-      <div className="flex flex-row items-center justify-between gap-4 mb-6 bg-muted/5 p-4 rounded-3xl border border-border shadow-inner">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goToBack}
-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-white active:scale-90 border border-border bg-card shadow-sm"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button
-            onClick={goToToday}
-            className="px-6 py-2.5 bg-primary/10 text-primary [.midnight_&]:text-amber-400 rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10 active:scale-95 shadow-sm"
-          >
-            Today
-          </button>
-          <button
-            onClick={goToNext}
-            className="p-2.5 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-white active:scale-90 border border-border bg-card shadow-sm"
-          >
-            <ChevronRight size={20} />
-          </button>
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-muted/30 p-2.5 sm:p-3 rounded-2xl border border-border/50 shadow-xs shrink-0">
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={goToBack}
+              className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-95 border border-border/60 bg-background shadow-xs"
+              title="Previous"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={goToToday}
+              className="px-3.5 py-2 bg-primary/10 text-primary [.midnight_&]:text-amber-400 hover:bg-primary/20 rounded-xl font-black text-xs uppercase tracking-wider transition-all border border-primary/20 active:scale-95 shadow-xs"
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={goToNext}
+              className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-95 border border-border/60 bg-background shadow-xs"
+              title="Next"
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          <div className="sm:hidden text-xs font-black tracking-tight text-foreground uppercase">
+            {toolbar.label}
+          </div>
         </div>
 
-        <div className="text-xl font-black tracking-tighter text-foreground [.midnight_&]:text-slate-200 uppercase">
+        <div className="hidden sm:block text-sm md:text-base font-black tracking-tight text-foreground uppercase">
           {toolbar.label}
         </div>
 
-        <div className="flex bg-muted p-1 rounded-xl border border-white/5 shadow-xl ">
-          {['month', 'week', 'day'].map((view) => (
+        <div className="flex bg-muted p-1 rounded-xl border border-border/50 shadow-inner w-full sm:w-auto justify-center">
+          {(['month', 'week', 'day'] as const).map((view) => (
             <button
               key={view}
-              onClick={() => toolbar.onView(view)}
+              type="button"
+              onClick={() => {
+                toolbar.onView(view);
+                setCalendarView(view);
+              }}
               className={cn(
-                "px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                "flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
                 toolbar.view === view 
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 scale-[1.02]" 
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -5705,6 +5751,10 @@ export const AppointmentsPage: React.FC = () => {
                 onChange={(val) => {
                   setFilterDate(val);
                   setShowAllDates(false);
+                  if (val) {
+                    const [y, m, d] = val.split('-').map(Number);
+                    if (y && m && d) setCalendarDate(new Date(y, m - 1, d));
+                  }
                 }}
                 disabled={showAllDates}
                 className={cn("border-b md:border-b-0 md:border-r border-border/50 flex-1", showAllDates && "opacity-50")}
@@ -5781,31 +5831,32 @@ export const AppointmentsPage: React.FC = () => {
                 ))}
               </div>
             ) : viewMode === 'calendar' ? (
-            <div className="h-[600px] bg-background rounded-2xl p-4 border border-border shadow-inner">
+            <div className="h-[750px] md:h-[800px] bg-card rounded-3xl p-3 sm:p-5 border border-border shadow-xl flex flex-col overflow-hidden w-full max-w-full">
               <style>{`
-                .rbc-calendar { font-family: inherit; }
-                .rbc-event { background-color: var(--color-primary); color: #000; border-radius: 12px; font-size: 11px; font-weight: 700; border: none; padding: 4px 8px; }
-                .rbc-today { background-color: rgba(212, 175, 55, 0.08); }
-                .rbc-header { padding: 16px; font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: 0.1em; color: var(--muted); border-bottom: 2px solid var(--border) !important; }
-                .dark .rbc-calendar { color: #f8f9fa; }
-                .dark .rbc-off-range-bg { background: #1a1a1a; }
-                .dark .rbc-day-bg + .rbc-day-bg { border-left: 1px solid #2d2d2d; }
-                .dark .rbc-month-row + .rbc-month-row { border-top: 1px solid #2d2d2d; }
-                .dark .rbc-month-view { border: 1px solid #2d2d2d; border-radius: 24px; overflow: hidden; }
-                .dark .rbc-header { border-bottom: 1px solid #2d2d2d; border-left: 1px solid #2d2d2d; color: #f8f9fa; }
-                .dark .rbc-header + .rbc-header { border-left: 1px solid #2d2d2d; }
-                .dark .rbc-time-view { border: 1px solid #2d2d2d; border-radius: 24px; overflow: hidden; }
-                .dark .rbc-time-header { border-bottom: 1px solid #2d2d2d; color: #f8f9fa; }
-                .dark .rbc-time-header-content { border-left: 1px solid #2d2d2d; }
-                .dark .rbc-time-content { border-top: 1px solid #2d2d2d; }
-                .dark .rbc-time-content > * + * > * { border-left: 1px solid #2d2d2d; }
-                .dark .rbc-timeslot-group { border-bottom: 1px solid #2d2d2d; }
-                .dark .rbc-day-slot .rbc-time-slot { border-top: 1px solid #2d2d2d; }
-                .dark .rbc-toolbar button { color: #f8f9fa; border: 1px solid #2d2d2d; border-radius: 8px; margin: 0 2px; }
-                .dark .rbc-toolbar button:hover { background-color: #2d2d2d; }
-                .dark .rbc-toolbar button.rbc-active { background-color: var(--color-primary); color: black; }
-                .dark .rbc-button-link { color: #f8f9fa; }
-                .dark .rbc-show-more { color: var(--color-primary); }
+                .rbc-calendar { font-family: inherit; font-size: 12px; display: flex !important; flex-direction: column !important; height: 100% !important; width: 100% !important; min-height: 0 !important; overflow: hidden !important; }
+                .rbc-month-view, .rbc-time-view { border: 1px solid var(--border) !important; border-radius: 20px; overflow: hidden; background: var(--card); display: flex !important; flex-direction: column !important; flex: 1 1 0% !important; min-height: 0 !important; width: 100% !important; }
+                .rbc-header { padding: 6px 2px !important; font-weight: 800; text-transform: uppercase; font-size: 10px; sm:font-size: 11px; letter-spacing: 0.02em; color: var(--muted-foreground); border-bottom: 2px solid var(--border) !important; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .rbc-header + .rbc-header { border-left: 1px solid var(--border) !important; }
+                .rbc-today { background-color: rgba(212, 175, 55, 0.08) !important; }
+                .rbc-off-range-bg { background-color: rgba(0, 0, 0, 0.04) !important; }
+                .dark .rbc-off-range-bg { background-color: rgba(255, 255, 255, 0.03) !important; }
+                .rbc-date-cell { padding: 4px 8px !important; font-weight: 800; font-size: 11px; text-align: right; }
+                .rbc-month-row { border-top: 1px solid var(--border) !important; flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; }
+                .rbc-row-content { height: 100% !important; }
+                .rbc-day-bg + .rbc-day-bg { border-left: 1px solid var(--border) !important; }
+                .rbc-time-header { border-bottom: 1px solid var(--border) !important; background: rgba(0,0,0,0.02); }
+                .dark .rbc-time-header { background: rgba(255,255,255,0.02); }
+                .rbc-time-header-content { border-left: 1px solid var(--border) !important; }
+                .rbc-time-content { border-top: 1px solid var(--border) !important; flex: 1 1 0% !important; overflow-y: auto !important; min-height: 0 !important; }
+                .rbc-time-content > * + * > * { border-left: 1px solid var(--border) !important; }
+                .rbc-timeslot-group { border-bottom: 1px solid var(--border) !important; min-height: 44px; }
+                .rbc-time-gutter .rbc-label { font-size: 10px; font-weight: 700; color: var(--muted-foreground); text-transform: uppercase; padding: 0 6px; }
+                .rbc-allday-cell { display: none !important; }
+                .rbc-current-time-indicator { background-color: var(--primary) !important; height: 2px !important; }
+                .rbc-show-more { color: var(--primary); font-weight: 800; font-size: 10px; text-transform: uppercase; padding: 2px 4px; }
+                .rbc-event { padding: 0 !important; background: transparent !important; }
+                .rbc-event:focus { outline: none !important; }
+                .rbc-day-slot .rbc-time-slot { border-top: 1px dashed var(--border) !important; }
               `}</style>
               <BigCalendar
                 localizer={localizer}
@@ -5820,10 +5871,18 @@ export const AppointmentsPage: React.FC = () => {
                 view={calendarView}
                 onView={(v) => setCalendarView(v)}
                 date={calendarDate}
-                onNavigate={(d) => setCalendarDate(d)}
+                onNavigate={(d) => {
+                  setCalendarDate(d);
+                  setFilterDate(format(d, 'yyyy-MM-dd'));
+                }}
+                min={new Date(1970, 0, 1, 7, 0, 0)}
+                max={new Date(1970, 0, 1, 21, 0, 0)}
+                step={15}
+                timeslots={2}
                 eventPropGetter={eventPropGetter}
                 components={{
-                  toolbar: CustomCalendarToolbar
+                  toolbar: CustomCalendarToolbar,
+                  event: CustomCalendarEvent
                 }}
               />
             </div>
@@ -6292,7 +6351,7 @@ Thank you for choosing Nail Pro!')}`}
           >
             <div className="p-6 sm:p-8 border-b bg-muted/5 flex justify-between items-center shrink-0">
               <div>
-                <h3 className="text-primary [.midnight_&]:text-amber-400 font-black text-2xl sm:text-3xl tracking-tighter">
+                <h3 className="text-foreground [.midnight_&]:text-slate-200 font-black text-2xl sm:text-3xl tracking-tighter">
                   {editingAppointment ? 'Edit Appointment' : 'Book Appointment'}
                 </h3>
                 <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-1">
@@ -6321,7 +6380,7 @@ Thank you for choosing Nail Pro!')}`}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Customer Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
                     <UserIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Customer Information
                   </label>
@@ -6378,7 +6437,7 @@ Thank you for choosing Nail Pro!')}`}
 
                 {/* Service & Staff Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
                     <Briefcase size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Service & Staff
                   </label>
@@ -6431,7 +6490,7 @@ Thank you for choosing Nail Pro!')}`}
 
                 {/* Date & Time Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
                     <CalendarIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Schedule
                   </label>
@@ -6482,7 +6541,7 @@ Thank you for choosing Nail Pro!')}`}
 
                 {/* Status & Points Section */}
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
                     <Star size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Status & Rewards
                   </label>
@@ -6568,7 +6627,7 @@ Thank you for choosing Nail Pro!')}`}
               </div>
 
                 <div className="space-y-4">
-                  <label className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
                     <FileText size={14} className="text-primary [.midnight_&]:text-amber-400" />
                     Additional Notes
                   </label>
@@ -6588,16 +6647,16 @@ Thank you for choosing Nail Pro!')}`}
                       <Check size={32} strokeWidth={3} />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-black text-primary [.midnight_&]:text-amber-400 tracking-tighter">
+                      <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 tracking-tighter">
                         Booking Confirmation
                       </h3>
-                      <p className="text-[10px] text-primary [.midnight_&]:text-amber-400 font-bold uppercase tracking-widest">Review your appointment details</p>
+                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Review your appointment details</p>
                     </div>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
                         <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Customer
                       </div>
@@ -6611,7 +6670,7 @@ Thank you for choosing Nail Pro!')}`}
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
                         <Briefcase size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Service
                       </div>
@@ -6625,7 +6684,7 @@ Thank you for choosing Nail Pro!')}`}
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
                         <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Staff Member
                       </div>
@@ -6638,7 +6697,7 @@ Thank you for choosing Nail Pro!')}`}
                     </div>
 
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
+                      <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
                         <CalendarIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
                         Scheduled Date
                       </div>
@@ -6662,7 +6721,7 @@ Thank you for choosing Nail Pro!')}`}
 
                     {apptNotes && (
                       <div className="col-span-full space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em]">
+                        <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
                           <FileText size={12} className="text-primary [.midnight_&]:text-amber-400" />
                           Additional Notes
                         </div>
@@ -8917,7 +8976,25 @@ const SettingsPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
   const [pwdSuccess, setPwdSuccess] = useState(false);
-  const { changePassword, error, setError, profile } = useAuth();
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  const handleResetPassword = async () => {
+    if (!profile?.email) return;
+    setResetLoading(true);
+    setError(null);
+    setResetSuccess(false);
+    try {
+      await resetPassword(profile.email);
+      setResetSuccess(true);
+      setTimeout(() => setResetSuccess(false), 5000);
+    } catch (err: any) {
+      // Error handled in useAuth
+    } finally {
+      setResetLoading(false);
+    }
+  };
+  const { changePassword, resetPassword, error, setError, profile } = useAuth();
   
   const [preferences, setPreferences] = useState(profile?.preferences || {
     dateFormat: 'MM/DD/YYYY',
@@ -8991,6 +9068,7 @@ const SettingsPage: React.FC = () => {
          setUpdateMsg({ type: 'success', text: "You are on the latest version." });
       }
     } catch (err) {
+      console.error("Error checking for updates:", err);
       setUpdateMsg({ type: 'error', text: "Failed to check for updates." });
     } finally {
       setUpdateChecking(false);
@@ -9101,63 +9179,95 @@ const SettingsPage: React.FC = () => {
           </div>
        </div>
 
-       <div className="p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-black tracking-tighter uppercase">Change Password</h2>
+       <button 
+         onClick={() => {
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setError(null);
+            setPwdSuccess(false);
+            setResetSuccess(false);
+            setIsPasswordModalOpen(true);
+         }}
+         className="w-full p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex items-center justify-between gap-4 hover:border-primary/50 transition-all group active:scale-[0.99] cursor-pointer text-left"
+       >
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-xl text-primary group-hover:scale-110 transition-transform">
+               <Lock className="w-4 h-4" />
+            </div>
+            <div>
+               <h2 className="text-sm font-black tracking-tighter uppercase">Change Password</h2>
+               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Update security credentials</p>
+            </div>
           </div>
-          <button 
-             onClick={() => {
-              setCurrentPassword('');
-              setNewPassword('');
-              setConfirmPassword('');
-              setError(null);
-              setPwdSuccess(false);
-              setIsPasswordModalOpen(true);
-            }} 
-             className="py-2 px-4 rounded-xl bg-primary text-primary-foreground font-black text-[10px] tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all shadow-sm shrink-0"
-          >
-            Update
-          </button>
-       </div>
+          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+       </button>
 
       {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden border border-border flex flex-col animate-in zoom-in-95 duration-300">
-            <div className="p-6 border-b border-border flex justify-between items-center bg-muted/10 shrink-0">
-              <h3 className="font-bold text-lg tracking-tight flex items-center gap-2">
-                <Lock size={20} className="text-primary" />
-                Update Password
-              </h3>
-              <button onClick={() => setIsPasswordModalOpen(false)} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></button>
-            </div>
-            <div className="p-6 overflow-y-auto space-y-4">
+        <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+          <div className="bg-card w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-border flex flex-col animate-in zoom-in-95 duration-300 relative overflow-hidden">
+             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+             <div className="relative z-10">
+               <div className="flex justify-between items-start mb-6">
+                 <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-inner">
+                   <Lock size={28} className="text-primary" />
+                 </div>
+                 <button onClick={() => setIsPasswordModalOpen(false)} className="p-2.5 bg-muted/50 hover:bg-muted rounded-full transition-colors active:scale-95"><X size={20} /></button>
+               </div>
+               
+               <h3 className="text-2xl font-black tracking-tight mb-2">Change Password</h3>
+               <p className="text-muted-foreground text-xs font-medium mb-6">Update your account password. If you forgot your current password, you can request a reset link.</p>
+
               {error && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl flex items-center gap-2 font-bold">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
                   {error}
                 </motion.div>
               )}
               {pwdSuccess && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-green-500/10 border border-green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold">
-                  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs rounded-xl flex items-center gap-2 font-bold">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                   Password updated successfully!
                 </motion.div>
               )}
+              {resetSuccess && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-blue-500/10 border border-blue-500/20 text-blue-600 text-xs rounded-xl flex items-center gap-2 font-bold">
+                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  Password reset link sent to your email!
+                </motion.div>
+              )}
+
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Current Password</label>
-                  <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Current Password</label>
+                    <button type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-[10px] font-bold text-primary hover:underline disabled:opacity-50 transition-all">
+                      {resetLoading ? 'Sending...' : 'Forgot password?'}
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+                    <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
-                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+                
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Password</label>
+                  <div className="relative">
+                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+                    <Key className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm Password</label>
-                  <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" required placeholder="••••••••" />
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Confirm New Password</label>
+                  <div className="relative">
+                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+                    <Key className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  </div>
                 </div>
-                <button type="submit" disabled={pwdLoading} className="w-full py-4 px-6 rounded-2xl bg-primary text-white font-black text-xs tracking-widest uppercase shadow-xl shadow-primary/20 hover:opacity-90 active:scale-95 disabled:opacity-50 transition-all mt-6">
+
+                <button type="submit" disabled={pwdLoading || resetLoading} className="w-full py-4 px-6 rounded-2xl bg-primary text-primary-foreground font-black text-[11px] tracking-widest uppercase shadow-xl shadow-primary/25 hover:opacity-95 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all mt-6 flex items-center justify-center gap-2">
                   {pwdLoading ? 'Updating...' : 'Update Password'}
                 </button>
               </form>
@@ -9900,17 +10010,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, []);
 
   
-  const isOlderVersion = (current: string, latest: string) => {
-    const cParts = current.split('.').map(Number);
-    const lParts = latest.split('.').map(Number);
-    for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
-      const c = cParts[i] || 0;
-      const l = lParts[i] || 0;
-      if (c < l) return true;
-      if (c > l) return false;
-    }
-    return false;
-  };
+
 
   const needsUpdate = Capacitor.isNativePlatform() && updateInfo && isOlderVersion(CURRENT_VERSION, updateInfo.latestVersion);
 

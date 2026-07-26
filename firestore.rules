@@ -64,7 +64,7 @@ service cloud.firestore {
       allow write: if isOwner();
     }
     match /app_config/{id} {
-      allow read: if isAuthenticated();
+      allow read: if true;
     }
     match /settings/{id} {
       allow read: if isAuthenticated();
