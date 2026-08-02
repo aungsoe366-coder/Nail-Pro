@@ -1,11 +1,11 @@
 import re
-
 with open('src/AppCore.tsx', 'r') as f:
-    text = f.read()
+    content = f.read()
 
-text = text.replace("<ScanFace,\n  Camera size={18} />", "<ScanFace size={18} />")
-text = text.replace("<ScanFace,  Camera size={18} />", "<ScanFace size={18} />")
+content = content.replace(
+    'const PullToRefresh: React.FC<{ children: React.ReactNode; onRefresh: () => Promise<void>; isPos?: boolean }> = ({ children, onRefresh, isPos }) => { children: React.ReactNode; onRefresh: () => Promise<void> }> = ({ children, onRefresh }) => {',
+    'const PullToRefresh: React.FC<{ children: React.ReactNode; onRefresh: () => Promise<void>; isPos?: boolean }> = ({ children, onRefresh, isPos }) => {'
+)
 
 with open('src/AppCore.tsx', 'w') as f:
-    f.write(text)
-print("Fixed syntax error")
+    f.write(content)

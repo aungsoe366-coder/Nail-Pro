@@ -1,12 +1,13 @@
+import { Minus, Percent } from 'lucide-react';
 import nailSalonBg from './assets/images/nail_salon_background_1784539561011.jpg';
 import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { 
-  Routes, 
-  Route, 
-  Navigate, 
-  useNavigate, 
-  useLocation 
+ Routes, 
+ Route, 
+ Navigate, 
+ useNavigate, 
+ useLocation 
 } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
@@ -18,119 +19,119 @@ import { renderToString } from 'react-dom/server';
 import { Printer as CapPrinter } from '@capgo/capacitor-printer';
 import { NativeBiometric, BiometryType } from '@capgo/capacitor-native-biometric';
 import { 
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithCredential,
-  signOut,
-  User,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  updateProfile,
-  sendPasswordResetEmail,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
-  updatePassword,
-  signInWithPopup,
-  browserPopupRedirectResolver
+ onAuthStateChanged,
+ GoogleAuthProvider,
+ signInWithCredential,
+ signOut,
+ User,
+ signInWithEmailAndPassword,
+ createUserWithEmailAndPassword,
+ updateProfile,
+ sendPasswordResetEmail,
+ EmailAuthProvider,
+ reauthenticateWithCredential,
+ updatePassword,
+ signInWithPopup,
+ browserPopupRedirectResolver
 } from 'firebase/auth';
 import { 
-  collection, 
-  doc, 
-  getDoc, getDocFromCache, 
-  getDocs, 
-  setDoc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  onSnapshot, 
-  query, 
-  where, 
-  orderBy,
-  getDocFromServer
+ collection, 
+ doc, 
+ getDoc, getDocFromCache, 
+ getDocs, 
+ setDoc, 
+ addDoc, 
+ updateDoc, 
+ deleteDoc, 
+ onSnapshot, 
+ query, 
+ where, 
+ orderBy,
+ getDocFromServer
 } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { auth, db, app, OperationType, handleFirestoreError } from './firebase';
 import { 
-  Category,
-  Service, 
-  CartItem, 
-  Sale, 
-  Expense, 
-  ExpenseCategory,
-  UserProfile, 
-  ShopSettings,
-  Customer,
-  Appointment
+ Category,
+ Service, 
+ CartItem, 
+ Sale, 
+ Expense, 
+ ExpenseCategory,
+ UserProfile, 
+ ShopSettings,
+ Customer,
+ Appointment
 } from './types';
 import { 
-  Menu, 
-  ShoppingCart, 
-  BarChart2, 
-  Calendar,
-  Calendar as CalendarIcon,
-  LayoutGrid,
-  TrendingDown, 
-  Settings,
-  Database,
-  LogOut, 
-  Search, 
-  X, 
-  Plus, 
-  Trash2, 
-  Printer,
-  ChevronRight,
-  ChevronLeft,
-  FileText,
-  Phone,
-  History as HistoryIcon,
-  User as UserIcon,
-  Users as UsersIcon,
-  Store,
-  Briefcase,
-  DollarSign,
-  Sun,
-  Moon,
-  Check,
-  Star,
-  Edit2,
-  Pencil,
-  ArrowUp,
-  ArrowDown,
-  Coins,
-  Home,
-  Car,
-  ChevronDown,
-  ArrowRight,
-  TrendingUp,
-  Mail,
-  Receipt,
-  AlertTriangle,
-  CreditCard,
-  Scissors,
-  Sparkles,
-  Smile,
-  Heart,
-  Zap,
-  Flower2,
-  Brush,
-  SprayCan,
-  Waves,
-  Clock,
-  HelpCircle,
-  Eye,
-  EyeOff,
-  Lock,
-  AlertCircle,
-  CheckCircle2,
-  Activity,
-  CalendarHeart,
-  MessageCircle,
-  Download,
-  ArrowLeft,
-  Palette,
-  Fingerprint,
-  ScanFace,
-  Camera
+ Menu, 
+ ShoppingCart, 
+ BarChart2, 
+ Calendar,
+ Calendar as CalendarIcon,
+ LayoutGrid,
+ TrendingDown, 
+ Settings,
+ Database,
+ LogOut, 
+ Search, 
+ X, 
+ Plus, 
+ Trash2, 
+ Printer,
+ ChevronRight,
+ ChevronLeft,
+ FileText,
+ Phone,
+ History as HistoryIcon,
+ User as UserIcon,
+ Users as UsersIcon,
+ Store,
+ Briefcase,
+ DollarSign,
+ Sun,
+ Moon,
+ Check,
+ Star,
+ Edit2,
+ Pencil,
+ ArrowUp,
+ ArrowDown,
+ Coins,
+ Home,
+ Car,
+ ChevronDown,
+ ArrowRight,
+ TrendingUp,
+ Mail,
+ Receipt,
+ AlertTriangle,
+ CreditCard,
+ Scissors,
+ Sparkles,
+ Smile,
+ Heart,
+ Zap,
+ Flower2,
+ Brush,
+ SprayCan,
+ Waves,
+ Clock,
+ HelpCircle,
+ Eye,
+ EyeOff,
+ Lock,
+ AlertCircle,
+ CheckCircle2,
+ Activity,
+ CalendarHeart,
+ MessageCircle,
+ Download,
+ ArrowLeft,
+ Palette,
+ Fingerprint,
+ ScanFace,
+ Camera
 , Info, Bell, Globe, RefreshCw, ShieldCheck, Key} from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -141,338 +142,338 @@ import { format, parse, startOfWeek, getDay } from 'date-fns';
 const CURRENT_VERSION = "1.1.1";
 
 export const isOlderVersion = (current: string, latest: string) => {
-  if (!current || !latest) return false;
-  const cParts = current.split(".").map(Number);
-  const lParts = latest.split(".").map(Number);
-  for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
-    const c = cParts[i] || 0;
-    const l = lParts[i] || 0;
-    if (c < l) return true;
-    if (c > l) return false;
-  }
-  return false;
+ if (!current || !latest) return false;
+ const cParts = current.split(".").map(Number);
+ const lParts = latest.split(".").map(Number);
+ for (let i = 0; i < Math.max(cParts.length, lParts.length); i++) {
+ const c = cParts[i] || 0;
+ const l = lParts[i] || 0;
+ if (c < l) return true;
+ if (c > l) return false;
+ }
+ return false;
 };
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { exportToCSVAndShare } from './exportUtils';
 
 import { 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip 
+ ResponsiveContainer, 
+ AreaChart, 
+ Area, 
+ XAxis, 
+ YAxis, 
+ CartesianGrid, 
+ Tooltip 
 } from 'recharts';
 
 import ErrorBoundary from './components/ErrorBoundary';
 
 const locales = {
-  'en-US': enUS,
+ 'en-US': enUS,
 };
 
 const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 0 }),
-  getDay,
-  locales,
+ format,
+ parse,
+ startOfWeek: (date: Date) => startOfWeek(date, { weekStartsOn: 0 }),
+ getDay,
+ locales,
 });
 
 // --- Utils ---
 let initialRedirectDone = false;
 function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+ return twMerge(clsx(inputs));
 }
 
 const normalizePhone = (phone: string) => {
-  // Strip all non-digits
-  let cleaned = phone.replace(/\\D/g, '');
-  
-  // Handle Myanmar specific normalization (common for this app's context)
-  // If it starts with 959..., convert to 09...
-  if (cleaned.startsWith('959')) {
-    cleaned = '09' + cleaned.slice(3);
-  } 
-  // If it starts with 9... and is 9-10 digits, it's likely missing the leading 0
-  else if (cleaned.startsWith('9') && (cleaned.length === 9 || cleaned.length === 10)) {
-    cleaned = '0' + cleaned;
-  }
-  
-  return cleaned;
+ // Strip all non-digits
+ let cleaned = phone.replace(/\\D/g, '');
+ 
+ // Handle Myanmar specific normalization (common for this app's context)
+ // If it starts with 959..., convert to 09...
+ if (cleaned.startsWith('959')) {
+ cleaned = '09' + cleaned.slice(3);
+ } 
+ // If it starts with 9... and is 9-10 digits, it's likely missing the leading 0
+ else if (cleaned.startsWith('9') && (cleaned.length === 9 || cleaned.length === 10)) {
+ cleaned = '0' + cleaned;
+ }
+ 
+ return cleaned;
 };
 
 function getLocalISODate(dateInput?: string | number | Date) {
-  const date = dateInput ? new Date(dateInput) : new Date();
-  return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+ const date = dateInput ? new Date(dateInput) : new Date();
+ return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 }
 
 function formatDisplayDate(dateInput: string | number | Date) {
-  try {
-    const date = new Date(dateInput);
-    if (isNaN(date.getTime())) return String(dateInput);
-    
-    const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
+ try {
+ const date = new Date(dateInput);
+ if (isNaN(date.getTime())) return String(dateInput);
+ 
+ const today = new Date();
+ const yesterday = new Date();
+ yesterday.setDate(today.getDate() - 1);
 
-    const isToday = date.toDateString() === today.toDateString();
-    const isYesterday = date.toDateString() === yesterday.toDateString();
+ const isToday = date.toDateString() === today.toDateString();
+ const isYesterday = date.toDateString() === yesterday.toDateString();
 
-    if (isToday) return 'Today';
-    if (isYesterday) return 'Yesterday';
+ if (isToday) return 'Today';
+ if (isYesterday) return 'Yesterday';
 
-    return format(date, 'dd MMM yyyy');
-  } catch (e) {
-    return String(dateInput);
-  }
+ return format(date, 'dd MMM yyyy');
+ } catch (e) {
+ return String(dateInput);
+ }
 }
 
 function formatTime(dateInput: string | number | Date) {
-  try {
-    const date = new Date(dateInput);
-    if (isNaN(date.getTime())) return '';
-    return format(date, 'hh:mm a');
-  } catch (e) {
-    return '';
-  }
+ try {
+ const date = new Date(dateInput);
+ if (isNaN(date.getTime())) return '';
+ return format(date, 'hh:mm a');
+ } catch (e) {
+ return '';
+ }
 }
 
 function formatFullDate(dateInput: string | number | Date) {
-  try {
-    const date = new Date(dateInput);
-    if (isNaN(date.getTime())) return String(dateInput);
-    return format(date, 'EEEE, MMMM d, yyyy');
-  } catch (e) {
-    return String(dateInput);
-  }
+ try {
+ const date = new Date(dateInput);
+ if (isNaN(date.getTime())) return String(dateInput);
+ return format(date, 'EEEE, MMMM d, yyyy');
+ } catch (e) {
+ return String(dateInput);
+ }
 }
 
 function formatDateToMDY(dateStr: string) {
-  if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-');
-  return `${m}/${d}/${y}`;
+ if (!dateStr) return '';
+ const [y, m, d] = dateStr.split('-');
+ return `${m}/${d}/${y}`;
 }
 
 const CustomDatePicker: React.FC<{
-  label: string;
-  value: string;
-  onChange: (val: string) => void;
-  iconColor?: string;
-  className?: string;
-  disabled?: boolean;
-}> = ({ label, value, onChange, iconColor = "text-primary", className, disabled }) => {
-  const dayOfWeek = value ? new Date(value).toLocaleDateString('en-US', { weekday: 'long' }) : 'All Time';
-  
-  return (
-    <div className={cn(
-      "relative group flex items-center gap-3 px-4 py-3 hover:bg-black/5  transition-colors cursor-pointer h-full",
-      disabled && "opacity-50 cursor-not-allowed pointer-events-none",
-      className
-    )}>
-      {/* Technical Grid Background */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
-      
-      <CalendarIcon size={18} className={iconColor} />
-      <div className="flex flex-col flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest leading-none">
-            {label}
-          </label>
-          <span className="text-[8px] text-primary/50 font-mono font-bold uppercase tracking-tighter">
-            {dayOfWeek}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-black text-foreground tracking-tight truncate">
-            {value ? formatDateToMDY(value) : "Select Date"}
-          </span>
-          <ChevronDown size={12} className="text-muted-foreground ml-2 opacity-30 group-hover:opacity-100 transition-opacity" />
-        </div>
-      </div>
-      <input
-        type="date"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed z-20"
-      />
-    </div>
-  );
+ label: string;
+ value: string;
+ onChange: (val: string) => void;
+ iconColor?: string;
+ className?: string;
+ disabled?: boolean;
+}> = ({ label, value, onChange, iconColor = "text-amber-600 dark:text-amber-400", className, disabled }) => {
+ const dayOfWeek = value ? new Date(value).toLocaleDateString('en-US', { weekday: 'long' }) : 'All Time';
+ 
+ return (
+ <div className={cn(
+ "relative group flex items-center gap-3 px-4 py-3 hover:bg-black/5 transition-colors cursor-pointer h-full",
+ disabled && "opacity-50 cursor-not-allowed pointer-events-none",
+ className
+ )}>
+ {/* Technical Grid Background */}
+ <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+ style={{ backgroundImage: 'radial-gradient(circle, currentColor 1px, transparent 1px)', backgroundSize: '12px 12px' }} />
+ 
+ <CalendarIcon size={18} className={iconColor} />
+ <div className="flex flex-col flex-1 min-w-0">
+ <div className="flex items-center justify-between mb-1">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest leading-none">
+ {label}
+ </label>
+ <span className="text-[8px] text-amber-600 dark:text-amber-400/50 font-mono font-bold uppercase tracking-tighter">
+ {dayOfWeek}
+ </span>
+ </div>
+ <div className="flex items-center justify-between">
+ <span className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight truncate">
+ {value ? formatDateToMDY(value) : "Select Date"}
+ </span>
+ <ChevronDown size={12} className="text-slate-700 dark:text-slate-300 ml-2 opacity-30 group-hover:opacity-100 transition-opacity" />
+ </div>
+ </div>
+ <input
+ type="date"
+ value={value}
+ onChange={(e) => onChange(e.target.value)}
+ disabled={disabled}
+ className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed z-20"
+ />
+ </div>
+ );
 };
 
 // Removed redundant OperationType and FirestoreErrorInfo definitions (moved to firebase.ts)
 
 const generateReceiptHTML = (sale: Omit<Sale, 'id'>, settings: ShopSettings | null) => {
-  return renderToString(<PrintView sale={sale} settings={settings} />);
+ return renderToString(<PrintView sale={sale} settings={settings} />);
 };
 
 const generateConsolidatedReceiptHTML = (sales: Sale[], settings: ShopSettings | null, from: string, to: string) => {
-  return renderToString(<PrintView sales={sales} settings={settings} from={from} to={to} isConsolidated={true} />);
+ return renderToString(<PrintView sales={sales} settings={settings} from={from} to={to} isConsolidated={true} />);
 };
 
 
 const pad = (str, len, align='left') => {
-  str = String(str);
-  if (str.length >= len) return str.substring(0, len);
-  if (align === 'right') return str.padStart(len, ' ');
-  if (align === 'center') return str.padStart(Math.floor((len - str.length)/2) + str.length, ' ').padEnd(len, ' ');
-  return str.padEnd(len, ' ');
+ str = String(str);
+ if (str.length >= len) return str.substring(0, len);
+ if (align === 'right') return str.padStart(len, ' ');
+ if (align === 'center') return str.padStart(Math.floor((len - str.length)/2) + str.length, ' ').padEnd(len, ' ');
+ return str.padEnd(len, ' ');
 };
 
 const generateReceiptText = (sale: Omit<Sale, 'id'>, settings: ShopSettings | null) => {
-  let text = '';
-  const C = 32; 
-  if (settings?.receiptHeader) {
-    text += settings.receiptHeader.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
-  }
-  if (!settings?.hideShopNameOnReceipt) {
-    text += pad(settings?.name || "NAIL PRO BEAUTY STUDIO", C, 'center') + '\n';
-  }
-  if (settings?.addr) {
-    text += settings.addr.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
-  }
-  if (settings?.ph) {
-    text += pad(`Ph: ${settings.ph}`, C, 'center') + '\n';
-  }
-  text += '-'.repeat(C) + '\n';
-  if (!settings?.hideDateTimeOnReceipt) {
-    text += `Date: ${new Date(sale.dateTime).toLocaleString()}\n`;
-  }
-  if (!settings?.hideStaffNameOnReceipt) {
-    let itemStaffNames: string[] = [];
-    sale.items.forEach((item) => {
-      if (item.staffAssignments && item.staffAssignments.length > 0) {
-        itemStaffNames.push(...item.staffAssignments.map((a: any) => a.name));
-      } else if (item.staffName) {
-        itemStaffNames.push(item.staffName);
-      }
-    });
-    const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
-    if (uniqueStaff.length > 0) {
-      text += `Staff: ${uniqueStaff.join(', ')}\n`;
-    } else if (sale.staff) {
-      text += `Staff: ${sale.staff}\n`;
-    }
-  }
-  text += '-'.repeat(C) + '\n';
-  text += pad('Item', 14) + pad('Qty', 4, 'center') + pad('Price', 6, 'right') + pad('Amt', 8, 'right') + '\n';
-  text += '-'.repeat(C) + '\n';
-  let subTotal = 0;
-  let totalDiscount = 0;
-  sale.items.forEach(item => {
-    const sub = item.price * item.qty;
-    const netSub = sub - (sub * ((item.disP || 0) / 100));
-    subTotal += sub;
-    totalDiscount += (sub - netSub);
-    let name = item.name.substring(0, 14);
-    text += pad(name, 14) + pad(String(item.qty), 4, 'center') + pad(String(item.price), 6, 'right') + pad(String(netSub), 8, 'right') + '\n';
-    if ((item.disP || 0) > 0) {
-      text += `  (-${item.disP}%)\n`;
-    }
-  });
-  text += '-'.repeat(C) + '\n';
-  if (totalDiscount > 0) {
-    text += pad('Sub Total', 20, 'right') + pad(`${subTotal} Ks`, 12, 'right') + '\n';
-    text += pad('Discount', 20, 'right') + pad(`-${totalDiscount} Ks`, 12, 'right') + '\n';
-  }
-  text += pad('NET TOTAL', 20, 'right') + pad(`${sale.total} Ks`, 12, 'right') + '\n';
-  if (!settings?.hideLoyaltyPointsOnReceipt && (sale.pointsEarned || sale.pointsRedeemed)) {
-    if (sale.pointsEarned) text += pad('Pts Earned', 20, 'right') + pad(`+${sale.pointsEarned}`, 12, 'right') + '\n';
-    if (sale.pointsRedeemed) text += pad('Pts Redeemed', 20, 'right') + pad(`-${sale.pointsRedeemed}`, 12, 'right') + '\n';
-  }
-  text += '-'.repeat(C) + '\n';
-  const footerText = settings?.receiptFooter || "Thank You! Please Come Again";
-  text += footerText.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
-  text += '\n\n';
-  return text;
+ let text = '';
+ const C = 32; 
+ if (settings?.receiptHeader) {
+ text += settings.receiptHeader.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
+ }
+ if (!settings?.hideShopNameOnReceipt) {
+ text += pad(settings?.name || "NAIL PRO BEAUTY STUDIO", C, 'center') + '\n';
+ }
+ if (settings?.addr) {
+ text += settings.addr.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
+ }
+ if (settings?.ph) {
+ text += pad(`Ph: ${settings.ph}`, C, 'center') + '\n';
+ }
+ text += '-'.repeat(C) + '\n';
+ if (!settings?.hideDateTimeOnReceipt) {
+ text += `Date: ${new Date(sale.dateTime).toLocaleString()}\n`;
+ }
+ if (!settings?.hideStaffNameOnReceipt) {
+ let itemStaffNames: string[] = [];
+ sale.items.forEach((item) => {
+ if (item.staffAssignments && item.staffAssignments.length > 0) {
+ itemStaffNames.push(...item.staffAssignments.map((a: any) => a.name));
+ } else if (item.staffName) {
+ itemStaffNames.push(item.staffName);
+ }
+ });
+ const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
+ if (uniqueStaff.length > 0) {
+ text += `Staff: ${uniqueStaff.join(', ')}\n`;
+ } else if (sale.staff) {
+ text += `Staff: ${sale.staff}\n`;
+ }
+ }
+ text += '-'.repeat(C) + '\n';
+ text += pad('Item', 14) + pad('Qty', 4, 'center') + pad('Price', 6, 'right') + pad('Amt', 8, 'right') + '\n';
+ text += '-'.repeat(C) + '\n';
+ let subTotal = 0;
+ let totalDiscount = 0;
+ sale.items.forEach(item => {
+ const sub = item.price * item.qty;
+ const netSub = sub - (sub * ((item.disP || 0) / 100));
+ subTotal += sub;
+ totalDiscount += (sub - netSub);
+ let name = item.name.substring(0, 14);
+ text += pad(name, 14) + pad(String(item.qty), 4, 'center') + pad(String(item.price), 6, 'right') + pad(String(netSub), 8, 'right') + '\n';
+ if ((item.disP || 0) > 0) {
+ text += ` (-${item.disP}%)\n`;
+ }
+ });
+ text += '-'.repeat(C) + '\n';
+ if (totalDiscount > 0) {
+ text += pad('Sub Total', 20, 'right') + pad(`${subTotal} Ks`, 12, 'right') + '\n';
+ text += pad('Discount', 20, 'right') + pad(`-${totalDiscount} Ks`, 12, 'right') + '\n';
+ }
+ text += pad('NET TOTAL', 20, 'right') + pad(`${sale.total} Ks`, 12, 'right') + '\n';
+ if (!settings?.hideLoyaltyPointsOnReceipt && (sale.pointsEarned || sale.pointsRedeemed)) {
+ if (sale.pointsEarned) text += pad('Pts Earned', 20, 'right') + pad(`+${sale.pointsEarned}`, 12, 'right') + '\n';
+ if (sale.pointsRedeemed) text += pad('Pts Redeemed', 20, 'right') + pad(`-${sale.pointsRedeemed}`, 12, 'right') + '\n';
+ }
+ text += '-'.repeat(C) + '\n';
+ const footerText = settings?.receiptFooter || "Thank You! Please Come Again";
+ text += footerText.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
+ text += '\n\n';
+ return text;
 };
 
 
 const triggerRawbtPrint = (text: string) => {
-  try {
-    const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(text))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
-    const a = document.createElement('a');
-    a.href = rawbtUrl;
-    a.style.display = 'none';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-    }, 1000);
-  } catch(e) {
-    console.error('Failed to trigger RawBT', e);
-    alert('Failed to open RawBT: ' + String(e));
-  }
+ try {
+ const rawbtUrl = "intent:base64," + btoa(unescape(encodeURIComponent(text))) + "#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;";
+ const a = document.createElement('a');
+ a.href = rawbtUrl;
+ a.style.display = 'none';
+ document.body.appendChild(a);
+ a.click();
+ setTimeout(() => {
+ document.body.removeChild(a);
+ }, 1000);
+ } catch(e) {
+ console.error('Failed to trigger RawBT', e);
+ alert('Failed to open RawBT: ' + String(e));
+ }
 };
 
 const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings | null, from: string, to: string) => {
-  let text = '';
-  const C = 32;
-  if (settings?.receiptHeader) {
-    text += settings.receiptHeader.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
-  }
-  if (!settings?.hideShopNameOnReceipt) {
-    text += pad(settings?.name || "NAIL PRO BEAUTY STUDIO", C, 'center') + '\n';
-  }
-  text += pad("CONSOLIDATED SALES REPORT", C, 'center') + '\n';
-  text += `From: ${from}\n`;
-  text += `To: ${to}\n`;
-  text += '-'.repeat(C) + '\n';
-  
-  let grandTotal = 0;
-  sales.forEach((sale, idx) => {
-    text += `Sale #${idx + 1}\n`;
-    if (!settings?.hideDateTimeOnReceipt) text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\n`;
-    
-    if (!settings?.hideStaffNameOnReceipt) {
-      let itemStaffNames: string[] = [];
-      sale.items.forEach((item) => {
-        if (item.staffAssignments && item.staffAssignments.length > 0) {
-          itemStaffNames.push(...item.staffAssignments.map((a: any) => a.name));
-        } else if (item.staffName) {
-          itemStaffNames.push(item.staffName);
-        }
-      });
-      const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
-      if (uniqueStaff.length > 0) text += `Staff: ${uniqueStaff.join(', ')}\n`;
-      else if (sale.staff) text += `Staff: ${sale.staff}\n`;
-    }
-    
-    text += pad('Item', 14) + pad('Qty', 4, 'center') + pad('Price', 6, 'right') + pad('Amt', 8, 'right') + '\n';
-    text += '-'.repeat(C) + '\n';
-    
-    let subTotal = 0;
-    let totalDiscount = 0;
-    sale.items.forEach(item => {
-      const sub = item.price * item.qty;
-      const netSub = sub - (sub * ((item.disP || 0) / 100));
-      subTotal += sub;
-      totalDiscount += (sub - netSub);
-      let name = item.name.substring(0, 14);
-      text += pad(name, 14) + pad(String(item.qty), 4, 'center') + pad(String(item.price), 6, 'right') + pad(String(netSub), 8, 'right') + '\n';
-      if ((item.disP || 0) > 0) {
-        text += `  (-${item.disP}%)\n`;
-      }
-    });
-    
-    if (totalDiscount > 0) {
-      text += pad('Sub Total', 20, 'right') + pad(`${subTotal} Ks`, 12, 'right') + '\n';
-      text += pad('Discount', 20, 'right') + pad(`-${totalDiscount} Ks`, 12, 'right') + '\n';
-    }
-    text += pad('Sale Total', 20, 'right') + pad(`${sale.total} Ks`, 12, 'right') + '\n';
-    text += '-'.repeat(C) + '\n';
-    grandTotal += sale.total;
-  });
-  
-  text += pad('GRAND TOTAL', 16) + pad(`${grandTotal} Ks`, 16, 'right') + '\n';
-  text += '-'.repeat(C) + '\n';
-  const footerText = settings?.receiptFooter || "Thank You! Please Come Again";
-  text += footerText.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
-  text += '\n\n';
-  return text;
+ let text = '';
+ const C = 32;
+ if (settings?.receiptHeader) {
+ text += settings.receiptHeader.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
+ }
+ if (!settings?.hideShopNameOnReceipt) {
+ text += pad(settings?.name || "NAIL PRO BEAUTY STUDIO", C, 'center') + '\n';
+ }
+ text += pad("CONSOLIDATED SALES REPORT", C, 'center') + '\n';
+ text += `From: ${from}\n`;
+ text += `To: ${to}\n`;
+ text += '-'.repeat(C) + '\n';
+ 
+ let grandTotal = 0;
+ sales.forEach((sale, idx) => {
+ text += `Sale #${idx + 1}\n`;
+ if (!settings?.hideDateTimeOnReceipt) text += `Time: ${new Date(sale.dateTime).toLocaleTimeString()}\n`;
+ 
+ if (!settings?.hideStaffNameOnReceipt) {
+ let itemStaffNames: string[] = [];
+ sale.items.forEach((item) => {
+ if (item.staffAssignments && item.staffAssignments.length > 0) {
+ itemStaffNames.push(...item.staffAssignments.map((a: any) => a.name));
+ } else if (item.staffName) {
+ itemStaffNames.push(item.staffName);
+ }
+ });
+ const uniqueStaff = Array.from(new Set(itemStaffNames.filter(Boolean)));
+ if (uniqueStaff.length > 0) text += `Staff: ${uniqueStaff.join(', ')}\n`;
+ else if (sale.staff) text += `Staff: ${sale.staff}\n`;
+ }
+ 
+ text += pad('Item', 14) + pad('Qty', 4, 'center') + pad('Price', 6, 'right') + pad('Amt', 8, 'right') + '\n';
+ text += '-'.repeat(C) + '\n';
+ 
+ let subTotal = 0;
+ let totalDiscount = 0;
+ sale.items.forEach(item => {
+ const sub = item.price * item.qty;
+ const netSub = sub - (sub * ((item.disP || 0) / 100));
+ subTotal += sub;
+ totalDiscount += (sub - netSub);
+ let name = item.name.substring(0, 14);
+ text += pad(name, 14) + pad(String(item.qty), 4, 'center') + pad(String(item.price), 6, 'right') + pad(String(netSub), 8, 'right') + '\n';
+ if ((item.disP || 0) > 0) {
+ text += ` (-${item.disP}%)\n`;
+ }
+ });
+ 
+ if (totalDiscount > 0) {
+ text += pad('Sub Total', 20, 'right') + pad(`${subTotal} Ks`, 12, 'right') + '\n';
+ text += pad('Discount', 20, 'right') + pad(`-${totalDiscount} Ks`, 12, 'right') + '\n';
+ }
+ text += pad('Sale Total', 20, 'right') + pad(`${sale.total} Ks`, 12, 'right') + '\n';
+ text += '-'.repeat(C) + '\n';
+ grandTotal += sale.total;
+ });
+ 
+ text += pad('GRAND TOTAL', 16) + pad(`${grandTotal} Ks`, 16, 'right') + '\n';
+ text += '-'.repeat(C) + '\n';
+ const footerText = settings?.receiptFooter || "Thank You! Please Come Again";
+ text += footerText.split('\n').map(l => pad(l, C, 'center')).join('\n') + '\n';
+ text += '\n\n';
+ return text;
 };
 
 
@@ -483,9681 +484,9625 @@ const generateConsolidatedReceiptText = (sales: Sale[], settings: ShopSettings |
 type ThemeType = 'gold' | 'rose' | 'midnight';
 
 interface ThemeContextType {
-  theme: ThemeType;
-  setTheme: (theme: ThemeType) => void;
+ theme: ThemeType;
+ setTheme: (theme: ThemeType) => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<ThemeType>('gold');
+ const [theme, setThemeState] = useState<ThemeType>('gold');
 
-  useEffect(() => {
-    const initializeTheme = async () => {
-      try {
-        const { value } = await Preferences.get({ key: 'app_theme' });
-        const savedTheme = value as ThemeType | null;
-        
-        if (savedTheme && ['gold', 'rose', 'midnight'].includes(savedTheme)) {
-          setThemeState(savedTheme);
-          document.documentElement.className = ''; document.documentElement.classList.add(savedTheme || 'gold');
-        } else {
-          const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          const systemTheme = isDark ? 'midnight' : 'gold';
-          setThemeState(systemTheme);
-          document.documentElement.className = ''; document.documentElement.classList.add(systemTheme || 'gold');
-          await Preferences.set({ key: 'app_theme', value: systemTheme });
-        }
-      } catch (err) {
-        console.warn('Failed to load initial theme:', err);
-      }
-    };
-    
-    initializeTheme();
-  }, []);
+ useEffect(() => {
+ const initializeTheme = async () => {
+ try {
+ const { value } = await Preferences.get({ key: 'app_theme' });
+ const savedTheme = value as ThemeType | null;
+ 
+ if (savedTheme && ['gold', 'rose', 'midnight'].includes(savedTheme)) {
+ setThemeState(savedTheme);
+ document.documentElement.className = ''; document.documentElement.classList.add(savedTheme || 'gold');
+ } else {
+ const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+ const systemTheme = isDark ? 'midnight' : 'gold';
+ setThemeState(systemTheme);
+ document.documentElement.className = ''; document.documentElement.classList.add(systemTheme || 'gold');
+ await Preferences.set({ key: 'app_theme', value: systemTheme });
+ }
+ } catch (err) {
+ console.warn('Failed to load initial theme:', err);
+ }
+ };
+ 
+ initializeTheme();
+ }, []);
 
-  const setTheme = async (newTheme: ThemeType) => {
-    setThemeState(newTheme);
-    try {
-      document.documentElement.className = ''; document.documentElement.classList.add(newTheme || 'gold');
-      await Preferences.set({ key: 'app_theme', value: newTheme });
-    } catch (err) {
-      console.warn('Failed to save theme:', err);
-    }
-  };
+ const setTheme = async (newTheme: ThemeType) => {
+ setThemeState(newTheme);
+ try {
+ document.documentElement.className = ''; document.documentElement.classList.add(newTheme || 'gold');
+ await Preferences.set({ key: 'app_theme', value: newTheme });
+ } catch (err) {
+ console.warn('Failed to save theme:', err);
+ }
+ };
 
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+ return (
+ <ThemeContext.Provider value={{ theme, setTheme }}>
+ {children}
+ </ThemeContext.Provider>
+ );
 };
 
 export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) throw new Error('useTheme must be used within ThemeProvider');
-  return context;
+ const context = useContext(ThemeContext);
+ if (!context) throw new Error('useTheme must be used within ThemeProvider');
+ return context;
 };
 
 // --- Auth Context ---
 interface AuthContextType {
-  user: User | null;
-  profile: UserProfile | null;
-  loading: boolean;
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
-  isOwner: boolean;
-  isCashier: boolean;
-  isStaff: boolean;
-  isStaffMember: boolean;
-  isCustomer: boolean;
-  login: () => Promise<void>;
-  loginWithEmail: (email: string, pass: string) => Promise<void>;
-  loginWithPhone: (phone: string, pass: string) => Promise<void>;
-  signUp: (email: string, pass: string, name: string) => Promise<void>;
-  signUpWithPhone: (phone: string, pass: string, dob: string, name: string) => Promise<void>;
-  resetPassword: (email: string) => Promise<void>;
-  resetPasswordWithIdentity: (phone: string, name: string, dob: string, newPass: string) => Promise<void>;
-  changePassword: (currentPass: string, newPass: string) => Promise<void>;
-  forceChangePassword: (newPass: string) => Promise<void>;
-  logout: () => Promise<void>;
-  error: string | null;
-  setError: (msg: string | null) => void;
+ user: User | null;
+ profile: UserProfile | null;
+ loading: boolean;
+ isAdmin: boolean;
+ isSuperAdmin: boolean;
+ isOwner: boolean;
+ isCashier: boolean;
+ isStaff: boolean;
+ isStaffMember: boolean;
+ isCustomer: boolean;
+ login: () => Promise<void>;
+ loginWithEmail: (email: string, pass: string) => Promise<void>;
+ loginWithPhone: (phone: string, pass: string) => Promise<void>;
+ signUp: (email: string, pass: string, name: string) => Promise<void>;
+ signUpWithPhone: (phone: string, pass: string, dob: string, name: string) => Promise<void>;
+ resetPassword: (email: string) => Promise<void>;
+ resetPasswordWithIdentity: (phone: string, name: string, dob: string, newPass: string) => Promise<void>;
+ changePassword: (currentPass: string, newPass: string) => Promise<void>;
+ forceChangePassword: (newPass: string) => Promise<void>;
+ logout: () => Promise<void>;
+ error: string | null;
+ setError: (msg: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthReady, setIsAuthReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+ const [user, setUser] = useState<User | null>(null);
+ const [profile, setProfile] = useState<UserProfile | null>(null);
+ const [loading, setLoading] = useState(true);
+ const [isAuthReady, setIsAuthReady] = useState(false);
+ const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let unsubProfile: (() => void) | null = null;
-    
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      if (unsubProfile) {
-        unsubProfile();
-        unsubProfile = null;
-      }
+ useEffect(() => {
+ let unsubProfile: (() => void) | null = null;
+ 
+ const unsubscribe = onAuthStateChanged(auth, (u) => {
+ if (unsubProfile) {
+ unsubProfile();
+ unsubProfile = null;
+ }
 
-      if (u) {
-        setUser(u);
-        const email = u.email!.toLowerCase();
-        const docRef = doc(db, 'users', email);
-        let initDone = false;
+ if (u) {
+ setUser(u);
+ const email = u.email!.toLowerCase();
+ const docRef = doc(db, 'users', email);
+ let initDone = false;
 
-        getDocFromCache(docRef).then(docSnap => {
-          if (docSnap.exists()) {
-             setProfile(docSnap.data() as UserProfile);
-             setLoading(false);
-             setIsAuthReady(true);
-          }
-        }).catch(() => {});
+ getDocFromCache(docRef).then(docSnap => {
+ if (docSnap.exists()) {
+ setProfile(docSnap.data() as UserProfile);
+ setLoading(false);
+ setIsAuthReady(true);
+ }
+ }).catch(() => {});
 
-        unsubProfile = onSnapshot(docRef, (docSnap) => {
-          try {
-            if (!docSnap.exists()) {
-              if (!initDone) {
-                initDone = true;
-                const now = new Date().toISOString();
-                let currentRole = (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) ? 'super_admin' : 'customer';
-                const profileData: any = {
-                  name: u.displayName || (currentRole === 'super_admin' ? 'Admin' : 'Customer'),
-                  email: email,
-                  role: currentRole as any,
-                  commission: 0,
-                  uid: u.uid,
-                  points: 0,
-                  status: 'active',
-                  createdAt: now,
-                  updatedAt: now
-                };
-                
-                // Do not await this so it doesn't block UI if offline.
-                setDoc(docRef, profileData).catch(err => console.error("setDoc failed", err));
+ unsubProfile = onSnapshot(docRef, (docSnap) => {
+ try {
+ if (!docSnap.exists()) {
+ if (!initDone) {
+ initDone = true;
+ const now = new Date().toISOString();
+ let currentRole = (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) ? 'super_admin' : 'customer';
+ const profileData: any = {
+ name: u.displayName || (currentRole === 'super_admin' ? 'Admin' : 'Customer'),
+ email: email,
+ role: currentRole as any,
+ commission: 0,
+ uid: u.uid,
+ points: 0,
+ status: 'active',
+ createdAt: now,
+ updatedAt: now
+ };
+ 
+ // Do not await this so it doesn't block UI if offline.
+ setDoc(docRef, profileData).catch(err => console.error("setDoc failed", err));
 
-                if (currentRole === 'customer') {
-                   getDocs(query(collection(db, 'customers'), where('email', '==', email))).then(custSnap => {
-                       if (custSnap.empty) {
-                          addDoc(collection(db, 'customers'), {
-                            name: profileData.name,
-                            email: email,
-                            phone: '',
-                            address: '',
-                            notes: 'Registered via Google Sign-In',
-                            points: 0,
-                            totalVisits: 0,
-                            totalSpent: 0
-                          }).catch(err => console.error("addDoc customer failed", err));
-                       }
-                   }).catch(err => console.error("getDocs customers failed", err));
-                }
-                
-                // Optimistically set profile to allow app load
-                setProfile(profileData as UserProfile);
-              }
-            } else {
-               const data = docSnap.data();
-               if (data?.status === 'deleted') {
-                  signOut(auth);
-                  setUser(null);
-                  setProfile(null);
-                  setLoading(false);
-                  setIsAuthReady(true);
-                  return;
-               }
-               setProfile(data as UserProfile);
-               
-               // Background admin/uid sync
-               if (!initDone) {
-                 initDone = true;
-                 const now = new Date().toISOString();
-                 let updates: any = {};
-                 if (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '') && data?.role !== 'super_admin') {
-                   updates.role = 'super_admin';
-                   updates.updatedAt = now;
-                 }
-                 if (!data?.uid || !data?.createdAt) {
-                   updates.uid = u.uid;
-                   updates.createdAt = data?.createdAt || now;
-                   updates.updatedAt = now;
-                 }
-                 if (Object.keys(updates).length > 0) {
-                    setDoc(docRef, updates, { merge: true }).catch(e => console.error("update doc failed", e));
-                 }
-               }
-            }
-            setLoading(false);
-            setIsAuthReady(true);
-          } catch (err) {
-             console.error("Profile onSnapshot handler error:", err);
-             setLoading(false);
-             setIsAuthReady(true);
-          }
-        }, (err) => {
-          console.error("Profile snapshot error:", err);
-          if (err.message.includes('permission-denied')) { 
-            signOut(auth);
-          }
-          setLoading(false);
-          setIsAuthReady(true);
-        });
-      } else {
-        setUser(null);
-        setProfile(null);
-        setLoading(false);
-        setIsAuthReady(true);
-      }
-    });
+ if (currentRole === 'customer') {
+ getDocs(query(collection(db, 'customers'), where('email', '==', email))).then(custSnap => {
+ if (custSnap.empty) {
+ addDoc(collection(db, 'customers'), {
+ name: profileData.name,
+ email: email,
+ phone: '',
+ address: '',
+ notes: 'Registered via Google Sign-In',
+ points: 0,
+ totalVisits: 0,
+ totalSpent: 0
+ }).catch(err => console.error("addDoc customer failed", err));
+ }
+ }).catch(err => console.error("getDocs customers failed", err));
+ }
+ 
+ // Optimistically set profile to allow app load
+ setProfile(profileData as UserProfile);
+ }
+ } else {
+ const data = docSnap.data();
+ if (data?.status === 'deleted') {
+ signOut(auth);
+ setUser(null);
+ setProfile(null);
+ setLoading(false);
+ setIsAuthReady(true);
+ return;
+ }
+ setProfile(data as UserProfile);
+ 
+ // Background admin/uid sync
+ if (!initDone) {
+ initDone = true;
+ const now = new Date().toISOString();
+ let updates: any = {};
+ if (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '') && data?.role !== 'super_admin') {
+ updates.role = 'super_admin';
+ updates.updatedAt = now;
+ }
+ if (!data?.uid || !data?.createdAt) {
+ updates.uid = u.uid;
+ updates.createdAt = data?.createdAt || now;
+ updates.updatedAt = now;
+ }
+ if (Object.keys(updates).length > 0) {
+ setDoc(docRef, updates, { merge: true }).catch(e => console.error("update doc failed", e));
+ }
+ }
+ }
+ setLoading(false);
+ setIsAuthReady(true);
+ } catch (err) {
+ console.error("Profile onSnapshot handler error:", err);
+ setLoading(false);
+ setIsAuthReady(true);
+ }
+ }, (err) => {
+ console.error("Profile snapshot error:", err);
+ if (err.message.includes('permission-denied')) { 
+ signOut(auth);
+ }
+ setLoading(false);
+ setIsAuthReady(true);
+ });
+ } else {
+ setUser(null);
+ setProfile(null);
+ setLoading(false);
+ setIsAuthReady(true);
+ }
+ });
 
-    return () => {
-      unsubscribe();
-      if (unsubProfile) unsubProfile();
-    };
-  }, []);  const isLoggingIn = useRef(false);
-  const googleProvider = useMemo(() => new GoogleAuthProvider(), []);
+ return () => {
+ unsubscribe();
+ if (unsubProfile) unsubProfile();
+ };
+ }, []); const isLoggingIn = useRef(false);
+ const googleProvider = useMemo(() => new GoogleAuthProvider(), []);
 
-  const login = async () => {
-    if (isLoggingIn.current) return;
-    isLoggingIn.current = true;
-    setError(null);
-    try {
-      // Ensure auth is ready before attempting login
-      if (!auth) throw new Error("Firebase Auth not initialized");
-      
-      if (Capacitor.isNativePlatform()) {
-        try {
-          GoogleAuth.initialize();
-          const googleUser = await GoogleAuth.signIn();
-          if (googleUser && googleUser.authentication && googleUser.authentication.idToken) {
-            const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
-            await signInWithCredential(auth, credential);
-          } else {
-            throw new Error('Google Auth did not return an ID token');
-          }
-        } catch (nativeErr) {
-          console.error("Capacitor Google Auth error");
-          throw nativeErr;
-        }
-      } else {
-        await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-      }
-    } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
-      } else if (err.code === 'auth/cancelled-popup-request') {
-      } else if (err.code === 'auth/network-request-failed') {
-        console.error("Login Error");
-        setError("Login failed. If you are in preview, please open the app in a new tab using the icon in the top right, or check your internet connection.");
-      } else {
-        console.error("Login Error");
-        setError("Google login failed: " + (err.message || "Unknown error"));
-      }
-    } finally {
-      isLoggingIn.current = false;
-    }
-  };
+ const login = async () => {
+ if (isLoggingIn.current) return;
+ isLoggingIn.current = true;
+ setError(null);
+ try {
+ // Ensure auth is ready before attempting login
+ if (!auth) throw new Error("Firebase Auth not initialized");
+ 
+ if (Capacitor.isNativePlatform()) {
+ try {
+ GoogleAuth.initialize();
+ const googleUser = await GoogleAuth.signIn();
+ if (googleUser && googleUser.authentication && googleUser.authentication.idToken) {
+ const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
+ await signInWithCredential(auth, credential);
+ } else {
+ throw new Error('Google Auth did not return an ID token');
+ }
+ } catch (nativeErr) {
+ console.error("Capacitor Google Auth error");
+ throw nativeErr;
+ }
+ } else {
+ await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
+ }
+ } catch (err: any) {
+ if (err.code === 'auth/popup-closed-by-user') {
+ } else if (err.code === 'auth/cancelled-popup-request') {
+ } else if (err.code === 'auth/network-request-failed') {
+ console.error("Login Error");
+ setError("Login failed. If you are in preview, please open the app in a new tab using the icon in the top right, or check your internet connection.");
+ } else {
+ console.error("Login Error");
+ setError("Google login failed: " + (err.message || "Unknown error"));
+ }
+ } finally {
+ isLoggingIn.current = false;
+ }
+ };
 
-  const loginWithEmail = async (email: string, pass: string) => {
-    setError(null);
-    const cleanEmail = email.trim().toLowerCase();
-    try {
-      const res = await signInWithEmailAndPassword(auth, cleanEmail, pass);
-      // Check if user document exists in Firestore
-      const docRef = doc(db, 'users', cleanEmail);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        await signOut(auth);
-        const msg = "This account no longer exists.";
-        setError(msg);
-        throw new Error(msg);
-      }
-      
-      if (docSnap.data()?.status === 'deleted') {
-        await signOut(auth);
-        const msg = "Your account has been deleted by Admin.";
-        setError(msg);
-        throw new Error(msg);
-      }
-    } catch (err: any) {
-      const errCode = err.code || "";
-      const errMessage = err.message || "";
-      
-      // Only log unexpected errors
-      if (!['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(errCode)) {
-        console.error("Email Login Error");
-      }
-      
-      let msg = "";
+ const loginWithEmail = async (email: string, pass: string) => {
+ setError(null);
+ const cleanEmail = email.trim().toLowerCase();
+ try {
+ const res = await signInWithEmailAndPassword(auth, cleanEmail, pass);
+ // Check if user document exists in Firestore
+ const docRef = doc(db, 'users', cleanEmail);
+ const docSnap = await getDoc(docRef);
+ 
+ if (!docSnap.exists()) {
+ await signOut(auth);
+ const msg = "This account no longer exists.";
+ setError(msg);
+ throw new Error(msg);
+ }
+ 
+ if (docSnap.data()?.status === 'deleted') {
+ await signOut(auth);
+ const msg = "Your account has been deleted by Admin.";
+ setError(msg);
+ throw new Error(msg);
+ }
+ } catch (err: any) {
+ const errCode = err.code || "";
+ const errMessage = err.message || "";
+ 
+ // Only log unexpected errors
+ if (!['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(errCode)) {
+ console.error("Email Login Error");
+ }
+ 
+ let msg = "";
 
-      if (errCode === 'auth/operation-not-allowed' || errMessage.includes('operation-not-allowed')) {
-        msg = "Email/Password login is not enabled in your Firebase Console. Please go to: https://console.firebase.google.com/project/gen-lang-client-0270863630/authentication/providers and enable 'Email/Password'.";
-      } else if (errCode === 'auth/invalid-email' || errMessage.includes('invalid-email')) {
-        msg = "The email address is not valid.";
-      } else if (errCode === 'auth/network-request-failed' || errMessage.includes('network-request-failed')) {
-        msg = "Network error. This can happen if your internet is unstable or if the Firebase Auth service is unreachable. Please check your connection and try again. If the problem persists, ensure that your domain is authorized in the Firebase Console.";
-      } else if (errCode === 'auth/user-not-found' || errCode === 'auth/wrong-password' || errCode === 'auth/invalid-credential' || 
-                 errMessage.includes('user-not-found') || errMessage.includes('wrong-password') || errMessage.includes('invalid-credential')) {
-        msg = "Invalid email or password. Please check your credentials or use 'Sign Up' if you are new.";
-      } else {
-        msg = "Login failed: " + (err.message || "Unknown error");
-      }
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+ if (errCode === 'auth/operation-not-allowed' || errMessage.includes('operation-not-allowed')) {
+ msg = "Email/Password login is not enabled in your Firebase Console. Please go to: https://console.firebase.google.com/project/gen-lang-client-0270863630/authentication/providers and enable 'Email/Password'.";
+ } else if (errCode === 'auth/invalid-email' || errMessage.includes('invalid-email')) {
+ msg = "The email address is not valid.";
+ } else if (errCode === 'auth/network-request-failed' || errMessage.includes('network-request-failed')) {
+ msg = "Network error. This can happen if your internet is unstable or if the Firebase Auth service is unreachable. Please check your connection and try again. If the problem persists, ensure that your domain is authorized in the Firebase Console.";
+ } else if (errCode === 'auth/user-not-found' || errCode === 'auth/wrong-password' || errCode === 'auth/invalid-credential' || 
+ errMessage.includes('user-not-found') || errMessage.includes('wrong-password') || errMessage.includes('invalid-credential')) {
+ msg = "Invalid email or password. Please check your credentials or use 'Sign Up' if you are new.";
+ } else {
+ msg = "Login failed: " + (err.message || "Unknown error");
+ }
+ setError(msg);
+ throw new Error(msg);
+ }
+ };
 
-  const loginWithPhone = async (phone: string, pass: string) => {
-    setError(null);
-    const cleanPhone = normalizePhone(phone);
-    if (!cleanPhone) {
-      const msg = "Please enter a valid phone number.";
-      setError(msg);
-      throw new Error(msg);
-    }
-    
-    let dummyEmail = `${cleanPhone}@nailpro.com`;
-    
-    try {
-      const q = query(collection(db, 'users'), where('phone', '==', cleanPhone));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        dummyEmail = querySnapshot.docs[0].data().email;
-      }
-    } catch (err) {
-      console.warn("Could not lookup user by phone, falling back to default email format", err);
-    }
-    
-    try {
-      const res = await signInWithEmailAndPassword(auth, dummyEmail, pass);
-      // Check if user document exists in Firestore
-      const docRef = doc(db, 'users', dummyEmail);
-      const docSnap = await getDoc(docRef);
-      
-      if (!docSnap.exists()) {
-        await signOut(auth);
-        const msg = "This account no longer exists.";
-        setError(msg);
-        throw new Error(msg);
-      }
-      
-      if (docSnap.data()?.status === 'deleted') {
-        await signOut(auth);
-        const msg = "Your account has been deleted by Admin.";
-        setError(msg);
-        throw new Error(msg);
-      }
-    } catch (err: any) {
-      const errCode = err.code || "";
-      const errMessage = err.message || "";
-      
-      
-      let msg = "";
-      
-      // auth/invalid-credential is the modern generic error for wrong user or wrong password
-      if (errCode === 'auth/user-not-found' || errCode === 'auth/wrong-password' || errCode === 'auth/invalid-credential' ||
-          errMessage.includes('user-not-found') || errMessage.includes('wrong-password') || errMessage.includes('invalid-credential')) {
-        msg = "Invalid phone number or password. Please check your credentials or use 'Sign Up' if you are new.";
-      } else if (errCode === 'auth/too-many-requests' || errMessage.includes('too-many-requests')) {
-        msg = "Too many failed login attempts. Please try again later or reset your password.";
-      } else if (errCode === 'auth/network-request-failed' || errMessage.includes('network-request-failed')) {
-        msg = "Network error. This can happen if your internet is unstable or if the Firebase Auth service is unreachable. Please check your connection and try again. If the problem persists, ensure that your domain is authorized in the Firebase Console.";
-      } else {
-        msg = "Login failed: " + (err.message || "Unknown error");
-      }
-      
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+ const loginWithPhone = async (phone: string, pass: string) => {
+ setError(null);
+ const cleanPhone = normalizePhone(phone);
+ if (!cleanPhone) {
+ const msg = "Please enter a valid phone number.";
+ setError(msg);
+ throw new Error(msg);
+ }
+ 
+ let dummyEmail = `${cleanPhone}@nailpro.com`;
+ 
+ try {
+ const q = query(collection(db, 'users'), where('phone', '==', cleanPhone));
+ const querySnapshot = await getDocs(q);
+ if (!querySnapshot.empty) {
+ dummyEmail = querySnapshot.docs[0].data().email;
+ }
+ } catch (err) {
+ console.warn("Could not lookup user by phone, falling back to default email format", err);
+ }
+ 
+ try {
+ const res = await signInWithEmailAndPassword(auth, dummyEmail, pass);
+ // Check if user document exists in Firestore
+ const docRef = doc(db, 'users', dummyEmail);
+ const docSnap = await getDoc(docRef);
+ 
+ if (!docSnap.exists()) {
+ await signOut(auth);
+ const msg = "This account no longer exists.";
+ setError(msg);
+ throw new Error(msg);
+ }
+ 
+ if (docSnap.data()?.status === 'deleted') {
+ await signOut(auth);
+ const msg = "Your account has been deleted by Admin.";
+ setError(msg);
+ throw new Error(msg);
+ }
+ } catch (err: any) {
+ const errCode = err.code || "";
+ const errMessage = err.message || "";
+ 
+ 
+ let msg = "";
+ 
+ // auth/invalid-credential is the modern generic error for wrong user or wrong password
+ if (errCode === 'auth/user-not-found' || errCode === 'auth/wrong-password' || errCode === 'auth/invalid-credential' ||
+ errMessage.includes('user-not-found') || errMessage.includes('wrong-password') || errMessage.includes('invalid-credential')) {
+ msg = "Invalid phone number or password. Please check your credentials or use 'Sign Up' if you are new.";
+ } else if (errCode === 'auth/too-many-requests' || errMessage.includes('too-many-requests')) {
+ msg = "Too many failed login attempts. Please try again later or reset your password.";
+ } else if (errCode === 'auth/network-request-failed' || errMessage.includes('network-request-failed')) {
+ msg = "Network error. This can happen if your internet is unstable or if the Firebase Auth service is unreachable. Please check your connection and try again. If the problem persists, ensure that your domain is authorized in the Firebase Console.";
+ } else {
+ msg = "Login failed: " + (err.message || "Unknown error");
+ }
+ 
+ setError(msg);
+ throw new Error(msg);
+ }
+ };
 
-  const signUp = async (email: string, pass: string, name: string) => {
-    setError(null);
-    const cleanEmail = email.trim().toLowerCase();
-    let newlyCreatedUser: any = null;
-    
-    try {
-      // 1. Check for existing user document to preserve role
-      const docRef = doc(db, 'users', cleanEmail);
-      const existingDoc = await getDoc(docRef);
-      let roleToSet: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer' = 'customer';
-      let existingCommission = 0;
-      let existingPhone = '';
-      let existingDob = '';
-      let existingPoints = 0;
-      
-      if (existingDoc.exists()) {
-        const existingData = existingDoc.data() as UserProfile;
-        if (existingData.role && existingData.role !== 'customer') {
-          roleToSet = existingData.role;
-        }
-        if (existingData.commission) {
-          existingCommission = existingData.commission;
-        }
-        if (existingData.phone) {
-          existingPhone = existingData.phone;
-        }
-        if (existingData.dob) {
-          existingDob = existingData.dob;
-        }
-        if (existingData.points) {
-          existingPoints = existingData.points;
-        }
-      }
+ const signUp = async (email: string, pass: string, name: string) => {
+ setError(null);
+ const cleanEmail = email.trim().toLowerCase();
+ let newlyCreatedUser: any = null;
+ 
+ try {
+ // 1. Check for existing user document to preserve role
+ const docRef = doc(db, 'users', cleanEmail);
+ const existingDoc = await getDoc(docRef);
+ let roleToSet: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer' = 'customer';
+ let existingCommission = 0;
+ let existingPhone = '';
+ let existingDob = '';
+ let existingPoints = 0;
+ 
+ if (existingDoc.exists()) {
+ const existingData = existingDoc.data() as UserProfile;
+ if (existingData.role && existingData.role !== 'customer') {
+ roleToSet = existingData.role;
+ }
+ if (existingData.commission) {
+ existingCommission = existingData.commission;
+ }
+ if (existingData.phone) {
+ existingPhone = existingData.phone;
+ }
+ if (existingData.dob) {
+ existingDob = existingData.dob;
+ }
+ if (existingData.points) {
+ existingPoints = existingData.points;
+ }
+ }
 
-      // 2. Create Auth User
-      const authResult = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
-      newlyCreatedUser = authResult.user;
-      
-      // 3. Update Auth Profile
-      await updateProfile(newlyCreatedUser, { displayName: name });
-      
-      // 4. Create/Update Firestore Document
-      const profileData: UserProfile = {
-        name: name,
-        email: cleanEmail,
-        phone: existingPhone,
-        role: roleToSet,
-        commission: existingCommission,
-        uid: newlyCreatedUser.uid,
-        points: existingPoints,
-        mustChangePassword: false,
-        dob: existingDob,
-        status: 'active'
-      };
-      
-      try {
-        await setDoc(docRef, profileData, { merge: true });
-      } catch (firestoreErr: any) {
-        // CRITICAL: If Firestore write fails, delete the Auth user
-        if (newlyCreatedUser) {
-          await newlyCreatedUser.delete();
-        }
-        throw firestoreErr;
-      }
+ // 2. Create Auth User
+ const authResult = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+ newlyCreatedUser = authResult.user;
+ 
+ // 3. Update Auth Profile
+ await updateProfile(newlyCreatedUser, { displayName: name });
+ 
+ // 4. Create/Update Firestore Document
+ const profileData: UserProfile = {
+ name: name,
+ email: cleanEmail,
+ phone: existingPhone,
+ role: roleToSet,
+ commission: existingCommission,
+ uid: newlyCreatedUser.uid,
+ points: existingPoints,
+ mustChangePassword: false,
+ dob: existingDob,
+ status: 'active'
+ };
+ 
+ try {
+ await setDoc(docRef, profileData, { merge: true });
+ } catch (firestoreErr: any) {
+ // CRITICAL: If Firestore write fails, delete the Auth user
+ if (newlyCreatedUser) {
+ await newlyCreatedUser.delete();
+ }
+ throw firestoreErr;
+ }
 
-      // 4. Create or Update Customer Record (Only if role is customer)
-      if (roleToSet === 'customer') {
-        try {
-          const custQuery = query(collection(db, 'customers'), where('email', '==', cleanEmail));
-          const custSnap = await getDocs(custQuery);
-          if (custSnap.empty) {
-            // Create new customer record if it doesn't exist
-            await addDoc(collection(db, 'customers'), {
-              name: name,
-              email: cleanEmail,
-              phone: '',
-              address: '',
-              notes: 'Registered via Email Sign-Up',
-              points: existingPoints,
-              createdAt: new Date().toISOString()
-            });
-          } else {
-            // Update existing customer record
-            await setDoc(custSnap.docs[0].ref, { name: name }, { merge: true });
-          }
-        } catch (custErr) {
-          console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
-          try {
-            await addDoc(collection(db, 'customers'), {
-              name: name,
-              email: cleanEmail,
-              phone: '',
-              address: '',
-              notes: 'Registered via Email Sign-Up',
-              points: existingPoints,
-              createdAt: new Date().toISOString()
-            });
-          } catch (fallbackErr) {
-            console.error("Fallback customer creation failed:", fallbackErr);
-          }
-        }
-      }
-      
-    } catch (err: any) {
-      const errCode = err.code || "";
-      const errMessage = err.message || "";
-      
-      // Only log unexpected errors
-      if (!['auth/email-already-in-use', 'auth/weak-password'].includes(errCode)) {
-        console.error("Sign Up Error:", err);
-      }
+ // 4. Create or Update Customer Record (Only if role is customer)
+ if (roleToSet === 'customer') {
+ try {
+ const custQuery = query(collection(db, 'customers'), where('email', '==', cleanEmail));
+ const custSnap = await getDocs(custQuery);
+ if (custSnap.empty) {
+ // Create new customer record if it doesn't exist
+ await addDoc(collection(db, 'customers'), {
+ name: name,
+ email: cleanEmail,
+ phone: '',
+ address: '',
+ notes: 'Registered via Email Sign-Up',
+ points: existingPoints,
+ createdAt: new Date().toISOString()
+ });
+ } else {
+ // Update existing customer record
+ await setDoc(custSnap.docs[0].ref, { name: name }, { merge: true });
+ }
+ } catch (custErr) {
+ console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
+ try {
+ await addDoc(collection(db, 'customers'), {
+ name: name,
+ email: cleanEmail,
+ phone: '',
+ address: '',
+ notes: 'Registered via Email Sign-Up',
+ points: existingPoints,
+ createdAt: new Date().toISOString()
+ });
+ } catch (fallbackErr) {
+ console.error("Fallback customer creation failed:", fallbackErr);
+ }
+ }
+ }
+ 
+ } catch (err: any) {
+ const errCode = err.code || "";
+ const errMessage = err.message || "";
+ 
+ // Only log unexpected errors
+ if (!['auth/email-already-in-use', 'auth/weak-password'].includes(errCode)) {
+ console.error("Sign Up Error:", err);
+ }
 
-      let msg = "";
+ let msg = "";
 
-      if (errCode === 'auth/operation-not-allowed' || errMessage.includes('operation-not-allowed')) {
-        msg = "Email/Password registration is not enabled in your Firebase Console. Please go to: https://console.firebase.google.com/project/gen-lang-client-0270863630/authentication/providers and enable 'Email/Password'.";
-      } else if (errCode === 'auth/email-already-in-use' || errMessage.includes('email-already-in-use')) {
-        msg = "This email is already registered. Please try logging in instead.";
-      } else if (errCode === 'auth/weak-password' || errMessage.includes('weak-password')) {
-        msg = "Password is too weak. Please use at least 6 characters.";
-      } else if (err.message?.includes('insufficient permissions')) {
-        msg = "Registration failed: Missing or insufficient permissions. Please check your Firestore security rules.";
-      } else {
-        msg = "Registration failed: " + (err.message || "Unknown error");
-      }
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+ if (errCode === 'auth/operation-not-allowed' || errMessage.includes('operation-not-allowed')) {
+ msg = "Email/Password registration is not enabled in your Firebase Console. Please go to: https://console.firebase.google.com/project/gen-lang-client-0270863630/authentication/providers and enable 'Email/Password'.";
+ } else if (errCode === 'auth/email-already-in-use' || errMessage.includes('email-already-in-use')) {
+ msg = "This email is already registered. Please try logging in instead.";
+ } else if (errCode === 'auth/weak-password' || errMessage.includes('weak-password')) {
+ msg = "Password is too weak. Please use at least 6 characters.";
+ } else if (err.message?.includes('insufficient permissions')) {
+ msg = "Registration failed: Missing or insufficient permissions. Please check your Firestore security rules.";
+ } else {
+ msg = "Registration failed: " + (err.message || "Unknown error");
+ }
+ setError(msg);
+ throw new Error(msg);
+ }
+ };
 
-  const signUpWithPhone = async (phone: string, pass: string, dob: string, name: string) => {
-    setError(null);
-    const cleanPhone = normalizePhone(phone);
-    if (cleanPhone.length < 8) throw new Error("Please enter a valid phone number.");
-    
-    let dummyEmail = `${name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}@nailpro.com`;
-    const last4 = cleanPhone.slice(-4);
+ const signUpWithPhone = async (phone: string, pass: string, dob: string, name: string) => {
+ setError(null);
+ const cleanPhone = normalizePhone(phone);
+ if (cleanPhone.length < 8) throw new Error("Please enter a valid phone number.");
+ 
+ let dummyEmail = `${name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}@nailpro.com`;
+ const last4 = cleanPhone.slice(-4);
 
-    let newlyCreatedUser: any = null;
-    
-    try {
-      // 1. Check for existing user document by phone to preserve role/reactivate
-      const q = query(collection(db, 'users'), where('phone', '==', cleanPhone));
-      const querySnapshot = await getDocs(q);
-      
-      let existingUserDoc: any = null;
-      let existingEmail = "";
+ let newlyCreatedUser: any = null;
+ 
+ try {
+ // 1. Check for existing user document by phone to preserve role/reactivate
+ const q = query(collection(db, 'users'), where('phone', '==', cleanPhone));
+ const querySnapshot = await getDocs(q);
+ 
+ let existingUserDoc: any = null;
+ let existingEmail = "";
 
-      if (!querySnapshot.empty) {
-        existingUserDoc = querySnapshot.docs[0].data();
-        existingEmail = existingUserDoc.email;
-        dummyEmail = existingEmail; // If user already has an email mapped, reuse it
-      }
+ if (!querySnapshot.empty) {
+ existingUserDoc = querySnapshot.docs[0].data();
+ existingEmail = existingUserDoc.email;
+ dummyEmail = existingEmail; // If user already has an email mapped, reuse it
+ }
 
-      if (existingUserDoc && existingUserDoc.status === 'deleted') {
-        const functions = getFunctions(app, 'asia-southeast1');
-        const reactivateUser = httpsCallable(functions, 'reactivateUser');
-        const result = await reactivateUser({ phone: cleanPhone, password: pass, name, dob });
-        
-        if (result.data) {
-          // Re-login to get the user object
-          await signInWithEmailAndPassword(auth, existingEmail, pass);
-          return;
-        }
-      }
+ if (existingUserDoc && existingUserDoc.status === 'deleted') {
+ const functions = getFunctions(app, 'asia-southeast1');
+ const reactivateUser = httpsCallable(functions, 'reactivateUser');
+ const result = await reactivateUser({ phone: cleanPhone, password: pass, name, dob });
+ 
+ if (result.data) {
+ // Re-login to get the user object
+ await signInWithEmailAndPassword(auth, existingEmail, pass);
+ return;
+ }
+ }
 
-      // 1.5 Check for existing user document to preserve role
-      let roleToSet: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer' = 'customer';
-      let existingCommission = 0;
-      let existingDob = dob;
-      let existingPoints = 0;
-      
-      if (existingUserDoc) {
-        if (existingUserDoc.role && existingUserDoc.role !== 'customer') {
-          roleToSet = existingUserDoc.role;
-        }
-        if (existingUserDoc.commission) {
-          existingCommission = existingUserDoc.commission;
-        }
-        if (existingUserDoc.dob) {
-          existingDob = existingUserDoc.dob;
-        }
-        if (existingUserDoc.points) {
-          existingPoints = existingUserDoc.points;
-        }
-      }
+ // 1.5 Check for existing user document to preserve role
+ let roleToSet: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer' = 'customer';
+ let existingCommission = 0;
+ let existingDob = dob;
+ let existingPoints = 0;
+ 
+ if (existingUserDoc) {
+ if (existingUserDoc.role && existingUserDoc.role !== 'customer') {
+ roleToSet = existingUserDoc.role;
+ }
+ if (existingUserDoc.commission) {
+ existingCommission = existingUserDoc.commission;
+ }
+ if (existingUserDoc.dob) {
+ existingDob = existingUserDoc.dob;
+ }
+ if (existingUserDoc.points) {
+ existingPoints = existingUserDoc.points;
+ }
+ }
 
-      // 2. Create Auth User
-      let authResult;
-      try {
-        authResult = await createUserWithEmailAndPassword(auth, dummyEmail, pass);
-      } catch (err: any) {
-        if (err.code === 'auth/email-already-in-use') {
-          // Append phone's last 4 if username hits collision
-          dummyEmail = `${name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}${last4}@nailpro.com`;
-          authResult = await createUserWithEmailAndPassword(auth, dummyEmail, pass);
-        } else {
-          throw err;
-        }
-      }
-      newlyCreatedUser = authResult.user;
-      
-      // We will define the docRef using the dummyEmail so it's consistent
-      const userDocRef = doc(db, 'users', dummyEmail);
-      
-      // 3. Update Auth Profile
-      await updateProfile(newlyCreatedUser, { displayName: name });
-      
-      // 4. Create/Update Firestore Document
-      const profileData: UserProfile = {
-        name: name,
-        email: dummyEmail,
-        phone: cleanPhone,
-        role: roleToSet,
-        commission: existingCommission,
-        uid: newlyCreatedUser.uid,
-        points: existingPoints,
-        mustChangePassword: false,
-        dob: existingDob,
-        last4Digits: last4,
-        status: 'active'
-      };
-      
-      try {
-        await setDoc(userDocRef, profileData, { merge: true });
-      } catch (firestoreErr: any) {
-        // CRITICAL: If Firestore write fails, delete the Auth user
-        if (newlyCreatedUser) {
-          try {
-            await newlyCreatedUser.delete();
-          } catch (deleteErr) {
-            console.error("Failed to cleanup Auth user:", deleteErr);
-          }
-        }
-        throw firestoreErr;
-      }
+ // 2. Create Auth User
+ let authResult;
+ try {
+ authResult = await createUserWithEmailAndPassword(auth, dummyEmail, pass);
+ } catch (err: any) {
+ if (err.code === 'auth/email-already-in-use') {
+ // Append phone's last 4 if username hits collision
+ dummyEmail = `${name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'user'}${last4}@nailpro.com`;
+ authResult = await createUserWithEmailAndPassword(auth, dummyEmail, pass);
+ } else {
+ throw err;
+ }
+ }
+ newlyCreatedUser = authResult.user;
+ 
+ // We will define the docRef using the dummyEmail so it's consistent
+ const userDocRef = doc(db, 'users', dummyEmail);
+ 
+ // 3. Update Auth Profile
+ await updateProfile(newlyCreatedUser, { displayName: name });
+ 
+ // 4. Create/Update Firestore Document
+ const profileData: UserProfile = {
+ name: name,
+ email: dummyEmail,
+ phone: cleanPhone,
+ role: roleToSet,
+ commission: existingCommission,
+ uid: newlyCreatedUser.uid,
+ points: existingPoints,
+ mustChangePassword: false,
+ dob: existingDob,
+ last4Digits: last4,
+ status: 'active'
+ };
+ 
+ try {
+ await setDoc(userDocRef, profileData, { merge: true });
+ } catch (firestoreErr: any) {
+ // CRITICAL: If Firestore write fails, delete the Auth user
+ if (newlyCreatedUser) {
+ try {
+ await newlyCreatedUser.delete();
+ } catch (deleteErr) {
+ console.error("Failed to cleanup Auth user:", deleteErr);
+ }
+ }
+ throw firestoreErr;
+ }
 
-      // 5. Create or Update Customer Record (Only if role is customer)
-      if (roleToSet === 'customer') {
-        try {
-          const custQuery = query(collection(db, 'customers'), where('email', '==', dummyEmail));
-          const custSnap = await getDocs(custQuery);
-          if (custSnap.empty) {
-            // Create new customer record if it doesn't exist
-            await addDoc(collection(db, 'customers'), {
-              name: name,
-              phone: cleanPhone,
-              email: dummyEmail,
-              address: '',
-              notes: 'Registered via Phone Sign-Up',
-              points: existingPoints,
-              createdAt: new Date().toISOString()
-            });
-          } else {
-            // Update existing customer record
-            await setDoc(custSnap.docs[0].ref, { name: name, email: dummyEmail }, { merge: true });
-          }
-        } catch (custErr) {
-          console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
-          try {
-            await addDoc(collection(db, 'customers'), {
-              name: name,
-              phone: cleanPhone,
-              email: dummyEmail,
-              address: '',
-              notes: 'Registered via Phone Sign-Up',
-              points: existingPoints,
-              createdAt: new Date().toISOString()
-            });
-          } catch (fallbackErr) {
-            console.error("Fallback customer creation failed (phone):", fallbackErr);
-          }
-        }
-      }
+ // 5. Create or Update Customer Record (Only if role is customer)
+ if (roleToSet === 'customer') {
+ try {
+ const custQuery = query(collection(db, 'customers'), where('email', '==', dummyEmail));
+ const custSnap = await getDocs(custQuery);
+ if (custSnap.empty) {
+ // Create new customer record if it doesn't exist
+ await addDoc(collection(db, 'customers'), {
+ name: name,
+ phone: cleanPhone,
+ email: dummyEmail,
+ address: '',
+ notes: 'Registered via Phone Sign-Up',
+ points: existingPoints,
+ createdAt: new Date().toISOString()
+ });
+ } else {
+ // Update existing customer record
+ await setDoc(custSnap.docs[0].ref, { name: name, email: dummyEmail }, { merge: true });
+ }
+ } catch (custErr) {
+ console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
+ try {
+ await addDoc(collection(db, 'customers'), {
+ name: name,
+ phone: cleanPhone,
+ email: dummyEmail,
+ address: '',
+ notes: 'Registered via Phone Sign-Up',
+ points: existingPoints,
+ createdAt: new Date().toISOString()
+ });
+ } catch (fallbackErr) {
+ console.error("Fallback customer creation failed (phone):", fallbackErr);
+ }
+ }
+ }
 
-      setProfile(profileData);
-      setUser(newlyCreatedUser);
-      
-    } catch (err: any) {
-      const errCode = err.code || "";
-      const errMessage = err.message || "";
+ setProfile(profileData);
+ setUser(newlyCreatedUser);
+ 
+ } catch (err: any) {
+ const errCode = err.code || "";
+ const errMessage = err.message || "";
 
-      if (errCode === 'auth/email-already-in-use' || errMessage.includes('email-already-in-use')) {
-        const msg = "This phone number is already registered. Please try logging in instead.";
-        setError(msg);
-        throw new Error(msg);
-      } else if (errCode === 'auth/weak-password' || errMessage.includes('weak-password')) {
-        const msg = "Password is too weak. Please use at least 6 characters.";
-        setError(msg);
-        throw new Error(msg);
-      } else if (errCode === 'auth/invalid-email' || errMessage.includes('invalid-email')) {
-        const msg = "Invalid phone number format. Please check and try again.";
-        setError(msg);
-        throw new Error(msg);
-      } else if (errMessage.includes('insufficient permissions')) {
-        const msg = "Database permission denied. Your Firebase security rules are blocking access. Please check the firestore.rules configuration for 'users' and 'customers' collections.";
-        setError(msg);
-        throw new Error(msg);
-      } else {
-        const msg = "Registration failed: " + (errMessage || "Unknown error");
-        setError(msg);
-        throw new Error(msg);
-      }
-    }
-  };
+ if (errCode === 'auth/email-already-in-use' || errMessage.includes('email-already-in-use')) {
+ const msg = "This phone number is already registered. Please try logging in instead.";
+ setError(msg);
+ throw new Error(msg);
+ } else if (errCode === 'auth/weak-password' || errMessage.includes('weak-password')) {
+ const msg = "Password is too weak. Please use at least 6 characters.";
+ setError(msg);
+ throw new Error(msg);
+ } else if (errCode === 'auth/invalid-email' || errMessage.includes('invalid-email')) {
+ const msg = "Invalid phone number format. Please check and try again.";
+ setError(msg);
+ throw new Error(msg);
+ } else if (errMessage.includes('insufficient permissions')) {
+ const msg = "Database permission denied. Your Firebase security rules are blocking access. Please check the firestore.rules configuration for 'users' and 'customers' collections.";
+ setError(msg);
+ throw new Error(msg);
+ } else {
+ const msg = "Registration failed: " + (errMessage || "Unknown error");
+ setError(msg);
+ throw new Error(msg);
+ }
+ }
+ };
 
-  const resetPassword = async (email: string) => {
-    setError(null);
-    const cleanEmail = email.trim().toLowerCase();
-    try {
-      await sendPasswordResetEmail(auth, cleanEmail);
-    } catch (err: any) {
-      console.error("Reset Password Error");
-      let msg = "";
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        msg = "No account found with this email.";
-      } else {
-        msg = "Failed to send reset email: " + err.message;
-      }
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+ const resetPassword = async (email: string) => {
+ setError(null);
+ const cleanEmail = email.trim().toLowerCase();
+ try {
+ await sendPasswordResetEmail(auth, cleanEmail);
+ } catch (err: any) {
+ console.error("Reset Password Error");
+ let msg = "";
+ if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+ msg = "No account found with this email.";
+ } else {
+ msg = "Failed to send reset email: " + err.message;
+ }
+ setError(msg);
+ throw new Error(msg);
+ }
+ };
 
-  const resetPasswordWithIdentity = async (phone: string, name: string, dob: string, newPass: string) => {
-    setError(null);
-    const cleanPhone = normalizePhone(phone);
+ const resetPasswordWithIdentity = async (phone: string, name: string, dob: string, newPass: string) => {
+ setError(null);
+ const cleanPhone = normalizePhone(phone);
 
-    try {
-      const functions = getFunctions(app, 'asia-southeast1');
-      const verifyAndReset = httpsCallable(functions, 'verifyIdentityAndResetPassword');
-      const result = await verifyAndReset({ 
-        name, 
-        phone: cleanPhone, 
-        dob, 
-        newPassword: newPass 
-      });
+ try {
+ const functions = getFunctions(app, 'asia-southeast1');
+ const verifyAndReset = httpsCallable(functions, 'verifyIdentityAndResetPassword');
+ const result = await verifyAndReset({ 
+ name, 
+ phone: cleanPhone, 
+ dob, 
+ newPassword: newPass 
+ });
 
-      if (result.data) {
-        // Success!
-        return;
-      } else {
-        throw new Error("Failed to update password. Please try again.");
-      }
-    } catch (err: any) {
-      console.error("Identity Reset Error");
-      const msg = err.message || "Verification failed. Please check your information.";
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+ if (result.data) {
+ // Success!
+ return;
+ } else {
+ throw new Error("Failed to update password. Please try again.");
+ }
+ } catch (err: any) {
+ console.error("Identity Reset Error");
+ const msg = err.message || "Verification failed. Please check your information.";
+ setError(msg);
+ throw new Error(msg);
+ }
+ };
 
-  const changePassword = async (currentPass: string, newPass: string) => {
-    if (!user || !user.email) throw new Error("No user logged in.");
-    setError(null);
-    try {
-      const credential = EmailAuthProvider.credential(user.email, currentPass);
-      await reauthenticateWithCredential(user, credential);
-      await updatePassword(user, newPass);
-    } catch (err: any) {
-      console.error("Change Password Error");
-      let msg = "";
-      const errCode = err.code || "";
-      const errMessage = err.message || "";
-      if (errCode === 'auth/wrong-password' || errCode === 'auth/invalid-credential' || errMessage.includes('invalid-credential') || errMessage.includes('wrong-password')) {
-        msg = "Current password is incorrect.";
-      } else if (errCode === 'auth/weak-password' || errMessage.includes('weak-password')) {
-        msg = "New password is too weak. Please use at least 6 characters.";
-      } else if (errCode === 'auth/requires-recent-login' || errMessage.includes('requires-recent-login')) {
-        msg = "Please log out and log back in to change your password.";
-      } else {
-        msg = "Failed to change password: " + errMessage;
-      }
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+ const changePassword = async (currentPass: string, newPass: string) => {
+ if (!user || !user.email) throw new Error("No user logged in.");
+ setError(null);
+ try {
+ const credential = EmailAuthProvider.credential(user.email, currentPass);
+ await reauthenticateWithCredential(user, credential);
+ await updatePassword(user, newPass);
+ } catch (err: any) {
+ console.error("Change Password Error");
+ let msg = "";
+ const errCode = err.code || "";
+ const errMessage = err.message || "";
+ if (errCode === 'auth/wrong-password' || errCode === 'auth/invalid-credential' || errMessage.includes('invalid-credential') || errMessage.includes('wrong-password')) {
+ msg = "Current password is incorrect.";
+ } else if (errCode === 'auth/weak-password' || errMessage.includes('weak-password')) {
+ msg = "New password is too weak. Please use at least 6 characters.";
+ } else if (errCode === 'auth/requires-recent-login' || errMessage.includes('requires-recent-login')) {
+ msg = "Please log out and log back in to change your password.";
+ } else {
+ msg = "Failed to change password: " + errMessage;
+ }
+ setError(msg);
+ throw new Error(msg);
+ }
+ };
 
-  const forceChangePassword = async (newPass: string) => {
-    if (!user || !user.email) throw new Error("No user logged in.");
-    setError(null);
-    try {
-      await updatePassword(user, newPass);
-      const docRef = doc(db, 'users', user.email.toLowerCase());
-      await updateDoc(docRef, { mustChangePassword: false });
-      setProfile(prev => prev ? { ...prev, mustChangePassword: false } : null);
-    } catch (err: any) {
-      console.error("Force Change Password Error");
-      let msg = "";
-      if (err.code === 'auth/weak-password') {
-        msg = "New password is too weak. Please use at least 6 characters.";
-      } else if (err.code === 'auth/requires-recent-login') {
-        msg = "Please log out and log back in to change your password.";
-      } else {
-        msg = "Failed to change password: " + err.message;
-      }
-      setError(msg);
-      throw new Error(msg);
-    }
-  };
+ const forceChangePassword = async (newPass: string) => {
+ if (!user || !user.email) throw new Error("No user logged in.");
+ setError(null);
+ try {
+ await updatePassword(user, newPass);
+ const docRef = doc(db, 'users', user.email.toLowerCase());
+ await updateDoc(docRef, { mustChangePassword: false });
+ setProfile(prev => prev ? { ...prev, mustChangePassword: false } : null);
+ } catch (err: any) {
+ console.error("Force Change Password Error");
+ let msg = "";
+ if (err.code === 'auth/weak-password') {
+ msg = "New password is too weak. Please use at least 6 characters.";
+ } else if (err.code === 'auth/requires-recent-login') {
+ msg = "Please log out and log back in to change your password.";
+ } else {
+ msg = "Failed to change password: " + err.message;
+ }
+ setError(msg);
+ throw new Error(msg);
+ }
+ };
 
-  const logout = async () => {
-    initialRedirectDone = false;
-    await signOut(auth);
-  };
+ const logout = async () => {
+ initialRedirectDone = false;
+ await signOut(auth);
+ };
 
-  const isSuperAdmin = profile?.role === 'super_admin' || 
-    (user?.email?.toLowerCase() === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || ''));
-  const isOwner = profile?.role === 'owner' || isSuperAdmin;
-  const isCashier = profile?.role === 'cashier';
-  const isStaffMember = profile?.role === 'staff';
-  const isCustomer = profile?.role === 'customer';
-  const isAdmin = isSuperAdmin || isOwner;
-  const isStaff = isSuperAdmin || isOwner || isCashier || isStaffMember;
+ const isSuperAdmin = profile?.role === 'super_admin' || 
+ (user?.email?.toLowerCase() === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || ''));
+ const isOwner = profile?.role === 'owner' || isSuperAdmin;
+ const isCashier = profile?.role === 'cashier';
+ const isStaffMember = profile?.role === 'staff';
+ const isCustomer = profile?.role === 'customer';
+ const isAdmin = isSuperAdmin || isOwner;
+ const isStaff = isSuperAdmin || isOwner || isCashier || isStaffMember;
 
-  useEffect(() => {
-    if (!loading) {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          SplashScreen.hide().catch(() => {});
-        } catch (e) {}
-      }
-    }
-  }, [loading]);
+ useEffect(() => {
+ if (!loading) {
+ if (Capacitor.isNativePlatform()) {
+ try {
+ SplashScreen.hide().catch(() => {});
+ } catch (e) {}
+ }
+ }
+ }, [loading]);
 
-  return (
-    <AuthContext.Provider value={{ 
-      user, profile, loading, isAdmin, isSuperAdmin, isOwner, isCashier, isStaff, isStaffMember, isCustomer,
-      login, loginWithEmail, loginWithPhone, signUp, signUpWithPhone, resetPassword, resetPasswordWithIdentity, changePassword, forceChangePassword, logout, error, setError 
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
+ return (
+ <AuthContext.Provider value={{ 
+ user, profile, loading, isAdmin, isSuperAdmin, isOwner, isCashier, isStaff, isStaffMember, isCustomer,
+ login, loginWithEmail, loginWithPhone, signUp, signUpWithPhone, resetPassword, resetPasswordWithIdentity, changePassword, forceChangePassword, logout, error, setError 
+ }}>
+ {children}
+ </AuthContext.Provider>
+ );
 };
 
-const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
-  return context;
+export const useAuth = () => {
+ const context = useContext(AuthContext);
+ if (!context) throw new Error("useAuth must be used within AuthProvider");
+ return context;
 };
 
 // --- Components ---
 
 const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
-  const { profile, logout } = useAuth();
-  const navigate = useNavigate();
-  const loginWithGoogle = async () => {};
-  const location = useLocation();
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !profile?.email) return;
-    
-    setIsUploadingPhoto(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = async () => {
-          const canvas = document.createElement('canvas');
-          const MAX_WIDTH = 300;
-          const MAX_HEIGHT = 300;
-          let width = img.width;
-          let height = img.height;
+ const { profile, logout } = useAuth();
+ const navigate = useNavigate();
+ const loginWithGoogle = async () => {};
+ const location = useLocation();
+ const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+ 
+ const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+ const file = e.target.files?.[0];
+ if (!file || !profile?.email) return;
+ 
+ setIsUploadingPhoto(true);
+ try {
+ const reader = new FileReader();
+ reader.onload = (event) => {
+ const img = new Image();
+ img.onload = async () => {
+ const canvas = document.createElement('canvas');
+ const MAX_WIDTH = 300;
+ const MAX_HEIGHT = 300;
+ let width = img.width;
+ let height = img.height;
 
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx?.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          
-          try {
-            await updateDoc(doc(db, 'users', profile.email), { photoURL: dataUrl });
-          } catch(err) {
-            console.error("Failed to update photo in DB", err);
-            alert("Failed to update photo in DB.");
-          } finally {
-            setIsUploadingPhoto(false);
-          }
-        };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error("Failed to process photo:", err);
-      alert("Failed to process photo.");
-      setIsUploadingPhoto(false);
-    }
-  };
+ if (width > height) {
+ if (width > MAX_WIDTH) {
+ height *= MAX_WIDTH / width;
+ width = MAX_WIDTH;
+ }
+ } else {
+ if (height > MAX_HEIGHT) {
+ width *= MAX_HEIGHT / height;
+ height = MAX_HEIGHT;
+ }
+ }
+ canvas.width = width;
+ canvas.height = height;
+ const ctx = canvas.getContext('2d');
+ ctx?.drawImage(img, 0, 0, width, height);
+ const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+ 
+ try {
+ await updateDoc(doc(db, 'users', profile.email), { photoURL: dataUrl });
+ } catch(err) {
+ console.error("Failed to update photo in DB", err);
+ alert("Failed to update photo in DB.");
+ } finally {
+ setIsUploadingPhoto(false);
+ }
+ };
+ img.src = event.target?.result as string;
+ };
+ reader.readAsDataURL(file);
+ } catch (err) {
+ console.error("Failed to process photo:", err);
+ alert("Failed to process photo.");
+ setIsUploadingPhoto(false);
+ }
+ };
 
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: <Home size={18} />, path: '/', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
-    { id: 'pos', label: 'Point of Sale', icon: <ShoppingCart size={18} />, path: '/pos', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
-    { id: 'appointments', label: 'Appointments', icon: <Calendar size={18} />, path: '/appointments', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
-    { id: 'history', label: 'Daily Sales', icon: <BarChart2 size={18} />, path: '/history', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
-    { id: 'staff-commissions', label: 'Commissions', icon: <UserIcon size={18} />, path: '/staff-commissions', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
-    { id: 'monthly', label: 'Monthly Summary', icon: <LayoutGrid size={18} />, path: '/monthly', roles: ['super_admin', 'owner', 'cashier'] },
-    { id: 'sales-report', label: 'Sales Report', icon: <FileText size={18} />, path: '/sales-report', roles: ['super_admin', 'owner', 'cashier'] },
-    { id: 'expenses', label: 'Expenses', icon: <TrendingDown size={18} />, path: '/expenses', roles: ['super_admin', 'owner', 'cashier'] },
-    { id: 'manage', label: 'Admin Management', icon: <Database size={18} />, path: '/manage', roles: ['super_admin', 'owner'] },
-    { id: 'settings', label: 'Settings', icon: <Settings size={18} />, path: '/settings', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
-  ];
+ const menuItems = [
+ { id: 'dashboard', label: 'Dashboard', icon: <Home size={18} />, path: '/', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
+ { id: 'pos', label: 'Point of Sale', icon: <ShoppingCart size={18} />, path: '/pos', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
+ { id: 'business-analysis', label: 'Business Analysis', icon: <TrendingUp size={18} />, path: '/business-analysis', roles: ['super_admin', 'owner'] },
+ { id: 'appointments', label: 'Appointments', icon: <Calendar size={18} />, path: '/appointments', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
+ { id: 'history', label: 'Daily Sales', icon: <BarChart2 size={18} />, path: '/history', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
+ { id: 'staff-commissions', label: 'Commissions', icon: <UserIcon size={18} />, path: '/staff-commissions', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
+ { id: 'monthly', label: 'Monthly Summary', icon: <LayoutGrid size={18} />, path: '/monthly', roles: ['super_admin', 'owner', 'cashier'] },
+ { id: 'sales-report', label: 'Sales Report', icon: <FileText size={18} />, path: '/sales-report', roles: ['super_admin', 'owner', 'cashier'] },
+ { id: 'expenses', label: 'Expenses', icon: <TrendingDown size={18} />, path: '/expenses', roles: ['super_admin', 'owner', 'cashier'] },
+ { id: 'manage', label: 'Admin Management', icon: <Database size={18} />, path: '/manage', roles: ['super_admin', 'owner'] },
+ { id: 'settings', label: 'Settings', icon: <Settings size={18} />, path: '/settings', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
+ ];
 
-  const filteredItems = menuItems.filter(item => item.roles.includes(profile?.role || ''));
+ const filteredItems = menuItems.filter(item => item.roles.includes(profile?.role || ''));
 
-  return (
-    <>
-      <div 
-        className={cn(
-          "fixed inset-0 bg-black/60  z-[10000] transition-opacity duration-500",
-          isOpen ? "opacity-100 visible" : "opacity-0 invisible"
-        )}
-        onClick={onClose}
-      />
-      <div className={cn(
-        "fixed top-0 left-0 w-[300px] h-full bg-card z-[10001] transition-transform duration-500 ease-out flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.2)]",
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
-        <div className="p-8 border-b border-border/50 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-          <div className="relative z-10 flex items-center space-x-4">
-            <div className="relative shrink-0">
-               <div className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center border-2 border-primary/20">
-                 {profile?.photoURL ? (
-                    <img src={profile.photoURL} alt={profile.name} className="w-full h-full object-cover" />
-                 ) : (
-                    <UserIcon size={32} className="text-muted-foreground" />
-                 )}
-               </div>
-               <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
-                 <Camera size={20} />
-                 <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
-               </label>
-               {isUploadingPhoto && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
-                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  </div>
-               )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-1 block truncate">{profile?.role}</span>
-              <h2 className="text-xl font-black text-foreground tracking-tighter leading-tight truncate">{profile?.name}</h2>
-              <p className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-widest opacity-60 truncate">{profile?.email}</p>
-            </div>
-          </div>
-        </div>
-        
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto scrollbar-hide">
-          {filteredItems.map(item => {
-            const isActive = location.pathname === item.path;
-            return (
-              <button
-                key={item.id}
-                onClick={() => { navigate(item.path); onClose(); }}
-                className={cn(
-                  "w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
-                  isActive 
-                    ? "bg-primary text-white font-bold shadow-xl shadow-primary/20 scale-[1.02]" 
-                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
-                )}
-              >
-                {isActive && (
-                  <motion.div 
-                    layoutId="sidebar-active"
-                    className="absolute inset-0 bg-primary z-0"
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <span className={cn(
-                  "mr-4 transition-all duration-300 relative z-10",
-                  isActive ? "text-white scale-110" : "text-primary group-hover:scale-120"
-                )}>
-                  {item.icon}
-                </span>
-                <span className="text-sm font-bold tracking-tight relative z-10">{item.label}</span>
-                {isActive && <ChevronRight size={14} className="ml-auto relative z-10" />}
-              </button>
-            );
-          })}
-        </nav>
+ return (
+ <>
+ <div 
+ className={cn(
+ "fixed inset-0 bg-black/60 z-[10000] transition-opacity duration-500",
+ isOpen ? "opacity-100 visible" : "opacity-0 invisible"
+ )}
+ onClick={onClose}
+ />
+ <div className={cn(
+ "fixed top-0 left-0 w-[300px] h-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-r border-rose-200/30 dark:border-rose-900/30 z-[10001] transition-transform duration-500 ease-out flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.2)]",
+ isOpen ? "translate-x-0" : "-translate-x-full"
+ )}>
+ <div className="p-4 relative overflow-hidden group">
+ <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/50 dark:bg-amber-900/20 rounded-full -mr-16 -mt-16 blur-3xl" />
+ <div className="relative z-10 flex items-center space-x-4">
+ <div className="relative shrink-0">
+ <div className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center -2 -primary/20">
+ {profile?.photoURL ? (
+ <img src={profile.photoURL} alt={profile.name} className="w-full h-full object-cover" />
+ ) : (
+ <UserIcon size={32} className="text-slate-700 dark:text-slate-300" />
+ )}
+ </div>
+ <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
+ <Camera size={20} />
+ <input type="file" className="hidden" accept="image/*" onChange={handlePhotoUpload} disabled={isUploadingPhoto} />
+ </label>
+ {isUploadingPhoto && (
+ <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
+ <div className="w-5 h-5 -2 -white -transparent rounded-full animate-spin" />
+ </div>
+ )}
+ </div>
+ <div className="min-w-0 flex-1">
+ <span className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-[0.3em] mb-1 block truncate">{profile?.role}</span>
+ <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tighter leading-tight truncate">{profile?.name}</h2>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold mt-1 uppercase tracking-widest opacity-60 truncate">{profile?.email}</p>
+ </div>
+ </div>
+ </div>
+ 
+ <nav className="flex-1 px-4 py-4 md:py-6 space-y-1 overflow-y-auto">
+ {filteredItems.map(item => {
+ const isActive = location.pathname === item.path;
+ return (
+ <button
+ key={item.id}
+ onClick={() => { navigate(item.path); onClose(); }}
+ className={cn(
+ "w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
+ isActive 
+ ? "bg-primary text-white font-bold shadow-primary/20 scale-[1.02]" 
+ : "text-slate-700 dark:text-slate-300 hover:bg-amber-50/50 dark:bg-amber-900/20 hover:text-amber-600 dark:text-amber-400"
+ )}
+ >
+ {isActive && (
+ <motion.div 
+ layoutId="sidebar-active"
+ className="absolute inset-0 bg-primary z-0"
+ transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+ />
+ )}
+ <span className={cn(
+ "mr-4 transition-all duration-300 relative z-10",
+ isActive ? "text-white scale-110" : "text-amber-600 dark:text-amber-400 group-hover:scale-120"
+ )}>
+ {item.icon}
+ </span>
+ <span className="text-sm font-bold tracking-tight relative z-10">{item.label}</span>
+ {isActive && <ChevronRight size={14} className="ml-auto relative z-10" />}
+ </button>
+ );
+ })}
+ </nav>
 
-        <div className="p-6 border-t border-border/50 bg-muted/5">
-          <button 
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-red-500 font-black text-xs tracking-[0.2em] border border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all duration-300 shadow-lg hover:shadow-red-500/20 active:scale-95"
-          >
-            <LogOut size={18} />
-            LOGOUT
-          </button>
-        </div>
-      </div>
-    </>
-  );
+ <div className="p-4 bg-muted/5">
+ <button 
+ onClick={logout}
+ className="w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-red-500 font-black text-xs tracking-[0.2em] -red-500/20 hover:bg-red-500 hover:text-slate-900 dark:text-slate-100 transition-all duration-300 hover:shadow-red-500/20 active:scale-95"
+ >
+ <LogOut size={18} />
+ LOGOUT
+ </button>
+ </div>
+ </div>
+ </>
+ );
 };
 
-const Header: React.FC<{ onMenuClick: () => void }> = ({ onMenuClick }) => {
-  const navigate = useNavigate();
-  
-  return (
-    <header className="sticky top-0 z-[1000] flex justify-between items-center px-6 py-4 bg-card/80  border-b border-border/50 transition-all duration-500">
-      <div className="flex items-center gap-6">
-        <button 
-          onClick={onMenuClick} 
-          className="text-primary hover:scale-110 active:scale-90 transition-all p-2 bg-primary/5 rounded-xl border border-primary/10"
-        >
-          <Menu size={20} />
-        </button>
-        <div 
-          onClick={() => navigate('/')} 
-          className="flex flex-col cursor-pointer group"
-        >
-          <span className="text-xl font-black text-foreground tracking-tighter group-hover:text-primary transition-colors leading-none">NAIL PRO</span>
-          <span className="text-[8px] font-black text-primary tracking-[0.4em] mt-0.5 opacity-80 uppercase">Luxury Salon</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-4">
-      </div>
-    </header>
-  );
+const Header: React.FC<{ onMenuClick: () => void, className?: string }> = ({ onMenuClick, className }) => {
+ const navigate = useNavigate();
+ 
+ return (
+ <header className={cn("sticky top-0 z-[1000] flex justify-between items-center px-4 md:px-6 py-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-rose-200/30 dark:border-rose-900/30 transition-all duration-500", className)}>
+ <div className="flex items-center gap-3">
+ <button 
+ onClick={onMenuClick} 
+ className="text-amber-600 dark:text-amber-400 hover:scale-110 active:scale-90 transition-all p-2 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl -primary/10"
+ >
+ <Menu size={20} />
+ </button>
+ <div 
+ onClick={() => navigate('/')} 
+ className="flex flex-col cursor-pointer group"
+ >
+ <span className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tighter group-hover:text-amber-600 dark:text-amber-400 transition-colors leading-none">NAIL PRO</span>
+ <span className="text-[8px] font-black text-amber-600 dark:text-amber-400 tracking-[0.4em] mt-0.5 opacity-80 uppercase">Luxury Salon</span>
+ </div>
+ </div>
+ <div className="flex items-center gap-4">
+ </div>
+ </header>
+ );
 };
 
 // --- Pages ---
 
 const CATEGORY_ICONS = [
-  { name: 'Scissors', icon: Scissors },
-  { name: 'Sparkles', icon: Sparkles },
-  { name: 'Smile', icon: Smile },
-  { name: 'Heart', icon: Heart },
-  { name: 'Star', icon: Star },
-  { name: 'Zap', icon: Zap },
-  { name: 'Flower2', icon: Flower2 },
-  { name: 'Brush', icon: Brush },
-  { name: 'SprayCan', icon: SprayCan },
-  { name: 'Waves', icon: Waves },
-  { name: 'LayoutGrid', icon: LayoutGrid },
+ { name: 'Scissors', icon: Scissors },
+ { name: 'Sparkles', icon: Sparkles },
+ { name: 'Smile', icon: Smile },
+ { name: 'Heart', icon: Heart },
+ { name: 'Star', icon: Star },
+ { name: 'Zap', icon: Zap },
+ { name: 'Flower2', icon: Flower2 },
+ { name: 'Brush', icon: Brush },
+ { name: 'SprayCan', icon: SprayCan },
+ { name: 'Waves', icon: Waves },
+ { name: 'LayoutGrid', icon: LayoutGrid },
 ];
 
 const ScrollToTop = () => {
-  const { pathname } = useLocation();
+ const { pathname } = useLocation();
 
-  useEffect(() => {
-    // Scroll window to top
-    window.scrollTo(0, 0);
-    // Attempt to reset any custom scrollable containers if needed
-    const scrollContainers = document.querySelectorAll('.overflow-y-auto');
-    scrollContainers.forEach(container => {
-      container.scrollTop = 0;
-    });
-  }, [pathname]);
+ useEffect(() => {
+ // Scroll window to top
+ window.scrollTo(0, 0);
+ // Attempt to reset any custom scrollable containers if needed
+ const scrollContainers = document.querySelectorAll('.overflow-y-auto');
+ scrollContainers.forEach(container => {
+ container.scrollTop = 0;
+ });
+ }, [pathname]);
 
-  return null;
+ return null;
 };
 
-const PullToRefresh: React.FC<{ children: React.ReactNode; onRefresh: () => Promise<void> }> = ({ children, onRefresh }) => {
-  const [startY, setStartY] = useState(0);
-  const [currentY, setCurrentY] = useState(0);
-  const [isPulling, setIsPulling] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-  
-  const MAX_PULL = 80;
+const PullToRefresh: React.FC<{ children: React.ReactNode; onRefresh: () => Promise<void>; isPos?: boolean }> = ({ children, onRefresh, isPos }) => {
+ const [startY, setStartY] = useState(0);
+ const [currentY, setCurrentY] = useState(0);
+ const [isPulling, setIsPulling] = useState(false);
+ const [isRefreshing, setIsRefreshing] = useState(false);
+ const contentRef = useRef<HTMLDivElement>(null);
+ 
+ const MAX_PULL = 80;
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY === 0) {
-      setStartY(e.touches[0].clientY);
-      setIsPulling(true);
-    }
-  };
+ const handleTouchStart = (e: React.TouchEvent) => {
+ if (isPos) return;
+ if (window.scrollY === 0) {
+ setStartY(e.touches[0].clientY);
+ setIsPulling(true);
+ }
+ };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isPulling) return;
-    const y = e.touches[0].clientY;
-    const dy = y - startY;
-    if (dy > 0 && window.scrollY === 0) {
-      setCurrentY(Math.min(dy, MAX_PULL));
-      if (e.cancelable) e.preventDefault();
-    } else {
-      setIsPulling(false);
-      setCurrentY(0);
-    }
-  };
+ const handleTouchMove = (e: React.TouchEvent) => {
+ if (!isPulling) return;
+ const y = e.touches[0].clientY;
+ const dy = y - startY;
+ if (dy > 0 && window.scrollY === 0) {
+ setCurrentY(Math.min(dy, MAX_PULL));
+ if (e.cancelable) e.preventDefault();
+ } else {
+ setIsPulling(false);
+ setCurrentY(0);
+ }
+ };
 
-  const handleTouchEnd = async () => {
-    if (!isPulling) return;
-    setIsPulling(false);
-    if (currentY >= MAX_PULL * 0.8) {
-      setIsRefreshing(true);
-      try {
-        await onRefresh();
-      } finally {
-        setIsRefreshing(false);
-      }
-    }
-    setCurrentY(0);
-  };
+ const handleTouchEnd = async () => {
+ if (!isPulling) return;
+ setIsPulling(false);
+ if (currentY >= MAX_PULL * 0.8) {
+ setIsRefreshing(true);
+ try {
+ await onRefresh();
+ } finally {
+ setIsRefreshing(false);
+ }
+ }
+ setCurrentY(0);
+ };
 
-  return (
-    <div 
-      className="relative w-full h-full"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div 
-        className="absolute left-0 w-full flex justify-center items-center overflow-visible transition-all duration-300 z-50 pointer-events-none"
-        style={{ 
-          top: `${isRefreshing ? 20 : Math.max(-40, currentY - 40)}px`,
-          opacity: isRefreshing ? 1 : currentY / MAX_PULL 
-        }}
-      >
-        <div className={`w-8 h-8 bg-card border border-border shadow-lg text-primary flex items-center justify-center rounded-full ${isRefreshing ? 'animate-spin' : ''}`} 
-             style={{ transform: `rotate(${currentY * 3}deg)` }}
-        >
-          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full" />
-        </div>
-      </div>
-      <div 
-        ref={contentRef}
-        className="w-full h-full"
-      >
-        {children}
-      </div>
-    </div>
-  );
+ return (
+ <div 
+ className={isPos ? "relative w-full flex-1 flex flex-col min-h-0" : "relative w-full h-full"}
+ onTouchStart={handleTouchStart}
+ onTouchMove={handleTouchMove}
+ onTouchEnd={handleTouchEnd}
+ >
+ <div 
+ className="absolute left-0 w-full flex justify-center items-center overflow-visible transition-all duration-300 z-50 pointer-events-none"
+ style={{ 
+ top: `${isRefreshing ? 20 : Math.max(-40, currentY - 40)}px`,
+ opacity: isRefreshing ? 1 : currentY / MAX_PULL 
+ }}
+ >
+ <div className={`w-8 h-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center rounded-full ${isRefreshing ? 'animate-spin' : ''}`} 
+ style={{ transform: `rotate(${currentY * 3}deg)` }}
+ >
+ <div className="w-5 h-5 -2 -primary -transparent rounded-full" />
+ </div>
+ </div>
+ <div 
+ ref={contentRef}
+ className={isPos ? "w-full flex-1 flex flex-col min-h-0" : "w-full h-full"}
+ >
+ {children}
+ </div>
+ </div>
+ );
 };
 
 export const CustomerDashboardPage: React.FC = () => {
-  const { profile } = useAuth();
-  const navigate = useNavigate();
+ const { profile } = useAuth();
+ const navigate = useNavigate();
 
-  return (
-    <div className="p-4 space-y-6 max-w-4xl mx-auto animate-in fade-in zoom-in duration-500">
-      <div className="bg-[#4A2E31] text-white p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="relative z-10 space-y-2">
-          <h2 className="text-3xl font-serif">Welcome back, {profile?.name || 'Beautiful'}!</h2>
-          <p className="text-white/80">Ready for your next salon experience?</p>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col items-center text-center space-y-4">
-           <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center text-primary">
-             <Calendar size={32} />
-           </div>
-           <div className="space-y-1">
-             <h3 className="font-bold text-lg">Book an Appointment</h3>
-             <p className="text-sm text-muted-foreground">Schedule your next visit easily with our online booking system.</p>
-           </div>
-           <button 
-             onClick={() => navigate('/appointments')}
-             className="mt-4 px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg w-full md:w-auto"
-           >
-             Book Now
-           </button>
-         </div>
+ return (
+ <div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in zoom-in duration-500">
+ <div className="bg-[#4A2E31] text-white p-4 rounded-2xl relative overflow-hidden">
+ <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+ <div className="relative z-10 space-y-2">
+ <h2 className="text-3xl font-serif">Welcome back, {profile?.name || 'Beautiful'}!</h2>
+ <p className="text-white/80">Ready for your next salon experience?</p>
+ </div>
+ </div>
+ 
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
+ <div className="w-16 h-16 bg-amber-100/50 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-400">
+ <Calendar size={32} />
+ </div>
+ <div className="space-y-1">
+ <h3 className="font-bold text-lg">Book an Appointment</h3>
+ <p className="text-sm text-slate-700 dark:text-slate-300">Schedule your next visit easily with our online booking system.</p>
+ </div>
+ <button 
+ onClick={() => navigate('/appointments')}
+ className="mt-4 px-4 md:px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 w-full md:w-auto"
+ >
+ Book Now
+ </button>
+ </div>
 
-         <div className="bg-card border border-border p-6 rounded-2xl shadow-sm flex flex-col items-center text-center space-y-4">
-           <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
-             <Star size={32} />
-           </div>
-           <div className="space-y-1">
-             <h3 className="font-bold text-lg">Loyalty Points</h3>
-             <p className="text-sm text-muted-foreground">You currently have <strong className="text-green-500 text-xl">{profile?.points || 0}</strong> points.</p>
-           </div>
-         </div>
-      </div>
-    </div>
-  );
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
+ <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
+ <Star size={32} />
+ </div>
+ <div className="space-y-1">
+ <h3 className="font-bold text-lg">Loyalty Points</h3>
+ <p className="text-sm text-slate-700 dark:text-slate-300">You currently have <strong className="text-green-500 text-xl">{profile?.points || 0}</strong> points.</p>
+ </div>
+ </div>
+ </div>
+ </div>
+ );
 };
 
 export const DashboardPage: React.FC = () => {
-  const { profile, isAdmin, isOwner, isSuperAdmin, isCustomer } = useAuth();
-  const navigate = useNavigate();
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [last7DaysSales, setLast7DaysSales] = useState<{ date: string; amount: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+ const { profile, isAdmin, isOwner, isSuperAdmin, isCustomer } = useAuth();
+ const navigate = useNavigate();
+ const [sales, setSales] = useState<Sale[]>([]);
+ const [expenses, setExpenses] = useState<Expense[]>([]);
+ const [appointments, setAppointments] = useState<Appointment[]>([]);
+ const [last7DaysSales, setLast7DaysSales] = useState<{ date: string; amount: number }[]>([]);
+ const [loading, setLoading] = useState(true);
 
-  const isOwnerOrAdmin = isAdmin || isOwner || (profile?.role as string) === 'admin';
+ const isOwnerOrAdmin = isAdmin || isOwner || (profile?.role as string) === 'admin';
 
-  const today = getLocalISODate();
+ const today = getLocalISODate();
 
-  useEffect(() => {
-    if (isCustomer) return;
+ useEffect(() => {
+ if (isCustomer) return;
 
-    const qSales = query(collection(db, 'sales'), where('date', '==', today));
-    const qAppts = query(collection(db, 'appointments'), where('date', '==', today));
+ const qSales = query(collection(db, 'sales'), where('date', '==', today));
+ const qAppts = query(collection(db, 'appointments'), where('date', '==', today));
 
-    const unsubSales = onSnapshot(qSales, (snapshot) => {
-      setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+ const unsubSales = onSnapshot(qSales, (snapshot) => {
+ setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
-    let unsubExp = () => {};
-    if (isOwnerOrAdmin) {
-      const qExp = query(collection(db, 'expenses'), where('date', '==', today));
-      unsubExp = onSnapshot(qExp, (snapshot) => {
-        setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
-      }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
-    }
+ let unsubExp = () => {};
+ if (isOwnerOrAdmin) {
+ const qExp = query(collection(db, 'expenses'), where('date', '==', today));
+ unsubExp = onSnapshot(qExp, (snapshot) => {
+ setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
+ }
 
-    const unsubAppts = onSnapshot(qAppts, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-      data.sort((a,b) => {
-        if (a.date !== b.date) return b.date.localeCompare(a.date);
-        return b.time.localeCompare(a.time);
-      });
-      setAppointments(data);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
+ const unsubAppts = onSnapshot(qAppts, (snapshot) => {
+ let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+ data.sort((a,b) => {
+ if (a.date !== b.date) return b.date.localeCompare(a.date);
+ return b.time.localeCompare(a.time);
+ });
+ setAppointments(data);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
 
-    let unsubChart = () => {};
-    if (isOwnerOrAdmin) {
-      // Fetch last 7 days for chart
-      const qChart = query(collection(db, 'sales'));
+ let unsubChart = () => {};
+ if (isOwnerOrAdmin) {
+ // Fetch last 7 days for chart
+ const qChart = query(collection(db, 'sales'));
 
-      unsubChart = onSnapshot(qChart, (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data() as Sale);
-        const chartData: { [key: string]: number } = {};
-        
-        // Initialize last 7 days with 0
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date();
-          d.setDate(d.getDate() - i);
-          const dStr = getLocalISODate(d);
-          chartData[dStr] = 0;
-        }
+ unsubChart = onSnapshot(qChart, (snapshot) => {
+ const data = snapshot.docs.map(doc => doc.data() as Sale);
+ const chartData: { [key: string]: number } = {};
+ 
+ // Initialize last 7 days with 0
+ for (let i = 6; i >= 0; i--) {
+ const d = new Date();
+ d.setDate(d.getDate() - i);
+ const dStr = getLocalISODate(d);
+ chartData[dStr] = 0;
+ }
 
-        data.forEach(s => {
-          if (s.date && chartData[s.date] !== undefined) {
-            chartData[s.date] += (Number(s.total) || 0);
-          }
-        });
+ data.forEach(s => {
+ if (s.date && chartData[s.date] !== undefined) {
+ chartData[s.date] += (Number(s.total) || 0);
+ }
+ });
 
-        const sortedDates = Object.keys(chartData).sort();
-        const formattedChart = sortedDates.map(date => {
-          let label = date;
-          try {
-            const parts = date.split('-');
-            if (parts.length === 3) {
-              const [y, m, d] = parts.map(Number);
-              label = format(new Date(y, m - 1, d), 'MMM dd');
-            }
-          } catch (e) {
-            console.error("Error formatting chart date:", e);
-          }
-          return {
-            date: label,
-            amount: chartData[date] || 0
-          };
-        });
+ const sortedDates = Object.keys(chartData).sort();
+ const formattedChart = sortedDates.map(date => {
+ let label = date;
+ try {
+ const parts = date.split('-');
+ if (parts.length === 3) {
+ const [y, m, d] = parts.map(Number);
+ label = format(new Date(y, m - 1, d), 'MMM dd');
+ }
+ } catch (e) {
+ console.error("Error formatting chart date:", e);
+ }
+ return {
+ date: label,
+ amount: chartData[date] || 0
+ };
+ });
 
-        setLast7DaysSales(formattedChart);
-        setLoading(false);
-      }, (error) => {
-        console.warn("Error fetching chart sales:", error);
-        // Fallback 7 days
-        const chartData: { [key: string]: number } = {};
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date();
-          d.setDate(d.getDate() - i);
-          chartData[getLocalISODate(d)] = 0;
-        }
-        setLast7DaysSales(Object.keys(chartData).sort().map(date => {
-          const [y, m, d] = date.split('-').map(Number);
-          return {
-            date: format(new Date(y, m - 1, d), 'MMM dd'),
-            amount: 0
-          };
-        }));
-        setLoading(false);
-      });
-    }
+ setLast7DaysSales(formattedChart);
+ setLoading(false);
+ }, (error) => {
+ console.warn("Error fetching chart sales:", error);
+ // Fallback 7 days
+ const chartData: { [key: string]: number } = {};
+ for (let i = 6; i >= 0; i--) {
+ const d = new Date();
+ d.setDate(d.getDate() - i);
+ chartData[getLocalISODate(d)] = 0;
+ }
+ setLast7DaysSales(Object.keys(chartData).sort().map(date => {
+ const [y, m, d] = date.split('-').map(Number);
+ return {
+ date: format(new Date(y, m - 1, d), 'MMM dd'),
+ amount: 0
+ };
+ }));
+ setLoading(false);
+ });
+ }
 
-    return () => {
-      unsubSales();
-      unsubExp();
-      unsubAppts();
-      unsubChart();
-    };
-  }, [profile, today, isOwnerOrAdmin]);
+ return () => {
+ unsubSales();
+ unsubExp();
+ unsubAppts();
+ unsubChart();
+ };
+ }, [profile, today, isOwnerOrAdmin]);
 
-  const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
-  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const netProfit = totalSales - totalExpenses;
-  const pendingAppts = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
+ const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
+ const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+ const netProfit = totalSales - totalExpenses;
+ const pendingAppts = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
 
-  const stats = [
-    { label: "Today's Sales", value: `${totalSales.toLocaleString()} Ks`, icon: <DollarSign size={24} />, color: "text-green-500", bg: "bg-green-500/10" },
-    ...(isAdmin ? [
-      { label: "Today's Expenses", value: `${totalExpenses.toLocaleString()} Ks`, icon: <TrendingDown size={24} />, color: "text-red-500", bg: "bg-red-500/10" },
-      { label: "Net Profit", value: `${netProfit.toLocaleString()} Ks`, icon: <TrendingUp size={24} />, color: "text-blue-500", bg: "bg-blue-500/10" },
-    ] : []),
-    { label: "Appointments", value: pendingAppts.toString(), icon: <Calendar size={24} />, color: "text-purple-500", bg: "bg-purple-500/10" },
-  ];
+ const stats = [
+ { label: "Today's Sales", value: `${totalSales.toLocaleString()} Ks`, icon: <DollarSign size={24} />, color: "text-green-500", bg: "bg-green-500/10" },
+ ...(isAdmin ? [
+ { label: "Today's Expenses", value: `${totalExpenses.toLocaleString()} Ks`, icon: <TrendingDown size={24} />, color: "text-red-500", bg: "bg-red-500/10" },
+ { label: "Net Profit", value: `${netProfit.toLocaleString()} Ks`, icon: <TrendingUp size={24} />, color: "text-blue-500", bg: "bg-blue-500/10" },
+ ] : []),
+ { label: "Appointments", value: pendingAppts.toString(), icon: <Calendar size={24} />, color: "text-purple-500", bg: "bg-purple-500/10" },
+ ];
 
 
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
-        <div className="space-y-1">
-          <h3 className="text-3xl font-black tracking-tighter text-foreground uppercase">Dashboard</h3>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Business Overview for {formatFullDate(new Date())}</p>
-        </div>
-        <div className="flex gap-3">
-          <button 
-            onClick={() => navigate('/pos')}
-            className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-2xl font-black text-xs tracking-widest shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
-          >
-            <Plus size={16} />
-            NEW SALE
-          </button>
-          <button 
-            onClick={() => navigate('/appointments')}
-            className="flex items-center gap-2 bg-card border border-border px-6 py-3 rounded-2xl font-black text-xs tracking-widest hover:border-primary transition-all"
-          >
-            <Calendar size={16} />
-            APPOINTMENTS
-          </button>
-        </div>
-      </div>
+ return (
+ <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-500">
+ <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
+ <div className="space-y-1">
+ <h3 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-slate-100 uppercase">Dashboard</h3>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em]">Business Overview for {formatFullDate(new Date())}</p>
+ </div>
+ <div className="flex gap-3">
+ <button 
+ onClick={() => navigate('/pos')}
+ className="flex items-center gap-2 bg-primary text-white px-4 md:px-6 py-3 rounded-2xl font-black text-xs tracking-widest shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+ >
+ <Plus size={16} />
+ NEW SALE
+ </button>
+ <button 
+ onClick={() => navigate('/appointments')}
+ className="flex items-center gap-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 px-4 md:px-6 py-3 rounded-2xl font-black text-xs tracking-widest hover:-primary transition-all"
+ >
+ <Calendar size={16} />
+ APPOINTMENTS
+ </button>
+ </div>
+ </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((s, i) => (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            key={i} 
-            className="bg-card p-6 rounded-[2rem] border border-border shadow-sm space-y-4 relative overflow-hidden group"
-          >
-            <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500", s.bg, s.color)}>
-              {s.icon}
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] text-muted-foreground font-black uppercase tracking-widest">{s.label}</p>
-              <h4 className="text-2xl font-black text-foreground tracking-tighter">{s.value}</h4>
-            </div>
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 blur-3xl group-hover:bg-primary/10 transition-colors" />
-          </motion.div>
-        ))}
-      </div>
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+ {stats.map((s, i) => (
+ <motion.div 
+ initial={{ opacity: 0, y: 20 }}
+ animate={{ opacity: 1, y: 0 }}
+ transition={{ delay: i * 0.1 }}
+ key={i} 
+ className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-3 relative overflow-hidden group"
+ >
+ <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500", s.bg, s.color)}>
+ {s.icon}
+ </div>
+ <div className="space-y-1">
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest">{s.label}</p>
+ <h4 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tighter">{s.value}</h4>
+ </div>
+ <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/50 dark:bg-amber-900/20 rounded-full -mr-12 -mt-12 blur-3xl group-hover:bg-amber-100/50 dark:bg-amber-900/30 transition-colors" />
+ </motion.div>
+ ))}
+ </div>
 
-      {isOwnerOrAdmin && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Sales Chart */}
-          <div className="lg:col-span-2 bg-card rounded-[2.5rem] border border-border p-8 shadow-sm space-y-6 flex flex-col">
-            <div className="flex justify-between items-center">
-              <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                Revenue Trend (Last 7 Days)
-              </h4>
-            </div>
-            <div className="flex-1 h-[300px] w-full min-h-[280px]">
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
-                <AreaChart data={last7DaysSales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#d4af37" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#d4af37" stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.15)" />
-                  <XAxis 
-                    dataKey="date" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--muted-foreground)' }}
-                    dy={10}
-                  />
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--muted-foreground)' }}
-                    tickFormatter={(val) => {
-                      if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
-                      if (val >= 1000) return `${(val / 1000).toFixed(0)}k`;
-                      return `${val}`;
-                    }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'var(--card)', 
-                      borderColor: 'var(--border-color)', 
-                      borderRadius: '1rem',
-                      fontSize: '12px',
-                      fontWeight: 'bold',
-                      boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)'
-                    }}
-                    formatter={(value: any) => [`${Number(value || 0).toLocaleString()} Ks`, 'Revenue']}
-                    labelStyle={{ color: 'var(--fg)', fontWeight: 800, marginBottom: '4px' }}
-                    itemStyle={{ color: '#d4af37', fontWeight: 800 }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="amount" 
-                    stroke="#d4af37" 
-                    strokeWidth={3.5}
-                    fillOpacity={1} 
-                    fill="url(#colorSales)" 
-                    activeDot={{ r: 6, fill: '#d4af37', stroke: '#ffffff', strokeWidth: 2 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
+ {isOwnerOrAdmin && (
+ <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+ {/* Sales Chart */}
+ <div className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-3 md:space-y-4 flex flex-col">
+ <div className="flex justify-between items-center">
+ <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Revenue Trend (Last 7 Days)
+ </h4>
+ </div>
+ <div className="flex-1 h-[300px] w-full min-h-[280px]">
+ <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
+ <AreaChart data={last7DaysSales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+ <defs>
+ <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
+ <stop offset="5%" stopColor="#d4af37" stopOpacity={0.4}/>
+ <stop offset="95%" stopColor="#d4af37" stopOpacity={0.0}/>
+ </linearGradient>
+ </defs>
+ <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.15)" />
+ <XAxis 
+ dataKey="date" 
+ axisLine={false} 
+ tickLine={false} 
+ tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--muted-foreground)' }}
+ dy={10}
+ />
+ <YAxis 
+ axisLine={false} 
+ tickLine={false} 
+ tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--muted-foreground)' }}
+ tickFormatter={(val) => {
+ if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+ if (val >= 1000) return `${(val / 1000).toFixed(0)}k`;
+ return `${val}`;
+ }}
+ />
+ <Tooltip 
+ contentStyle={{ 
+ backgroundColor: 'var(--card)', 
+ borderColor: 'var(---color)', 
+ borderRadius: '1rem',
+ fontSize: '12px',
+ fontWeight: 'bold',
+ boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)'
+ }}
+ formatter={(value: any) => [`${Number(value || 0).toLocaleString()} Ks`, 'Revenue']}
+ labelStyle={{ color: 'var(--fg)', fontWeight: 800, marginBottom: '4px' }}
+ itemStyle={{ color: '#d4af37', fontWeight: 800 }}
+ />
+ <Area 
+ type="monotone" 
+ dataKey="amount" 
+ stroke="#d4af37" 
+ strokeWidth={3.5}
+ fillOpacity={1} 
+ fill="url(#colorSales)" 
+ activeDot={{ r: 6, fill: '#d4af37', stroke: '#ffffff', strokeWidth: 2 }}
+ />
+ </AreaChart>
+ </ResponsiveContainer>
+ </div>
+ </div>
 
-          {/* Quick Stats / Info */}
-          <div className="bg-primary rounded-[2.5rem] p-8 text-white space-y-8 relative overflow-hidden shadow-2xl shadow-primary/20">
-            <div className="relative z-10 space-y-2">
-              <h4 className="text-xs font-black uppercase tracking-[0.3em] opacity-60">Today's Performance</h4>
-              <h2 className="text-4xl font-black tracking-tighter leading-none">
-                {netProfit > 0 ? "+" : ""}{netProfit.toLocaleString()} <span className="text-lg opacity-60">Ks</span>
-              </h2>
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Net Profit after expenses</p>
-            </div>
+ {/* Quick Stats / Info */}
+ <div className="bg-primary rounded-2xl p-4 text-white space-y-4 relative overflow-hidden">
+ <div className="relative z-10 space-y-2">
+ <h4 className="text-xs font-black uppercase tracking-[0.3em] opacity-60">Today's Performance</h4>
+ <h2 className="text-4xl font-black tracking-tighter leading-none">
+ {netProfit > 0 ? "+" : ""}{netProfit.toLocaleString()} <span className="text-lg opacity-60">Ks</span>
+ </h2>
+ <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Net Profit after expenses</p>
+ </div>
 
-            <div className="relative z-10 space-y-4">
-              <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Sales Count</span>
-                <span className="text-lg font-black">{sales.length}</span>
-              </div>
-              <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Avg. Ticket</span>
-                <span className="text-lg font-black">{sales.length > 0 ? Math.floor(totalSales / sales.length).toLocaleString() : 0} Ks</span>
-              </div>
-              <div className="bg-white/10  p-4 rounded-2xl border border-border flex justify-between items-center">
-                <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Expense Ratio</span>
-                <span className="text-lg font-black">{totalSales > 0 ? Math.floor((totalExpenses / totalSales) * 100) : 0}%</span>
-              </div>
-            </div>
+ <div className="relative z-10 space-y-4">
+ <div className="bg-white/10 p-3 rounded-xl flex justify-between items-center">
+ <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Sales Count</span>
+ <span className="text-lg font-black">{sales.length}</span>
+ </div>
+ <div className="bg-white/10 p-3 rounded-xl flex justify-between items-center">
+ <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Avg. Ticket</span>
+ <span className="text-lg font-black">{sales.length > 0 ? Math.floor(totalSales / sales.length).toLocaleString() : 0} Ks</span>
+ </div>
+ <div className="bg-white/10 p-3 rounded-xl flex justify-between items-center">
+ <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Expense Ratio</span>
+ <span className="text-lg font-black">{totalSales > 0 ? Math.floor((totalExpenses / totalSales) * 100) : 0}%</span>
+ </div>
+ </div>
 
-            <div className="absolute bottom-0 right-0 w-64 h-64 bg-input rounded-full -mr-32 -mb-32 blur-3xl" />
-          </div>
-        </div>
-      )}
+ <div className="absolute bottom-0 right-0 w-64 h-64 bg-input rounded-full -mr-32 -mb-32 blur-3xl" />
+ </div>
+ </div>
+ )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Recent Sales */}
-        <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm flex flex-col">
-          <div className="p-6 border-b border-border flex justify-between items-center bg-muted/5">
-            <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-              Recent Sales
-            </h4>
-            <button onClick={() => navigate('/history')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW ALL</button>
-          </div>
-          <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
-            {sales.length === 0 ? (
-              <div className="p-20 text-center space-y-4 opacity-40">
-                <ShoppingCart size={40} className="mx-auto text-muted-foreground" />
-                <p className="text-xs font-bold uppercase tracking-widest">No sales today yet</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/50">
-                {sales.slice(0, 10).map((s) => (
-                  <div key={s.id} className="p-5 flex justify-between items-center hover:bg-muted/5 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-black text-xs">
-                        {s.customerName ? s.customerName[0].toUpperCase() : 'G'}
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{s.customerName || 'Guest Customer'}</p>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                          {formatDisplayDate(s.dateTime)} • {formatTime(s.dateTime)} • {s.method}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-black text-foreground">{s.total.toLocaleString()} Ks</p>
-                      <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">{s.items.length} items</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+ <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+ {/* Recent Sales */}
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden flex flex-col">
+ <div className="p-4 flex justify-between items-center bg-muted/5">
+ <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Recent Sales
+ </h4>
+ <button onClick={() => navigate('/history')} className="text-[10px] font-black text-amber-600 dark:text-amber-400 hover:underline tracking-widest">VIEW ALL</button>
+ </div>
+ <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
+ {sales.length === 0 ? (
+ <div className="p-20 text-center space-y-4 opacity-40">
+ <ShoppingCart size={40} className="mx-auto text-slate-700 dark:text-slate-300" />
+ <p className="text-xs font-bold uppercase tracking-widest">No sales today yet</p>
+ </div>
+ ) : (
+ <div className="divide-y divide-/50">
+ {sales.slice(0, 10).map((s) => (
+ <div key={s.id} className="p-4 flex justify-between items-center hover:bg-muted/5 transition-colors group">
+ <div className="flex items-center gap-4">
+ <div className="w-10 h-10 bg-amber-100/50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 font-black text-xs">
+ {s.customerName ? s.customerName[0].toUpperCase() : 'G'}
+ </div>
+ <div>
+ <p className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight group-hover:text-amber-600 dark:text-amber-400 transition-colors">{s.customerName || 'Guest Customer'}</p>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">
+ {formatDisplayDate(s.dateTime)} • {formatTime(s.dateTime)} • {s.method}
+ </p>
+ </div>
+ </div>
+ <div className="text-right">
+ <p className="text-sm font-black text-slate-900 dark:text-slate-100">{s.total.toLocaleString()} Ks</p>
+ <p className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">{s.items.length} items</p>
+ </div>
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
+ </div>
 
-        {/* Upcoming Appointments */}
-        <div className="bg-card rounded-[2.5rem] border border-border overflow-hidden shadow-sm flex flex-col">
-          <div className="p-6 border-b border-border flex justify-between items-center bg-muted/5">
-            <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <div className="w-1.5 h-4 bg-purple-500 rounded-full"></div>
-              Today's Appointments
-            </h4>
-            <button onClick={() => navigate('/appointments')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW CALENDAR</button>
-          </div>
-          <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
-            {appointments.length === 0 ? (
-              <div className="p-20 text-center space-y-4 opacity-40">
-                <Calendar size={40} className="mx-auto text-muted-foreground" />
-                <p className="text-xs font-bold uppercase tracking-widest">No appointments today</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border/50">
-                {appointments.sort((a, b) => a.time.localeCompare(b.time)).map((a) => (
-                  <div key={a.id} className="p-5 flex justify-between items-center hover:bg-muted/5 transition-colors group">
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
-                        a.status === 'confirmed' ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
-                      )}>
-                        {a.time}
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{a.customerName}</p>
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{a.serviceName} • {a.staffName}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={cn(
-                        "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full border",
-                        a.status === 'confirmed' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-                      )}>
-                        {a.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+ {/* Upcoming Appointments */}
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden flex flex-col">
+ <div className="p-4 flex justify-between items-center bg-muted/5">
+ <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-purple-500 rounded-full"></div>
+ Today's Appointments
+ </h4>
+ <button onClick={() => navigate('/appointments')} className="text-[10px] font-black text-amber-600 dark:text-amber-400 hover:underline tracking-widest">VIEW CALENDAR</button>
+ </div>
+ <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
+ {appointments.length === 0 ? (
+ <div className="p-20 text-center space-y-4 opacity-40">
+ <Calendar size={40} className="mx-auto text-slate-700 dark:text-slate-300" />
+ <p className="text-xs font-bold uppercase tracking-widest">No appointments today</p>
+ </div>
+ ) : (
+ <div className="divide-y divide-/50">
+ {appointments.sort((a, b) => a.time.localeCompare(b.time)).map((a) => (
+ <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/5 transition-colors group">
+ <div className="flex items-center gap-4">
+ <div className={cn(
+ "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
+ a.status === 'confirmed' ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+ )}>
+ {a.time}
+ </div>
+ <div>
+ <p className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight group-hover:text-amber-600 dark:text-amber-400 transition-colors">{a.customerName}</p>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">{a.serviceName} • {a.staffName}</p>
+ </div>
+ </div>
+ <div className="text-right">
+ <span className={cn(
+ "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full ",
+ a.status === 'confirmed' ? "bg-green-500/10 text-green-500 -green-500/20" : "bg-yellow-500/10 text-yellow-500 -yellow-500/20"
+ )}>
+ {a.status}
+ </span>
+ </div>
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ </div>
+ );
 };
 
 export const POSPage: React.FC = () => {
-  const { profile, isAdmin, isStaff, isStaffMember, isCustomer } = useAuth();
-  const [services, setServices] = useState<Service[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [search, setSearch] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [staff, setStaff] = useState<UserProfile[]>([]);
-  const [selectedStaffEmail, setSelectedStaffEmail] = useState('');
-  const [payments, setPayments] = useState<{ method: 'Cash' | 'KBZPay' | 'WavePay' | 'AYA Pay' | 'CB PAY' | 'OK$'; amount: number }[]>([
-    { method: 'Cash', amount: 0 }
-  ]);
-  const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState('');
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState('');
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [appointmentSearch, setAppointmentSearch] = useState('');
-  const [pointsToRedeem, setPointsToRedeem] = useState(0);
-  const [showLoyaltyPrompt, setShowLoyaltyPrompt] = useState(false);
-  const [isLoyaltyDiscountActive, setIsLoyaltyDiscountActive] = useState(false);
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
-  const [pendingSaleParams, setPendingSaleParams] = useState<{sale: Omit<Sale, 'id'>, overridePayments?: typeof payments} | null>(null);
-  const [loadingPOS, setLoadingPOS] = useState(true);
-
-  const LOYALTY_THRESHOLD = 500;
-  const LOYALTY_DISCOUNT = 10; // 10%
-
-  useEffect(() => {
-    if (!isStaff) return;
-    const q = query(collection(db, 'services'), orderBy('name'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
-      setLoadingPOS(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'services');
-      setLoadingPOS(false);
-    });
-    return unsubscribe;
-  }, [profile]);
-
-  useEffect(() => {
-    if (!isStaff) return;
-    const q = query(collection(db, 'categories'), orderBy('name'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
-    return unsubscribe;
-  }, [profile]);
-
-  useEffect(() => {
-    const q = query(collection(db, 'users'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const uniqueStaff = new Map<string, UserProfile>();
-      snapshot.docs.forEach(doc => {
-        const data = doc.data() as UserProfile;
-        // Client-side filtering: Hide super_admin and customers from the staff list
-        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
-        const isExcluded = data.role === 'super_admin' || 
-                          data.role === 'customer' || 
-                          (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
-        if (data.email && !isExcluded) {
-          const email = data.email.toLowerCase().trim();
-          // Prefer documents that have a UID (already logged in)
-          if (!uniqueStaff.has(email) || data.uid) {
-            uniqueStaff.set(email, { ...data, id: doc.id });
-          }
-        }
-      });
-      const staffList = Array.from(uniqueStaff.values());
-      setStaff(staffList);
-      if (profile && !selectedStaffEmail) setSelectedStaffEmail(profile.email);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
-    return unsubscribe;
-  }, [profile]);
-
-  useEffect(() => {
-    if (!isStaff) return;
-    const q = query(collection(db, 'customers'), orderBy('name'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
-    return unsubscribe;
-  }, [profile]);
-
-  useEffect(() => {
-    if (!isStaff) return;
-    // Fetch pending, confirmed, and completed appointments for today or recent
-    // We filter out completed ones that were already processed for points in memory
-    const q = query(
-      collection(db, 'appointments'), 
-      where('status', 'in', ['pending', 'confirmed', 'completed']),
-      orderBy('date', 'desc'),
-      orderBy('time', 'asc')
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const allAppts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-      // Filter: only show completed ones if they haven't been processed for points yet
-      const filteredAppts = allAppts.filter(a => a.status !== 'completed' || !a.pointsProcessed);
-      setAppointments(filteredAppts);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
-    return unsubscribe;
-  }, [profile]);
-
-  useEffect(() => {
-    if (isCustomer) return;
-    const docRef = doc(db, 'settings', 'salon');
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) setShopSettings(docSnap.data() as ShopSettings);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'settings/salon'));
-    return unsubscribe;
-  }, [profile]);
-
-  const categoryList = ['All', ...categories.map(c => c.name)];
-
-  const filteredServices = services.filter(s => {
-    const matchesCategory = selectedCategory === 'All' || (s.category === selectedCategory);
-    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
-
-  // Remove automatic loyalty prompt useEffect
-  
-  const applyLoyaltyDiscount = () => {
-    setIsLoyaltyDiscountActive(true);
-    setCart(prev => prev.map(item => ({ ...item, disP: Math.max(item.disP, LOYALTY_DISCOUNT) })));
-    setShowLoyaltyPrompt(false);
-  };
-
-  const addToCart = (service: Service) => {
-    setCart(prev => {
-      const existing = prev.find(item => item.id === service.id);
-      const initialDiscount = isLoyaltyDiscountActive ? LOYALTY_DISCOUNT : 0;
-      if (existing) {
-        return prev.map(item => item.id === service.id ? { ...item, qty: item.qty + 1 } : item);
-      }
-      return [...prev, { ...service, qty: 1, disP: initialDiscount }];
-    });
-  };
-
-  const updateCartItem = (index: number, updates: Partial<CartItem>) => {
-    setCart(prev => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
-  };
-
-  const removeFromCart = (index: number) => {
-    setCart(prev => prev.filter((_, i) => i !== index));
-  };
-
-  useEffect(() => {
-    if (profile?.email && !selectedStaffEmail) {
-      setSelectedStaffEmail(profile.email);
-    }
-  }, [profile, selectedStaffEmail]);
-
-  const subTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-  const totalDiscount = cart.reduce((sum, item) => sum + (item.price * item.qty * (item.disP / 100)), 0);
-  const pointsDiscount = pointsToRedeem * 10; // 1 point = 10 Ks
-  const netTotal = Math.max(0, subTotal - totalDiscount - pointsDiscount);
-  const pointsEarned = Math.floor(netTotal / 1000); // 1 point per 1000 Ks
-
-  // Update the first payment amount when netTotal changes, if there's only one payment
-  useEffect(() => {
-    if (payments.length === 1) {
-      setPayments([{ ...payments[0], amount: netTotal }]);
-    }
-  }, [netTotal]);
-
-  const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-  const remainingAmount = netTotal - totalPaid;
-
-  const todayStr = getLocalISODate();
-  const todaysAppointments = appointments.filter(a => a.date === todayStr);
-
-  const addPaymentMethod = () => {
-    setPayments([...payments, { method: 'Cash', amount: Math.max(0, remainingAmount) }]);
-  };
-
-  const removePaymentMethod = (index: number) => {
-    setPayments(payments.filter((_, i) => i !== index));
-  };
-
-  const updatePayment = (index: number, updates: Partial<{ method: any; amount: number }>) => {
-    setPayments(payments.map((p, i) => i === index ? { ...p, ...updates } : p));
-  };
-
-  const customerSuggestions = customerSearch.length > 0 
-    ? customers.filter(c => 
-        c.name.toLowerCase().includes(customerSearch.toLowerCase()) || 
-        c.phone.includes(customerSearch)
-      ).slice(0, 5)
-    : [];
-
-  const appointmentSuggestions = appointmentSearch.length > 0
-    ? appointments.filter(a => 
-        a.customerName.toLowerCase().includes(appointmentSearch.toLowerCase()) ||
-        a.customerPhone.includes(appointmentSearch) ||
-        a.serviceName.toLowerCase().includes(appointmentSearch.toLowerCase())
-      ).slice(0, 5)
-    : [];
-
-  const handleSelectAppointment = (appt: Appointment) => {
-    // 1. Set customer
-    if (appt.customerId && appt.customerId !== 'manual') {
-      setSelectedCustomerId(appt.customerId);
-    } else {
-      // Try to find customer by phone or name if phone is not empty
-      let customer = undefined;
-      if (appt.customerPhone && appt.customerPhone.trim() !== '') {
-        customer = customers.find(c => c.phone === appt.customerPhone);
-      }
-      if (customer) {
-        setSelectedCustomerId(customer.id);
-      } else {
-        setSelectedCustomerId('');
-      }
-    }
-
-    // 2. Add service to cart
-    const service = services.find(s => s.id === appt.serviceId || s.name === appt.serviceName);
-    if (service) {
-      addToCart(service);
-    }
-
-    // 3. Set staff
-    if (appt.staffEmail) {
-      setSelectedStaffEmail(appt.staffEmail);
-    }
-
-    // 4. Set appointment ID and points
-    setSelectedAppointmentId(appt.id);
-    setPointsToRedeem(appt.pointsToRedeem || 0);
-    setAppointmentSearch('');
-  };
-
-  const handleCheckout = (overridePayments?: typeof payments) => {
-    if (cart.length === 0) return;
-
-    // Validate quantities for multi-staff assignments
-    for (const item of cart) {
-      if (item.staffAssignments && item.staffAssignments.length > 0) {
-        const sum = item.staffAssignments.reduce((acc, a) => acc + (a.qty || 0), 0);
-        if (sum !== item.qty) {
-          alert(`Cannot checkout. Please ensure the total staff assigned quantities match the service total quantity for ${item.name}.`);
-          return;
-        }
-      }
-    }
-    
-    // Determine the global fallback staff
-    // If 'Any Staff' is selected, fallback to an owner. If no owner, fallback to first staff.
-    let globalStaff = staff.find(s => s.email === selectedStaffEmail);
-    if (!globalStaff) {
-      globalStaff = staff.find(s => s.role === 'owner') || staff[0];
-    }
-    if (!globalStaff) return; // Should not happen in practice
-
-    const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
-
-    const now = new Date();
-    const localDateStr = getLocalISODate(now);
-    
-    const finalPayments = overridePayments || payments;
-    const finalTotalPaid = finalPayments.reduce((sum, p) => sum + p.amount, 0);
-
-    if (finalTotalPaid !== netTotal) {
-      alert(`Payment mismatch! Total paid: ${finalTotalPaid.toLocaleString()} Ks, Net Total: ${netTotal.toLocaleString()} Ks`);
-      return;
-    }
-
-    let totalSaleCommission = 0;
-
-    const mappedItems = cart.map(item => {
-      let finalAssignments = item.staffAssignments ? [...item.staffAssignments] : [];
-      let itemStaffEmail = item.staffEmail;
-      let itemStaffName = item.staffName;
-
-      if (finalAssignments.length > 0) {
-        itemStaffEmail = "";
-        itemStaffName = "";
-      } else if (!itemStaffEmail) {
-        itemStaffEmail = globalStaff.email;
-        itemStaffName = globalStaff.name;
-      }
-
-      const itemStaff = staff.find(s => s.email === itemStaffEmail) || globalStaff;
-      const itemSubtotal = item.price * item.qty * (1 - item.disP / 100);
-      let itemCommission = 0;
-      
-      if (item.allowCommission !== false) {
-        const proportion = subTotal > 0 ? (itemSubtotal / subTotal) : 0;
-        const effectivePointsDiscount = pointsDiscount * proportion;
-        const commissionableValue = Math.max(0, itemSubtotal - effectivePointsDiscount);
-        
-        if (finalAssignments.length > 0) {
-          itemCommission = finalAssignments.reduce((sum, a, aIdx) => {
-             const s = staff.find(st => st.name === a.name);
-             let aComm = 0;
-             if (s) {
-                const aCommValue = commissionableValue * (a.qty / item.qty);
-                aComm = Math.round(aCommValue * ((s.commission || 0) / 100));
-             }
-             finalAssignments[aIdx] = { ...a, commission: aComm };
-             return sum + aComm;
-          }, 0);
-        } else {
-          itemCommission = Math.round(commissionableValue * ((itemStaff.commission || 0) / 100));
-        }
-        totalSaleCommission += itemCommission;
-      }
-
-      return {
-        id: item.id,
-        serviceId: item.id,
-        name: item.name,
-        qty: item.qty,
-        price: item.price,
-        disP: item.disP,
-        staffId: itemStaffEmail,
-        staffName: itemStaffName,
-        staffAssignments: finalAssignments,
-        commission: itemCommission
-      };
-    });
-
-    let saleStaffNames: string[] = [];
-    mappedItems.forEach(item => {
-      if (item.staffAssignments && item.staffAssignments.length > 0) {
-        saleStaffNames.push(...item.staffAssignments.map(a => a.name));
-      } else if (item.staffName) {
-        saleStaffNames.push(item.staffName);
-      }
-    });
-    
-    const uniqueSaleStaffNames = Array.from(new Set(saleStaffNames.filter(Boolean)));
-    const finalSaleStaffName = uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames.join(' + ') : globalStaff.name;
-
-    const sale: Omit<Sale, 'id'> = {
-      date: localDateStr,
-      dateTime: now.toISOString(),
-      staff: finalSaleStaffName,
-      staffNames: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
-      staffNamesArray: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
-      staffEmail: globalStaff.email,
-      customerName: selectedCustomer?.name || '',
-      customerPhone: selectedCustomer?.phone || '',
-      total: netTotal,
-      payments: finalPayments,
-      method: finalPayments.map(p => p.method).join(', '),
-      commission: totalSaleCommission,
-      pointsEarned,
-      pointsRedeemed: pointsToRedeem,
-      items: mappedItems
-    };
-
-    setPendingSaleParams({ sale, overridePayments });
-    setShowPrintPreview(true);
-  };
-
-  const confirmCheckout = async (print: boolean) => {
-    if (!pendingSaleParams) return;
-    const { sale } = pendingSaleParams;
-
-    try {
-      await addDoc(collection(db, 'sales'), sale);
-      
-      const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
-      if (selectedCustomer) {
-        const newPoints = (selectedCustomer.points || 0) + (sale.pointsEarned || 0) - (sale.pointsRedeemed || 0);
-        await updateDoc(doc(db, 'customers', selectedCustomer.id), {
-          points: newPoints
-        });
-        
-        if (selectedCustomer.email) {
-          const userDocRef = doc(db, 'users', selectedCustomer.email.toLowerCase());
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-             await updateDoc(userDocRef, { points: newPoints });
-          }
-        }
-      }
-
-      if (selectedAppointmentId) {
-        await updateDoc(doc(db, 'appointments', selectedAppointmentId), {
-          status: 'completed',
-          pointsProcessed: true
-        });
-      }
-
-      if (print) {
-        const printText = generateReceiptHTML(sale, shopSettings);
-        if (Capacitor.isNativePlatform()) {
-          const htmlStr = `<html><body style='margin:0;padding:10px;'>${printText}</body></html>`;
-          CapPrinter.printHtml({ name: 'Receipt', html: htmlStr }).catch(e => {
-            console.error('Printer error:', e);
-            alert('Failed to print: ' + String(e));
-          });
-        } else {
-          const isAndroid = /android/i.test(navigator.userAgent);
-          if (isAndroid) {
-            const rawText = generateReceiptText(sale, shopSettings);
-            triggerRawbtPrint(rawText);
-          } else {
-            window.dispatchEvent(new CustomEvent('print-html', { detail: printText }));
-          }
-        }
-      }
-
-      setCart([]);
-      setSelectedCustomerId('');
-      setSelectedAppointmentId('');
-      setAppointmentSearch('');
-      setPointsToRedeem(0);
-      setIsLoyaltyDiscountActive(false);
-      setPayments([{ method: 'Cash', amount: 0 }]);
-      setShowPrintPreview(false);
-      setPendingSaleParams(null);
-      alert("Sale saved successfully!");
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'sales');
-    }
-  };
-
-  const handleQuickCheckout = (method: 'Cash' | 'KBZPay' | 'WavePay') => {
-    handleCheckout([{ method, amount: netTotal }]);
-  };
-
-  const paymentMethods = [
-    { id: 'Cash', label: 'Cash' },
-    { id: 'KBZPay', label: 'KBZPay' },
-    { id: 'WavePay', label: 'WavePay' },
-    { id: 'AYA Pay', label: 'AYA Pay' },
-    { id: 'CB PAY', label: 'CB PAY' },
-    { id: 'OK$', label: 'OK$' },
-  ];
-
-  const invalidCartItem = cart.find(item => {
-    if (item.staffAssignments && item.staffAssignments.length > 0) {
-      const sum = item.staffAssignments.reduce((acc, a) => acc + (a.qty || 0), 0);
-      return sum !== item.qty;
-    }
-    return false;
-  });
-  const isCartValid = !invalidCartItem;
-
-  return (
-    <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-73px)] overflow-y-auto lg:overflow-hidden bg-background">
-      {/* Left Side: Services Selection */}
-      <div className="flex-none lg:flex-1 flex flex-col min-w-0 border-r border-border/50">
-        <div className="p-4 space-y-4 bg-card  border-b border-border/50">
-          <div className="relative z-50">
-            <div className="relative">
-              <FloatingInput 
-                label="Search Service..." 
-                value={search}
-                onChange={setSearch}
-                onFocusClear
-                className="mt-0"
-              />
-              {search && (
-                <button 
-                  onClick={() => setSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600 transition-colors z-10"
-                >
-                  <X size={18} />
-                </button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide px-1">
-            {categoryList.map(cat => {
-              const categoryData = categories.find(c => c.name === cat);
-              const IconComp = categoryData 
-                ? (CATEGORY_ICONS.find(i => i.name === categoryData.icon)?.icon || LayoutGrid)
-                : (cat === 'All' ? LayoutGrid : LayoutGrid);
-              
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={cn(
-                    "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border whitespace-nowrap flex items-center gap-2.5",
-                    selectedCategory === cat 
-                      ? "bg-primary text-white border-primary shadow-lg shadow-primary/20 scale-105" 
-                      : "bg-card/50 text-muted-foreground border-border/50 hover:border-primary/30 hover:text-primary"
-                  )}
-                >
-                  <IconComp size={14} />
-                  {cat}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex-none lg:flex-1 overflow-y-visible lg:overflow-y-auto p-4 scrollbar-hide">
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-            {loadingPOS ? (
-              Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-card border border-border/50 rounded-2xl p-4 text-left shadow-sm min-h-[100px] flex flex-col justify-between animate-pulse">
-                   <div>
-                     <div className="h-2 bg-primary/10 rounded w-1/3 mb-2"></div>
-                     <div className="h-4 bg-primary/20 rounded w-3/4 mb-1"></div>
-                     <div className="h-4 bg-primary/20 rounded w-1/2"></div>
-                   </div>
-                   <div className="mt-4 flex justify-between items-end">
-                     <div className="h-3 bg-primary/10 rounded w-1/2"></div>
-                     <div className="w-6 h-6 rounded-lg bg-primary/10"></div>
-                   </div>
-                </div>
-              ))
-            ) : filteredServices.length > 0 ? (
-              filteredServices.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => addToCart(s)}
-                  className={cn(
-                    "border rounded-2xl p-4 text-left shadow-sm group relative overflow-hidden flex flex-col justify-between min-h-[100px]",
-                    "bg-card border-border/50",
-                    "hover:shadow-xl hover:border-primary/30",
-                    "active:scale-95 active:bg-amber-500/5 transition-transform duration-75 ease-out"
-                  )}
-                >
-                  <div className="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-full -mr-8 -mt-8 blur-2xl group-hover:bg-primary/10 transition-colors" />
-                  <div className="relative z-10">
-                    <span className="text-[8px] text-primary font-black uppercase tracking-[0.2em] block mb-1 opacity-60">{s.category}</span>
-                    <b className="block text-foreground text-sm font-black tracking-tight leading-tight line-clamp-2 group-hover:text-primary transition-colors">{s.name}</b>
-                  </div>
-                  <div className="mt-4 relative z-10">
-                    <span className="text-xs text-muted-foreground font-bold">{s.price.toLocaleString()} Ks</span>
-                  </div>
-                </button>
-              ))
-            ) : (
-              <div className="col-span-full py-20 text-center space-y-4">
-                <div className="w-16 h-16 bg-muted/10 rounded-full flex items-center justify-center mx-auto">
-                  <Search size={24} className="text-muted-foreground/40" />
-                </div>
-                <p className="text-muted-foreground font-bold text-sm uppercase tracking-widest">No services found</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side: Cart & Checkout */}
-      <div className="w-full lg:w-[400px] xl:w-[450px] bg-card/50  flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.05)] border-t lg:border-t-0 border-border/50">
-        <div className="p-6 border-b border-border/50 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-              <ShoppingCart size={20} />
-            </div>
-            <div>
-              <h2 className="text-lg font-black text-foreground tracking-tight">Current Order</h2>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{cart.length} items selected</p>
-            </div>
-          </div>
-          {cart.length > 0 && (
-            <button 
-              onClick={() => {
-                setCart([]);
-                setIsLoyaltyDiscountActive(false);
-                setPointsToRedeem(0);
-                setSelectedCustomerId('');
-                setSelectedAppointmentId('');
-                setCustomerSearch('');
-                setAppointmentSearch('');
-              }}
-              className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-              title="Clear Cart"
-            >
-              <Trash2 size={18} />
-            </button>
-          )}
-        </div>
-
-        <div className="flex-none lg:flex-1 overflow-y-visible lg:overflow-y-auto p-6 space-y-6 scrollbar-hide">
-          {cart.length > 0 ? (
-            <div className="space-y-4">
-              {cart.map((item, i) => (
-                <motion.div 
-                  layout
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  key={i} 
-                  className="bg-card border border-border/50 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all group"
-                >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-black text-foreground tracking-tight truncate group-hover:text-primary transition-colors">{item.name}</h4>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{item.price.toLocaleString()} Ks</p>
-                        {item.disP > 0 && (
-                          <div className="flex gap-1">
-                            <span className="text-[8px] bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest border border-red-500/20">
-                              -{item.disP}%
-                            </span>
-                            {isLoyaltyDiscountActive && item.disP >= LOYALTY_DISCOUNT && (
-                              <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest border border-border">
-                                Loyalty
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center bg-muted/5 rounded-xl p-1 border border-border/50">
-                        <button 
-                          onClick={() => {
-                            const newQty = Math.max(1, item.qty - 1);
-                            let updates: any = { qty: newQty };
-                            if (item.staffAssignments && item.staffAssignments.length > 0) {
-                              let sum = item.staffAssignments.reduce((s, a) => s + (a.qty || 0), 0);
-                              if (sum > newQty) {
-                                updates.staffAssignments = [];
-                                updates.staffEmail = "";
-                                updates.staffName = "";
-                                alert("Staff assignments cleared because item quantity was reduced below assigned quantity.");
-                              }
-                            }
-                            updateCartItem(i, updates);
-                          }}
-                          className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all"
-                        >
-                          <ArrowDown size={14} />
-                        </button>
-                        <span className="w-8 text-center font-black text-sm">{item.qty}</span>
-                        <button 
-                          onClick={() => updateCartItem(i, { qty: item.qty + 1 })}
-                          className="w-7 h-7 flex items-center justify-center hover:bg-primary/10 rounded-lg text-muted-foreground hover:text-primary transition-all"
-                        >
-                          <ArrowUp size={14} />
-                        </button>
-                      </div>
-                      <button 
-                        onClick={() => removeFromCart(i)}
-                        className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 pt-4 border-t border-border/30 flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Discount %</span>
-                        <input 
-                          type="number" 
-                          value={item.disP === "" as any ? "" : (item.disP ?? 0)}
-                          onFocus={() => {
-                            if (item.disP === 0) updateCartItem(i, { disP: "" as any });
-                          }}
-                          onBlur={(e) => {
-                            if (e.target.value === "") updateCartItem(i, { disP: 0 });
-                          }}
-                          onChange={(e) => {
-                            if (e.target.value === "") {
-                              updateCartItem(i, { disP: "" as any });
-                              return;
-                            }
-                            const val = Number(e.target.value);
-                            if (val >= 0 && val <= 100) {
-                              updateCartItem(i, { disP: val });
-                            }
-                          }}
-                          className="w-12 bg-input border border-border/50 rounded-lg px-2 py-1 text-[10px] font-black text-center focus:border-primary outline-none transition-all"
-                        />
-                      </div>
-                      
-                      <div className="flex items-center gap-2 flex-1 max-w-[200px]">
-                        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest whitespace-nowrap">Staff</span>
-                        <div className="relative flex-1">
-                          <select
-                            value=""
-                            onChange={(e) => {
-                              const sName = e.target.value;
-                              if (!sName) return;
-                              if (item.qty === 1 && item.staffAssignments && item.staffAssignments.length >= 1) {
-                                alert("Cannot assign more staff. Total quantity is 1.");
-                                return;
-                              }
-                              let current = item.staffAssignments ? [...item.staffAssignments] : [];
-                              if (!current.find(a => a.name === sName)) {
-                                const otherQty = current.reduce((sum, a) => sum + (a.qty || 0), 0);
-                                const defaultQty = Math.max(0, item.qty - otherQty);
-                                if (defaultQty > 0) {
-                                  current.push({ name: sName, qty: defaultQty });
-                                  updateCartItem(i, { staffAssignments: current, staffEmail: "", staffName: "" });
-                                } else {
-                                  alert("Cannot assign more staff. Remaining quantity is 0.");
-                                }
-                              }
-                            }}
-                            className="w-full px-2 py-1 bg-input border border-border/50 rounded-lg text-[10px] font-bold outline-none focus:border-primary cursor-pointer [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border-primary"
-                          >
-                             <option value="">+ Assign Staff</option>
-                             {staff.filter(s => ["staff", "owner", "cashier"].includes(s.role || "")).map(s => (
-                                <option key={s.email} value={s.name}>{s.name}</option>
-                             ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between items-end gap-4 mt-1">
-                      <div className="flex flex-wrap gap-1.5 flex-1">
-                        {item.staffAssignments && item.staffAssignments.length > 0 ? (
-                          item.staffAssignments.map((assignment, aIdx) => (
-                             <div key={aIdx} className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-md px-1.5 py-1">
-                               <button 
-                                 onClick={() => {
-                                   const newA = item.staffAssignments!.filter(a => a.name !== assignment.name);
-                                   updateCartItem(i, { staffAssignments: newA });
-                                 }}
-                                 className="text-red-500 hover:bg-red-500/10 p-0.5 rounded transition-colors"
-                               >
-                                 <X size={12} />
-                               </button>
-                               <span className="text-[10px] font-bold text-primary">{assignment.name}</span>
-                               <input 
-                                 type="number"
-                                 min="1"
-                                 value={assignment.qty === "" as any ? "" : (assignment.qty || "")}
-                                 onBlur={(e) => {
-                                   if (e.target.value === "") {
-                                     const newA = item.staffAssignments!.map(a => a.name === assignment.name ? { ...a, qty: 1 } : a);
-                                     updateCartItem(i, { staffAssignments: newA });
-                                   }
-                                 }}
-                                 onChange={(e) => {
-                                   if (e.target.value === "") {
-                                     const newA = item.staffAssignments!.map(a => a.name === assignment.name ? { ...a, qty: "" as any } : a);
-                                     updateCartItem(i, { staffAssignments: newA });
-                                     return;
-                                   }
-                                   let val = parseInt(e.target.value) || 0;
-                                   if (val < 1) val = 1;
-                                   const otherQty = item.staffAssignments!.filter(a => a.name !== assignment.name).reduce((sum, a) => sum + (a.qty || 0), 0);
-                                   const maxVal = Math.max(0, item.qty - otherQty);
-                                   if (val > maxVal) val = maxVal;
-                                   const newA = item.staffAssignments!.map(a => a.name === assignment.name ? { ...a, qty: val } : a);
-                                   updateCartItem(i, { staffAssignments: newA });
-                                 }}
-                                 className="w-10 bg-background border border-primary/20 rounded px-1 py-0.5 text-[10px] font-black text-center focus:border-primary outline-none transition-colors"
-                               />
-                             </div>
-                          ))
-                        ) : (
-                          <CustomSelect
-                            value={item.staffEmail || ""}
-                            onChange={(val) => {
-                              const selected = staff.find(s => s.email === val);
-                              if (selected) {
-                                updateCartItem(i, { staffEmail: selected.email, staffName: selected.name, staffAssignments: [] });
-                              } else {
-                                updateCartItem(i, { staffEmail: "", staffName: "", staffAssignments: [] });
-                              }
-                            }}
-                            placeholder="Auto (Main Staff)"
-                            options={[
-                              { value: "", label: "Auto (Main Staff)" },
-                              ...staff.filter(s => ["staff", "owner", "cashier"].includes(s.role || "")).map(s => ({ value: s.email, label: s.name }))
-                            ]}
-                            buttonClassName="px-2 py-1 text-[10px] font-black min-w-[120px]"
-                          />
-                        )}
-                      </div>
-                      
-                      <div className="text-right shrink-0">
-                        <span className="font-black text-primary w-full text-right">
-                          {(item.price * item.qty * (1 - item.disP / 100)).toLocaleString()} Ks
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-4 opacity-40">
-              <div className="w-20 h-20 bg-muted/10 rounded-full flex items-center justify-center">
-                <ShoppingCart size={32} className="text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-black uppercase tracking-[0.2em]">Your cart is empty</p>
-                <p className="text-[10px] font-bold mt-1">Add services to start an order</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 bg-card border-t border-border/50 space-y-6 shadow-[0_-10px_30px_rgba(0,0,0,0.05)]">
-          {/* Staff & Customer Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] ml-1">Assigned Staff</label>
-              <CustomSelect
-                value={selectedStaffEmail}
-                onChange={(val) => setSelectedStaffEmail(val)}
-                disabled={isStaffMember}
-                placeholder="Any Staff (Auto-assign)"
-                options={[
-                  { value: '', label: 'Any Staff (Auto-assign)' },
-                  ...staff.filter(s => {
-                    const todayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-                    return (!s.workingDays || s.workingDays.includes(todayName)) && s.role !== 'super_admin';
-                  }).map(s => ({ value: s.email, label: s.name }))
-                ]}
-                buttonClassName="px-3 py-2.5 text-xs font-bold"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center ml-1">
-                <label className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em]">Payments</label>
-                <button 
-                  onClick={addPaymentMethod}
-                  className="text-[9px] font-black text-primary uppercase tracking-[0.2em] flex items-center gap-1 hover:opacity-70"
-                >
-                  <Plus size={10} /> Add Method
-                </button>
-              </div>
-              <div className="space-y-2">
-                {payments.map((p, idx) => (
-                  <div key={idx} className="flex gap-2 items-center">
-                    <div className="flex-1">
-                      <CustomSelect
-                        value={p.method}
-                        onChange={(val) => updatePayment(idx, { method: val as any })}
-                        options={paymentMethods.map(m => ({ value: m.id, label: m.label }))}
-                        buttonClassName="px-3 py-2 text-[10px] font-bold"
-                      />
-                    </div>
-                    <div className="relative w-24">
-                      <input 
-                        type="number"
-                        value={p.amount}
-                        onChange={(e) => updatePayment(idx, { amount: Number(e.target.value) })}
-                        className="w-full bg-input border border-border/50 rounded-xl px-2 py-2 text-[10px] font-black text-foreground focus:border-primary outline-none transition-all"
-                        placeholder="Amount"
-                      />
-                    </div>
-                    {payments.length > 1 && (
-                      <button 
-                        onClick={() => removePaymentMethod(idx)}
-                        className="p-1.5 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {remainingAmount !== 0 && (
-                <p className={cn(
-                  "text-[9px] font-black uppercase tracking-widest text-center mt-1",
-                  remainingAmount > 0 ? "text-red-500" : "text-primary"
-                )}>
-                  {remainingAmount > 0 ? `Short: ${remainingAmount.toLocaleString()} Ks` : `Over: ${Math.abs(remainingAmount).toLocaleString()} Ks`}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Appointment Selection */}
-          <div className="space-y-3">
-            {todaysAppointments.length > 0 && !selectedAppointmentId && (
-              <div className="space-y-2">
-                <label className="text-[9px] font-black text-primary uppercase tracking-[0.2em] ml-1 flex items-center gap-2">
-                  <Clock size={10} /> Today's Appointments
-                </label>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  {todaysAppointments.map(a => (
-                    <button
-                      key={a.id}
-                      onClick={() => handleSelectAppointment(a)}
-                      className="flex-none w-32 bg-primary/5 border border-primary/10 rounded-xl p-2 text-left hover:bg-primary/10 transition-all group"
-                    >
-                      <p className="text-[10px] font-black text-foreground truncate group-hover:text-primary transition-colors">{a.customerName}</p>
-                      <p className="text-[8px] text-muted-foreground font-bold truncate">{a.serviceName}</p>
-                      <div className="flex justify-between items-center mt-1">
-                        <span className="text-[8px] font-black text-primary">{a.time}</span>
-                        <ChevronRight size={10} className="text-primary/30 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <div className="relative">
-              <FloatingInput 
-                label="Search Appointment..." 
-                value={appointmentSearch}
-                onChange={setAppointmentSearch}
-                onFocusClear
-                className="mt-0"
-              />
-              {appointmentSearch && (
-                <button 
-                  onClick={() => setAppointmentSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600 transition-colors z-10"
-                >
-                  <X size={18} />
-                </button>
-              )}
-              
-              {appointmentSuggestions.length > 0 && (
-                <div className="absolute bottom-full left-0 w-full bg-card border border-primary/30 rounded-2xl mb-2 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-[1001]">
-                  {appointmentSuggestions.map(a => (
-                    <button
-                      key={a.id}
-                      onClick={() => handleSelectAppointment(a)}
-                      className="w-full text-left p-4 border-b border-border/50 last:border-0 hover:bg-primary/5 flex justify-between items-center transition-colors group"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-foreground font-bold truncate group-hover:text-primary transition-colors">{a.customerName}</span>
-                          <span className="text-[8px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded-full">{a.time}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] text-muted-foreground truncate">{a.serviceName}</span>
-                          <span className="text-[10px] text-muted-foreground font-bold">{a.date}</span>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {selectedAppointmentId && (
-              <div className="bg-blue-500/5 p-4 rounded-2xl border border-blue-500/10 flex justify-between items-center animate-in zoom-in-95 duration-300">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-500">
-                    <Calendar size={14} />
-                  </div>
-                  <div>
-                    <p className="text-[8px] text-muted-foreground font-black uppercase tracking-[0.2em]">Linked Appointment</p>
-                    <p className="text-xs font-bold text-blue-500">
-                      {appointments.find(a => a.id === selectedAppointmentId)?.customerName}
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setSelectedAppointmentId('')}
-                  className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Customer Selection */}
-          <div className="space-y-3">
-            <div className="relative">
-              <FloatingInput 
-                label="Customer (Name or Phone)" 
-                value={customerSearch}
-                onChange={setCustomerSearch}
-                onFocusClear
-                className="mt-0"
-              />
-              {customerSearch && (
-                <button 
-                  onClick={() => setCustomerSearch('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600 transition-colors z-10"
-                >
-                  <X size={18} />
-                </button>
-              )}
-              
-              {customerSuggestions.length > 0 && (
-                <div className="absolute bottom-full left-0 w-full bg-card border border-primary/30 rounded-2xl mb-2 shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-[1001]">
-                  {customerSuggestions.map(c => (
-                    <button
-                      key={c.id}
-                      onClick={() => {
-                        setSelectedCustomerId(c.id);
-                        setCustomerSearch('');
-                      }}
-                      className="w-full text-left p-4 border-b border-border/50 last:border-0 hover:bg-primary/5 flex justify-between items-center transition-colors group"
-                    >
-                      <div>
-                        <span className="text-foreground font-bold block group-hover:text-primary transition-colors">{c.name}</span>
-                        <span className="text-[10px] text-muted-foreground uppercase tracking-[0.2em]">{c.phone}</span>
-                      </div>
-                      {selectedCustomerId === c.id && <Check size={16} className="text-primary" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {selectedCustomerId && (
-              <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-3 animate-in zoom-in-95 duration-300">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center text-primary">
-                      <Star size={14} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-black text-primary truncate max-w-[150px]">
-                        {customers.find(c => c.id === selectedCustomerId)?.name}
-                      </p>
-                      <div className="flex items-center gap-1">
-                        <p className="text-[8px] text-muted-foreground font-black uppercase tracking-[0.2em]">Loyalty Points:</p>
-                        <p className="text-[10px] font-black text-primary">{(customers.find(c => c.id === selectedCustomerId)?.points || 0).toLocaleString()} PTS</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {customers.find(c => c.id === selectedCustomerId)?.points! >= LOYALTY_THRESHOLD && !isLoyaltyDiscountActive && (
-                      <button 
-                        onClick={applyLoyaltyDiscount}
-                        className="px-3 py-1.5 bg-primary text-white text-[9px] font-black rounded-lg shadow-lg shadow-primary/20 hover:scale-105 transition-all uppercase tracking-widest"
-                      >
-                        Apply 10%
-                      </button>
-                    )}
-                    <button 
-                      onClick={() => { setSelectedCustomerId(''); setPointsToRedeem(0); setIsLoyaltyDiscountActive(false); }}
-                      className="p-2 text-muted-foreground hover:text-red-500 transition-colors"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <div className="relative flex-1">
-                    <input 
-                      type="number"
-                      placeholder="Redeem points..."
-                      value={pointsToRedeem || ''}
-                      onChange={(e) => {
-                        const val = Math.min(Number(e.target.value), (customers.find(c => c.id === selectedCustomerId)?.points || 0));
-                        setPointsToRedeem(Math.max(0, val));
-                      }}
-                      className="w-full bg-input border border-border/50 rounded-xl pl-4 pr-12 py-2.5 text-xs font-black text-foreground focus:border-primary outline-none transition-all"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[8px] font-black text-muted-foreground uppercase tracking-widest">PTS</span>
-                  </div>
-                  <div className="bg-red-500 text-foreground px-3 py-2.5 rounded-xl text-[10px] font-black shadow-lg shadow-red-500/20">
-                    -{ (pointsToRedeem * 10).toLocaleString() } Ks
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Totals Section */}
-          <div className="space-y-3 bg-muted/5 p-5 rounded-3xl border border-border/50">
-            <div className="flex justify-between items-center text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">
-              <span>Sub Total</span>
-              <span className="text-foreground">{subTotal.toLocaleString()} Ks</span>
-            </div>
-            {totalDiscount > 0 && (
-              <div className="flex justify-between items-center text-[10px] font-black text-red-500 uppercase tracking-[0.2em]">
-                <span>Total Discount</span>
-                <span>-{totalDiscount.toLocaleString()} Ks</span>
-              </div>
-            )}
-            {pointsToRedeem > 0 && (
-              <div className="flex justify-between items-center text-[10px] font-black text-red-500 uppercase tracking-[0.2em]">
-                <span>Points Redeemed</span>
-                <span>-{pointsDiscount.toLocaleString()} Ks</span>
-              </div>
-            )}
-            <div className="flex justify-between items-center text-[10px] font-black text-primary uppercase tracking-[0.2em]">
-              <span>Points to Earn</span>
-              <span>+{pointsEarned} PTS</span>
-            </div>
-            <div className="pt-4 border-t border-border/50 space-y-4">
-              <div className="flex justify-between items-end">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em] leading-none mb-1">Net Total</span>
-                  <span className="text-3xl font-black text-primary tracking-tighter leading-none">{netTotal.toLocaleString()} <span className="text-sm">Ks</span></span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[9px] font-black text-primary uppercase tracking-widest block">Paid / Remaining</span>
-                  <span className={cn(
-                    "text-xs font-black",
-                    remainingAmount === 0 ? "text-green-500" : "text-red-500"
-                  )}>
-                    {totalPaid.toLocaleString()} / {remainingAmount.toLocaleString()} Ks
-                  </span>
-                </div>
-              </div>
-
-              {remainingAmount === 0 && cart.length > 0 && (
-                <div className="space-y-2 animate-in slide-in-from-bottom-2 duration-300">
-                  <p className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] text-center">Quick Pay & Checkout</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button 
-                      onClick={() => handleQuickCheckout('Cash')}
-                      disabled={!isCartValid}
-                      className="bg-green-500/10 hover:bg-green-500 text-green-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-green-500/20 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      CASH
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCheckout('KBZPay')}
-                      disabled={!isCartValid}
-                      className="bg-blue-500/10 hover:bg-blue-500 text-blue-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-blue-500/20 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      KBZPAY
-                    </button>
-                    <button 
-                      onClick={() => handleQuickCheckout('WavePay')}
-                      disabled={!isCartValid}
-                      className="bg-yellow-500/10 hover:bg-yellow-500 text-yellow-600 hover:text-foreground py-2 rounded-xl text-[10px] font-black transition-all border border-yellow-500/20 disabled:opacity-50 disabled:pointer-events-none"
-                    >
-                      WAVEPAY
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {!isCartValid && invalidCartItem && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-3 rounded-xl text-[10px] font-bold text-center">
-                  Cannot checkout. Please ensure the total staff assigned quantities match the service total quantity for {invalidCartItem.name}.
-                </div>
-              )}
-
-              <button 
-                onClick={() => handleCheckout()}
-                disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid}
-                className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border [.midnight_&]:border-primary py-5 rounded-[1.5rem] font-black text-base tracking-[0.2em] shadow-2xl shadow-primary/40 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-4 group"
-              >
-                <Printer size={20} className="group-hover:rotate-12 transition-transform" />
-                CHECKOUT NOW
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Loyalty Discount Prompt Modal */}
-      {showLoyaltyPrompt && (
-        <div className="fixed inset-0 z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px] bg-black/60  animate-in fade-in duration-300">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-primary/30 rounded-3xl p-8 max-w-sm w-full shadow-2xl space-y-6 text-center max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
-          >
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-              <Star className="text-primary w-10 h-10 animate-pulse" />
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-bold text-foreground">Loyalty Reward!</h3>
-              <p className="text-sm text-muted-foreground">
-                This customer has <span className="text-primary font-bold">{(customers.find(c => c.id === selectedCustomerId)?.points || 0)}</span> points. 
-                Would you like to apply an automatic <span className="text-green-500 font-bold">{LOYALTY_DISCOUNT}% discount</span> to this sale?
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              <button 
-                onClick={applyLoyaltyDiscount}
-                className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                APPLY DISCOUNT
-              </button>
-              <button 
-                onClick={() => setShowLoyaltyPrompt(false)}
-                className="w-full bg-muted/10 text-muted-foreground font-bold py-3 rounded-2xl hover:bg-muted/20 transition-all"
-              >
-                NO, THANKS
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {pendingSaleParams && (
-        <PrintPreviewModal
-          isOpen={showPrintPreview}
-          onClose={() => {
-            setShowPrintPreview(false);
-            setPendingSaleParams(null);
-          }}
-          text={generateReceiptHTML(pendingSaleParams.sale, shopSettings)}
-          onPrint={() => confirmCheckout(true)}
-          onSkipPrint={() => confirmCheckout(false)}
-          title="Checkout & Print Preview"
-        />
-      )}
-    </div>
-  );
+ const { profile, isAdmin, isStaff, isStaffMember, isCustomer } = useAuth();
+ const [services, setServices] = useState<Service[]>([]);
+ const [categories, setCategories] = useState<Category[]>([]);
+ const [search, setSearch] = useState('');
+ const [selectedCategory, setSelectedCategory] = useState('All');
+ const [cart, setCart] = useState<CartItem[]>([]);
+ const [staff, setStaff] = useState<UserProfile[]>([]);
+ const [selectedStaffEmail, setSelectedStaffEmail] = useState('');
+ const [payments, setPayments] = useState<{ method: 'Cash' | 'KBZPay' | 'WavePay' | 'AYA Pay' | 'CB PAY' | 'OK$'; amount: number }[]>([
+ { method: 'Cash', amount: 0 }
+ ]);
+ const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
+ const [customers, setCustomers] = useState<Customer[]>([]);
+ const [appointments, setAppointments] = useState<Appointment[]>([]);
+ const [selectedCustomerId, setSelectedCustomerId] = useState('');
+ const [selectedAppointmentId, setSelectedAppointmentId] = useState('');
+ const [customerSearch, setCustomerSearch] = useState('');
+ const [appointmentSearch, setAppointmentSearch] = useState('');
+ const [pointsToRedeem, setPointsToRedeem] = useState(0);
+ const [showLoyaltyPrompt, setShowLoyaltyPrompt] = useState(false);
+ const [confirmAction, setConfirmAction] = useState<{message: string, onConfirm: () => void} | null>(null);
+ const [isLoyaltyDiscountActive, setIsLoyaltyDiscountActive] = useState(false);
+ const [showPrintPreview, setShowPrintPreview] = useState(false);
+ const [pendingSaleParams, setPendingSaleParams] = useState<{sale: Omit<Sale, 'id'>, overridePayments?: typeof payments} | null>(null);
+ const [loadingPOS, setLoadingPOS] = useState(true);
+ const [currentStep, setCurrentStep] = useState<'services' | 'cart' | 'checkout'>('services');
+
+ const LOYALTY_THRESHOLD = 500;
+ const LOYALTY_DISCOUNT = 10; // 10%
+
+ useEffect(() => {
+ if (!isStaff) return;
+ const q = query(collection(db, 'services'), orderBy('name'));
+ const unsubscribe = onSnapshot(q, (snapshot) => {
+ setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
+ setLoadingPOS(false);
+ }, (error) => {
+ handleFirestoreError(error, OperationType.LIST, 'services');
+ setLoadingPOS(false);
+ });
+ return unsubscribe;
+ }, [profile, isStaff]);
+
+ useEffect(() => {
+ if (!isStaff) return;
+ const q = query(collection(db, 'categories'), orderBy('name'));
+ const unsubscribe = onSnapshot(q, (snapshot) => {
+ setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
+ return unsubscribe;
+ }, [profile, isStaff]);
+
+ useEffect(() => {
+ if (!isStaff) return;
+ const uniqueStaff = new Map<string, UserProfile>();
+ const q = query(collection(db, 'users'));
+ const unsubscribe = onSnapshot(q, (snapshot) => {
+ snapshot.docs.forEach(doc => {
+ const data = doc.data() as UserProfile;
+ if (data.email && (data.role === 'staff' || data.role === 'cashier' || data.role === 'owner')) {
+ const email = data.email.toLowerCase().trim();
+ if (!uniqueStaff.has(email) || data.uid) {
+ uniqueStaff.set(email, { ...data, id: doc.id });
+ }
+ }
+ });
+ const staffList = Array.from(uniqueStaff.values());
+ setStaff(staffList);
+ if (profile && !selectedStaffEmail) setSelectedStaffEmail(profile.email);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+ return unsubscribe;
+ }, [profile, isStaff, selectedStaffEmail]);
+
+ useEffect(() => {
+ if (!isStaff) return;
+ const q = query(collection(db, 'customers'), orderBy('name'));
+ const unsubscribe = onSnapshot(q, (snapshot) => {
+ setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
+ return unsubscribe;
+ }, [profile, isStaff]);
+
+ useEffect(() => {
+ if (!isStaff) return;
+ const q = query(
+ collection(db, 'appointments'), 
+ where('status', 'in', ['pending', 'confirmed', 'completed']),
+ orderBy('date', 'desc'),
+ orderBy('time', 'asc')
+ );
+ const unsubscribe = onSnapshot(q, (snapshot) => {
+ const allAppts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+ const filteredAppts = allAppts.filter(a => a.status !== 'completed' || !a.pointsProcessed);
+ setAppointments(filteredAppts);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
+ return unsubscribe;
+ }, [profile, isStaff]);
+
+ useEffect(() => {
+ if (isCustomer) return;
+ const docRef = doc(db, 'settings', 'salon');
+ const unsubscribe = onSnapshot(docRef, (docSnap) => {
+ if (docSnap.exists()) setShopSettings(docSnap.data() as ShopSettings);
+ }, (error) => handleFirestoreError(error, OperationType.GET, 'settings/salon'));
+ return unsubscribe;
+ }, [profile, isCustomer]);
+
+ const categoryList = ['All', ...categories.map(c => c.name)];
+
+ const filteredServices = services.filter(s => {
+ const matchesCategory = selectedCategory === 'All' || (s.category === selectedCategory);
+ const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase());
+ return matchesCategory && matchesSearch;
+ });
+
+ const addToCart = (service: Service) => {
+ setCart(prev => {
+ const existing = prev.find(item => item.id === service.id);
+ if (existing) {
+ // Second click: unselect / remove from cart
+ return prev.filter(item => item.id !== service.id);
+ }
+ // First click: select / add to cart
+ const initialDiscount = isLoyaltyDiscountActive ? LOYALTY_DISCOUNT : 0;
+ return [...prev, { ...service, qty: 1, disP: initialDiscount }];
+ });
+ };
+
+ const updateCartItem = (index: number, updates: Partial<CartItem>) => {
+ setCart(prev => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
+ };
+
+ const removeFromCart = (index: number) => {
+ setCart(prev => prev.filter((_, i) => i !== index));
+ };
+
+ const subTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+ const totalDiscount = cart.reduce((sum, item) => sum + (item.price * item.qty * (item.disP / 100)), 0);
+ const pointsDiscount = pointsToRedeem * 10;
+ const netTotal = Math.max(0, subTotal - totalDiscount - pointsDiscount);
+ const pointsEarned = Math.floor(netTotal / 1000);
+
+ useEffect(() => {
+ if (payments.length === 1) {
+ setPayments([{ ...payments[0], amount: netTotal }]);
+ }
+ }, [netTotal]);
+
+ const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+ const remainingAmount = netTotal - totalPaid;
+
+ const addPaymentMethod = () => {
+ setPayments([...payments, { method: 'Cash', amount: Math.max(0, remainingAmount) }]);
+ };
+
+ const removePaymentMethod = (index: number) => {
+ setPayments(payments.filter((_, i) => i !== index));
+ };
+
+ const updatePayment = (index: number, updates: Partial<{ method: any; amount: number }>) => {
+ setPayments(payments.map((p, i) => i === index ? { ...p, ...updates } : p));
+ };
+
+ const customerSuggestions = customerSearch.length > 0 
+ ? customers.filter(c => 
+ c.name.toLowerCase().includes(customerSearch.toLowerCase()) || 
+ c.phone.includes(customerSearch)
+ ).slice(0, 5)
+ : [];
+
+ const validateCartItem = (item: CartItem) => {
+ const errors: string[] = [];
+ if (item.staffAssignments && item.staffAssignments.length > 0) {
+ // Logic 2: Staff selection is mandatory for every split staff slot
+ const hasUnassignedStaff = item.staffAssignments.some(a => !a.name || a.name.trim() === '');
+ if (hasUnassignedStaff) {
+ errors.push("You need to choose a staff member for all split staff rows.");
+ }
+ // Logic 1: Sum of split quantities must match service total quantity
+ const sum = item.staffAssignments.reduce((acc, a) => acc + (Number(a.qty) || 0), 0);
+ if (sum !== item.qty) {
+ errors.push(`Staff assigned quantities (${sum}) do not match service total quantity (${item.qty}).`);
+ }
+ }
+ return {
+ isValid: errors.length === 0,
+ errors
+ };
+ };
+
+ const getCartValidationErrors = (cartItems: CartItem[]): string[] => {
+ const allErrors: string[] = [];
+ cartItems.forEach((item, idx) => {
+ const { errors } = validateCartItem(item);
+ errors.forEach(err => {
+ allErrors.push(`"${item.name}" (Item ${idx + 1}): ${err}`);
+ });
+ });
+ return allErrors;
+ };
+
+ const handleClearAllCart = () => {
+ if (cart.length === 0) return;
+ setConfirmAction({
+ message: "Are you sure you want to clear all items from the cart?",
+ onConfirm: () => {
+ setCart([]);
+ setIsLoyaltyDiscountActive(false);
+ setPointsToRedeem(0);
+ setSelectedCustomerId('');
+ setSelectedAppointmentId('');
+ setCustomerSearch('');
+ setAppointmentSearch('');
+ setSelectedStaffEmail('');
+ setPayments([{ method: 'Cash', amount: 0 }]);
+ setConfirmAction(null);
+ }
+ });
+ };
+
+ const handleProceedToCheckout = () => {
+ const cartValidationErrs = getCartValidationErrors(cart);
+ if (cartValidationErrs.length > 0) {
+ alert("Cannot proceed to checkout. Please fix the following errors in your cart:\n\n• " + cartValidationErrs.join("\n• "));
+ return;
+ }
+ setCurrentStep('checkout');
+ };
+
+ const handleCheckout = (overridePayments?: typeof payments) => {
+ if (cart.length === 0) return;
+ const cartValidationErrs = getCartValidationErrors(cart);
+ if (cartValidationErrs.length > 0) {
+ alert("Cannot complete sale. Please fix the following errors in your cart:\n\n• " + cartValidationErrs.join("\n• "));
+ return;
+ }
+ let globalStaff = staff.find(s => s.email === selectedStaffEmail);
+ if (!globalStaff) {
+ globalStaff = staff.find(s => s.role === 'owner') || staff[0];
+ }
+ if (!globalStaff) return;
+ 
+ const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+ const now = new Date();
+ const localDateStr = getLocalISODate(now);
+ const finalPayments = overridePayments || payments;
+ const finalTotalPaid = finalPayments.reduce((sum, p) => sum + p.amount, 0);
+ 
+ if (finalTotalPaid !== netTotal) {
+ alert(`Payment mismatch! Total paid: ${finalTotalPaid.toLocaleString()} Ks, Net Total: ${netTotal.toLocaleString()} Ks`);
+ return;
+ }
+ 
+ let totalSaleCommission = 0;
+ const mappedItems = cart.map(item => {
+ let finalAssignments = item.staffAssignments ? [...item.staffAssignments] : [];
+ let itemStaffEmail = item.staffEmail;
+ let itemStaffName = item.staffName;
+ if (finalAssignments.length > 0) {
+ itemStaffEmail = "";
+ itemStaffName = "";
+ } else if (!itemStaffEmail) {
+ itemStaffEmail = globalStaff.email;
+ itemStaffName = globalStaff.name;
+ }
+ const itemStaff = staff.find(s => s.email === itemStaffEmail) || globalStaff;
+ const itemSubtotal = item.price * item.qty * (1 - item.disP / 100);
+ let itemCommission = 0;
+ if (item.allowCommission !== false) {
+ const proportion = subTotal > 0 ? (itemSubtotal / subTotal) : 0;
+ const effectivePointsDiscount = pointsDiscount * proportion;
+ const commissionableValue = Math.max(0, itemSubtotal - effectivePointsDiscount);
+ if (finalAssignments.length > 0) {
+ itemCommission = finalAssignments.reduce((sum, a, aIdx) => { 
+ const s = staff.find(st => st.name === a.name);
+ let aComm = 0;
+ if (s) {
+ const aCommValue = commissionableValue * (a.qty / item.qty);
+ aComm = Math.round(aCommValue * ((s.commission || 0) / 100));
+ }
+ finalAssignments[aIdx] = { ...a, commission: aComm };
+ return sum + aComm;
+ }, 0);
+ } else {
+ itemCommission = Math.round(commissionableValue * ((itemStaff.commission || 0) / 100));
+ }
+ totalSaleCommission += itemCommission;
+ }
+ return {
+ id: item.id,
+ serviceId: item.id,
+ name: item.name,
+ qty: item.qty,
+ price: item.price,
+ disP: item.disP,
+ staffId: itemStaffEmail,
+ staffName: itemStaffName,
+ staffAssignments: finalAssignments,
+ commission: itemCommission
+ };
+ });
+ 
+ let saleStaffNames: string[] = [];
+ mappedItems.forEach(item => {
+ if (item.staffAssignments && item.staffAssignments.length > 0) {
+ saleStaffNames.push(...item.staffAssignments.map(a => a.name));
+ } else if (item.staffName) {
+ saleStaffNames.push(item.staffName);
+ }
+ });
+ 
+ const uniqueSaleStaffNames = Array.from(new Set(saleStaffNames.filter(Boolean)));
+ const finalSaleStaffName = uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames.join(' + ') : globalStaff.name;
+ 
+ const sale: Omit<Sale, 'id'> = {
+ date: localDateStr,
+ dateTime: now.toISOString(),
+ staff: finalSaleStaffName,
+ staffNames: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
+ staffNamesArray: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
+ staffEmail: globalStaff.email,
+ customerName: selectedCustomer?.name || '',
+ customerPhone: selectedCustomer?.phone || '',
+ total: netTotal,
+ payments: finalPayments,
+ method: finalPayments.map(p => p.method).join(', '),
+ commission: totalSaleCommission,
+ pointsEarned,
+ pointsRedeemed: pointsToRedeem,
+ items: mappedItems
+ };
+ 
+ setPendingSaleParams({ sale, overridePayments });
+ setShowPrintPreview(true);
+ };
+
+ const confirmCheckout = async (print: boolean) => {
+ if (!pendingSaleParams) return;
+ const { sale } = pendingSaleParams;
+ try {
+ await addDoc(collection(db, 'sales'), sale);
+ const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
+ if (selectedCustomer) {
+ const newPoints = (selectedCustomer.points || 0) + (sale.pointsEarned || 0) - (sale.pointsRedeemed || 0);
+ await updateDoc(doc(db, 'customers', selectedCustomer.id), {
+ points: newPoints
+ });
+ if (selectedCustomer.email) {
+ const userDocRef = doc(db, 'users', selectedCustomer.email.toLowerCase());
+ const userDocSnap = await getDoc(userDocRef);
+ if (userDocSnap.exists()) {
+ await updateDoc(userDocRef, { points: newPoints });
+ }
+ }
+ }
+ if (selectedAppointmentId) {
+ await updateDoc(doc(db, 'appointments', selectedAppointmentId), {
+ status: 'completed',
+ pointsProcessed: true
+ });
+ }
+ if (print) {
+ const printText = generateReceiptHTML(sale, shopSettings);
+ if (Capacitor.isNativePlatform()) {
+ const htmlStr = `<html><body style='margin:0;padding:10px;'>${printText}</body></html>`;
+ CapPrinter.printHtml({ name: 'Receipt', html: htmlStr }).catch(e => {
+ console.error('Printer error:', e);
+ alert('Failed to print: ' + String(e));
+ });
+ } else {
+ const isAndroid = /android/i.test(navigator.userAgent);
+ if (isAndroid) {
+ const rawText = generateReceiptText(sale, shopSettings);
+ triggerRawbtPrint(rawText);
+ } else {
+ window.dispatchEvent(new CustomEvent('print-html', { detail: printText }));
+ }
+ }
+ }
+ setCart([]);
+ setSelectedCustomerId('');
+ setSelectedAppointmentId('');
+ setAppointmentSearch('');
+ setPointsToRedeem(0);
+ setIsLoyaltyDiscountActive(false);
+ setPayments([{ method: 'Cash', amount: 0 }]);
+ setShowPrintPreview(false);
+ setPendingSaleParams(null);
+ alert("Sale saved successfully!");
+ } catch (error) {
+ handleFirestoreError(error, OperationType.CREATE, 'sales');
+ }
+ };
+
+ const paymentMethods = [
+ { id: 'Cash', label: 'Cash' },
+ { id: 'KBZPay', label: 'KBZPay' },
+ { id: 'WavePay', label: 'WavePay' },
+ { id: 'AYA Pay', label: 'AYA Pay' },
+ { id: 'CB PAY', label: 'CB PAY' },
+ { id: 'OK$', label: 'OK$' },
+ ];
+
+ const invalidCartItem = cart.find(item => !validateCartItem(item).isValid);
+ const isCartValid = cart.length > 0 && !invalidCartItem;
+
+ if (loadingPOS) {
+ return (
+ <div className="flex-1 flex justify-center items-center h-screen w-full bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]">
+ <div className="w-8 h-8 -4 -primary -transparent rounded-full animate-spin"></div>
+ </div>
+ );
+ }
+
+ return (
+ <div className="h-screen w-full flex flex-col overflow-hidden bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]">
+ {/* Top Header & Step Indicator (Fixed, shrink-0) */}
+ <div className="flex-shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 -b py-3 md:py-5 z-20 relative">
+ <div className="max-w-2xl mx-auto w-full relative flex items-center justify-between px-4 md:px-6 sm:px-12">
+ {/* Progress Track (Single Line) */}
+ <div className="absolute top-1/2 left-[48px] right-[48px] sm:left-[64px] sm:right-[64px] h-[3px] bg-/50 -translate-y-1/2 rounded-full overflow-hidden -z-10">
+ <div 
+ className="h-full bg-primary transition-all duration-500 ease-in-out"
+ style={{ 
+ width: currentStep === 'services' ? '0%' : currentStep === 'cart' ? '50%' : '100%' 
+ }}
+ />
+ </div>
+
+ {/* Steps */}
+ {[
+ { id: 'services', icon: LayoutGrid, label: 'Services' },
+ { id: 'cart', icon: ShoppingCart, label: 'Cart' },
+ { id: 'checkout', icon: CreditCard, label: 'Checkout' }
+ ].map((step, idx) => {
+ const isActive = currentStep === step.id;
+ const isPast = ['services', 'cart', 'checkout'].indexOf(currentStep) > idx;
+ const stateClass = isActive 
+ ? "-primary scale-110 shadow-primary/30" 
+ : isPast 
+ ? "-primary" 
+ : "";
+ 
+ return (
+ <button
+ key={step.id}
+ onClick={() => setCurrentStep(step.id as any)}
+ className="relative z-10 flex flex-col items-center gap-2 group outline-none"
+ >
+ <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center -2 transition-all duration-300 relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 ${stateClass}`}>
+ <div className={`absolute inset-0 rounded-full ${isActive ? 'bg-primary' : isPast ? 'bg-amber-200/50 dark:bg-amber-900/40' : ''}`} />
+ <step.icon size={20} className={`relative z-10 ${isActive ? "text-amber-600 dark:text-amber-400-foreground animate-pulse" : isPast ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"}`} />
+ {step.id === 'cart' && cart.length > 0 && (
+ <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full -2 -background ">
+ {cart.length}
+ </span>
+ )}
+ </div>
+ <span className={`text-[10px] sm:text-xs font-black uppercase tracking-widest transition-colors ${isActive ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"}`}>
+ {step.label}
+ </span>
+ </button>
+ )
+ })}
+ </div>
+ </div>
+
+ {/* Middle Content Area (flex-1 overflow-y-auto) */}
+ <div className="flex-1 overflow-y-auto pb-32">
+ {currentStep === 'services' && (
+ <div className="w-full max-w-5xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
+ {/* Search and Category Filter */}
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-4">
+ <div className="relative">
+ <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300" />
+ <input
+ type="text"
+ placeholder="Search services..."
+ value={search}
+ onChange={(e) => setSearch(e.target.value)}
+ className="w-full bg-input rounded-xl pl-12 pr-10 py-3.5 text-slate-900 dark:text-slate-100 placeholder-muted-foreground focus:outline-none focus:-primary transition-all font-medium"
+ />
+ {search && (
+ <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 hover:text-red-500 transition-colors">
+ <X size={18} />
+ </button>
+ )}
+ </div>
+ <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+ {categoryList.map(cat => (
+ <button
+ key={cat}
+ onClick={() => setSelectedCategory(cat)}
+ className={`whitespace-nowrap px-3 md:px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shrink-0 ${
+ selectedCategory === cat 
+ ? 'bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20' 
+ : 'bg-muted text-slate-700 dark:text-slate-300 hover:bg-muted/80'
+ }`}
+ >
+ {cat}
+ </button>
+ ))}
+ </div>
+ </div>
+
+ {/* Grid of Services */}
+ {filteredServices.length === 0 ? (
+ <div className="text-center p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl ">
+ <p className="text-slate-700 dark:text-slate-300 font-medium">No services found matching your criteria.</p>
+ </div>
+ ) : (
+ <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+ {filteredServices.map(service => {
+ const isInCart = cart.some(c => c.id === service.id);
+ return (
+ <button
+ key={service.id}
+ onClick={() => addToCart(service)}
+ className={`text-left bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-3.5 rounded-xl transition-all active:scale-95 group relative overflow-hidden flex flex-col justify-between min-h-[90px] ${
+ isInCart ? '-primary bg-amber-50/50 dark:bg-amber-900/20 ring-2 ring-primary/20 shadow-primary/10' : ' hover:-primary/50 hover:'
+ }`}
+ >
+ {isInCart && (
+ <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-amber-600 dark:text-amber-400-foreground rounded-full flex items-center justify-center transition-transform scale-110">
+ <Check size={12} strokeWidth={3} />
+ </div>
+ )}
+ <div className="space-y-0.5 mt-1 pr-6">
+ <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest opacity-80 truncate">{service.category}</p>
+ <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug group-hover:text-amber-600 dark:text-amber-400 transition-colors line-clamp-2">{service.name}</h3>
+ </div>
+ <p className="text-sm font-black text-slate-900 dark:text-slate-100 mt-2">{service.price.toLocaleString()} Ks</p>
+ </button>
+ );
+ })}
+ </div>
+ )}
+ </div>
+ )}
+
+ {currentStep === 'cart' && (
+ <div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
+ {cart.length === 0 ? (
+ <div className="text-center p-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col items-center gap-4 ">
+ <div className="w-16 h-16 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center">
+ <ShoppingCart size={32} />
+ </div>
+ <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">Your cart is empty</h3>
+ <p className="text-slate-700 dark:text-slate-300">Select services to begin your order.</p>
+ <button onClick={() => setCurrentStep('services')} className="mt-2 bg-primary text-amber-600 dark:text-amber-400-foreground px-4 md:px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:opacity-90 active:scale-95 transition-all">
+ Browse Services
+ </button>
+ </div>
+ ) : (
+ <div className="space-y-4">
+ <div className="flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
+ <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+ <ShoppingCart size={18} className="text-amber-600 dark:text-amber-400" />
+ Order Items ({cart.length})
+ </h3>
+ <button 
+ type="button"
+ onClick={handleClearAllCart} 
+ disabled={cart.length === 0}
+ className="text-xs text-red-500 font-bold uppercase tracking-widest hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+ >
+ <Trash2 size={14} /> Clear All
+ </button>
+ </div>
+
+ {cart.map((item, index) => (
+ <div key={item.id + index} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-2.5 sm:p-3 rounded-xl space-y-2.5 relative">
+ {/* Remove */}
+ <button 
+ onClick={() => {
+ setConfirmAction({
+ message: "Remove this item from the cart?",
+ onConfirm: () => {
+ removeFromCart(index);
+ setConfirmAction(null);
+ }
+ });
+ }} 
+ className="absolute top-2.5 right-2.5 w-7 h-7 flex items-center justify-center text-red-500 hover:bg-red-500/10 rounded-lg transition-colors z-20 cursor-pointer"
+ >
+ <Trash2 size={14} />
+ </button>
+ <div className="flex flex-row items-center justify-between gap-3 pr-8">
+ <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">{item.name}</h4>
+ <p className="text-amber-600 dark:text-amber-400 font-bold text-xs shrink-0">{item.price.toLocaleString()} Ks</p>
+ </div>
+
+ <div className="flex items-center gap-2 pt-2 ">
+ {/* Quantity */}
+ <div className="flex items-center bg-muted rounded-lg p-0.5 h-8">
+ <button onClick={() => updateCartItem(index, { qty: Math.max(1, item.qty - 1) })} className="w-6 h-full flex items-center justify-center hover:bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-md transition-colors text-slate-900 dark:text-slate-100">
+ <Minus size={12} />
+ </button>
+ <input 
+ type="number"
+ value={item.qty}
+ onChange={(e) => updateCartItem(index, { qty: Math.max(1, parseInt(e.target.value) || 1) })}
+ className="w-8 text-center text-xs font-bold text-slate-900 dark:text-slate-100 bg-transparent outline-none appearance-none"
+ style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+ />
+ <button onClick={() => updateCartItem(index, { qty: item.qty + 1 })} className="w-6 h-full flex items-center justify-center hover:bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-md transition-colors text-slate-900 dark:text-slate-100">
+ <Plus size={12} />
+ </button>
+ </div>
+
+ {/* Discount % */}
+ <div className="relative w-20">
+ <Percent size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300" />
+ <input
+ type="number"
+ min="0"
+ max="100"
+ value={item.disP}
+ onFocus={(e) => {
+ if (item.disP === 0) {
+ updateCartItem(index, { disP: '' as any });
+ }
+ }}
+ onBlur={(e) => {
+ if ((e.target.value as any) === '') {
+ updateCartItem(index, { disP: 0 });
+ }
+ }}
+ onChange={(e) => {
+ const val = e.target.value;
+ updateCartItem(index, { disP: val === '' ? ('' as any) : Number(val) });
+ }}
+ className="w-full h-8 bg-input rounded-lg pl-6 pr-1 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all"
+ placeholder="Disc"
+ />
+ </div>
+ </div>
+ 
+ {/* Assign Staff (Split Staff Logic) */}
+ <div className="pt-2 flex flex-col gap-2">
+ {(!item.staffAssignments || item.staffAssignments.length === 0) ? (
+ <div className="flex items-center gap-2">
+ <div className="relative flex-1">
+ <UserIcon size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 z-10" />
+ <select 
+ value={item.staffName || ''}
+ onChange={(e) => updateCartItem(index, { staffName: e.target.value, staffEmail: staff.find(s => s.name === e.target.value)?.email || '' })}
+ className="w-full h-8 bg-input rounded-lg pl-7 pr-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all appearance-none"
+ >
+ <option value="">Select Staff</option>
+ {staff.map(s => (
+ <option key={s.id} value={s.name}>{s.name}</option>
+ ))}
+ </select>
+ </div>
+ <button 
+ onClick={() => {
+ // Initialize split staff with the first person if selected, or empty
+ const firstStaff = item.staffName ? [{ name: item.staffName, qty: Math.max(1, Math.floor(item.qty / 2)) }] : [];
+ updateCartItem(index, { 
+ staffName: '', 
+ staffEmail: '', 
+ staffAssignments: [...firstStaff, { name: '', qty: Math.max(1, Math.ceil(item.qty / 2)) }]
+ });
+ }}
+ className="h-8 px-2 bg-muted text-slate-900 dark:text-slate-100 text-[10px] font-bold rounded-lg whitespace-nowrap hover:bg-muted/80"
+ >
+ Split
+ </button>
+ </div>
+ ) : (
+ <div className="flex flex-col gap-2">
+ {item.staffAssignments.map((assignment, aIndex) => (
+ <div key={aIndex} className="flex items-center gap-2">
+ <div className="relative flex-1">
+ <UserIcon size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 z-10" />
+ <select 
+ value={assignment.name || ''}
+ onChange={(e) => {
+ const newAssignments = [...(item.staffAssignments || [])];
+ newAssignments[aIndex].name = e.target.value;
+ updateCartItem(index, { staffAssignments: newAssignments });
+ }}
+ className="w-full h-8 bg-input rounded-lg pl-7 pr-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all appearance-none"
+ >
+ <option value="">Select Staff</option>
+ {staff.map(s => (
+ <option key={s.id} value={s.name}>{s.name}</option>
+ ))}
+ </select>
+ </div>
+ <div className="relative w-16">
+ <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-700 dark:text-slate-300 pointer-events-none">qty</span>
+ <input
+ type="number"
+ min="0"
+ max={item.qty}
+ value={assignment.qty}
+ onChange={(e) => {
+ const newAssignments = [...(item.staffAssignments || [])];
+ const val = parseInt(e.target.value) || 0;
+ newAssignments[aIndex].qty = val;
+ updateCartItem(index, { staffAssignments: newAssignments });
+ }}
+ className="w-full h-8 bg-input rounded-lg pl-2 pr-6 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all text-center"
+ />
+ </div>
+ <button 
+ onClick={() => {
+ const newAssignments = [...(item.staffAssignments || [])];
+ newAssignments.splice(aIndex, 1);
+ if (newAssignments.length === 0) {
+ updateCartItem(index, { staffAssignments: undefined });
+ } else {
+ updateCartItem(index, { staffAssignments: newAssignments });
+ }
+ }}
+ className="w-8 h-8 flex items-center justify-center text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"
+ >
+ <Trash2 size={12} />
+ </button>
+ </div>
+ ))}
+ <button 
+ onClick={() => {
+ const newAssignments = [...(item.staffAssignments || []), { name: '', qty: 1 }];
+ updateCartItem(index, { staffAssignments: newAssignments });
+ }}
+ className="h-8 flex items-center justify-center gap-1 bg-muted/50 text-slate-900 dark:text-slate-100 text-[10px] font-bold rounded-lg -dashed hover:bg-muted"
+ >
+ <Plus size={10} /> Add Staff
+ </button>
+ {/* Logic 1 & Logic 2 Validation Error Messages */}
+ {(() => {
+ const itemValidation = validateCartItem(item);
+ if (!itemValidation.isValid && itemValidation.errors.length > 0) {
+ return (
+ <div className="space-y-1 mt-1">
+ {itemValidation.errors.map((err, errIdx) => (
+ <div key={errIdx} className="bg-red-500/10 -red-500/30 text-red-600 dark:text-red-400 p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+ <AlertCircle size={14} className="shrink-0 text-red-500" />
+ <span>{err}</span>
+ </div>
+ ))}
+ </div>
+ );
+ }
+ return null;
+ })()}
+ </div>
+ )}
+ </div>
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
+ )}
+
+ {currentStep === 'checkout' && cart.length > 0 && (
+ <div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
+ {/* Order Summary */}
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-4">
+ <div className="flex items-center justify-between pb-3">
+ <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest text-sm sm:text-base flex items-center gap-2">
+ <Receipt size={18} className="text-amber-600 dark:text-amber-400" /> Order Summary
+ </h3>
+ <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-muted px-2.5 py-1 rounded-lg">
+ {cart.reduce((sum, item) => sum + item.qty, 0)} {cart.reduce((sum, item) => sum + item.qty, 0) === 1 ? 'item' : 'items'}
+ </span>
+ </div>
+
+ {/* Cart Items Detailed Breakdown */}
+ <div className="space-y-2">
+ <div className="grid grid-cols-12 text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 pb-2 gap-2">
+ <div className="col-span-5 sm:col-span-6">Item (Dis%)</div>
+ <div className="col-span-2 text-center">Qty</div>
+ <div className="col-span-2 text-right">Price</div>
+ <div className="col-span-3 sm:col-span-2 text-right">Amount</div>
+ </div>
+ <div className="divide-y divide-/20 max-h-60 overflow-y-auto pr-1 space-y-0.5">
+ {cart.map((item, idx) => {
+ const lineAmount = Math.round(item.price * item.qty * (1 - (item.disP || 0) / 100));
+ return (
+ <div key={idx} className="grid grid-cols-12 text-xs items-center py-2 gap-2">
+ <div className="col-span-5 sm:col-span-6 min-w-0 pr-1">
+ <div className="font-bold text-slate-900 dark:text-slate-100 truncate">{item.name}</div>
+ {item.disP > 0 && (
+ <span className="inline-block text-[10px] font-extrabold text-red-500 bg-red-500/10 px-1.5 py-0.2 rounded mt-0.5">
+ Dis: {item.disP}%
+ </span>
+ )}
+ {item.staffAssignments && item.staffAssignments.length > 0 ? (
+ <div className="text-[10px] text-slate-700 dark:text-slate-300 truncate mt-0.5">
+ Staff: {item.staffAssignments.map(a => `${a.name || 'Staff'} (${a.qty})`).join(', ')}
+ </div>
+ ) : item.staffName ? (
+ <div className="text-[10px] text-slate-700 dark:text-slate-300 truncate mt-0.5">
+ Staff: {item.staffName}
+ </div>
+ ) : null}
+ </div>
+ <div className="col-span-2 text-center text-slate-700 dark:text-slate-300 font-semibold">{item.qty}</div>
+ <div className="col-span-2 text-right text-slate-700 dark:text-slate-300 font-semibold">{item.price.toLocaleString()} Ks</div>
+ <div className="col-span-3 sm:col-span-2 text-right font-extrabold text-slate-900 dark:text-slate-100">{lineAmount.toLocaleString()} Ks</div>
+ </div>
+ );
+ })}
+ </div>
+ </div>
+
+ <div className="h-px w-full bg-/50 my-2" />
+
+ <div className="space-y-2">
+ <div className="flex justify-between items-center text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+ <span>Subtotal</span>
+ <span>{subTotal.toLocaleString()} Ks</span>
+ </div>
+ {totalDiscount > 0 && (
+ <div className="flex justify-between items-center text-xs sm:text-sm font-medium text-red-500">
+ <span>Item Discounts</span>
+ <span>-{totalDiscount.toLocaleString()} Ks</span>
+ </div>
+ )}
+ {pointsDiscount > 0 && (
+ <div className="flex justify-between items-center text-xs sm:text-sm font-medium text-amber-600 dark:text-amber-400">
+ <span>Points Redeemed</span>
+ <span>-{pointsDiscount.toLocaleString()} Ks</span>
+ </div>
+ )}
+ <div className="h-px w-full bg-/50 my-2" />
+ <div className="flex justify-between items-center text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100">
+ <span>Net Total</span>
+ <span className="text-amber-600 dark:text-amber-400">{netTotal.toLocaleString()} Ks</span>
+ </div>
+ </div>
+ </div>
+
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+ {/* Global Options */}
+ <div className="space-y-3">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-4">
+ <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
+ <UserIcon size={16} className="text-amber-600 dark:text-amber-400" /> Global Settings
+ </h3>
+ <div>
+ <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1.5 block">Global Staff Assignment</label>
+ <select 
+ value={selectedStaffEmail}
+ onChange={(e) => setSelectedStaffEmail(e.target.value)}
+ className="w-full bg-input rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all"
+ >
+ {staff.map(s => (
+ <option key={s.id} value={s.email}>{s.name}</option>
+ ))}
+ </select>
+ </div>
+
+ <div className="pt-2 ">
+ <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1.5 block">Customer Search</label>
+ <div className="relative">
+ <input 
+ type="text" 
+ placeholder="Search customer by name or phone..."
+ value={customerSearch}
+ onChange={(e) => setCustomerSearch(e.target.value)}
+ className="w-full bg-input rounded-xl pl-4 pr-10 py-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all"
+ />
+ {customerSearch && (
+ <button onClick={() => setCustomerSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 hover:text-red-500 transition-colors">
+ <X size={16} />
+ </button>
+ )}
+ </div>
+ {customerSuggestions.length > 0 && (
+ <div className="absolute z-30 w-full mt-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-xl overflow-hidden max-w-sm">
+ {customerSuggestions.map(c => (
+ <button
+ key={c.id}
+ onClick={() => { setSelectedCustomerId(c.id); setCustomerSearch(''); }}
+ className="w-full text-left px-4 py-3 hover:bg-muted transition-colors last:-0"
+ >
+ <div className="font-bold text-slate-900 dark:text-slate-100">{c.name}</div>
+ <div className="text-xs text-slate-700 dark:text-slate-300">{c.phone}</div>
+ </button>
+ ))}
+ </div>
+ )}
+
+ {selectedCustomerId && (
+ <div className="mt-4 p-3 bg-amber-100/50 dark:bg-amber-900/30 -primary/20 rounded-xl flex justify-between items-center">
+ <div>
+ <div className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Selected Customer</div>
+ <div className="font-bold text-slate-900 dark:text-slate-100">{customers.find(c => c.id === selectedCustomerId)?.name}</div>
+ </div>
+ <button onClick={() => { setSelectedCustomerId(''); setPointsToRedeem(0); setIsLoyaltyDiscountActive(false); }} className="p-2 text-slate-700 dark:text-slate-300 hover:text-red-500 transition-colors">
+ <X size={16} />
+ </button>
+ </div>
+ )}
+ </div>
+ 
+ {selectedCustomerId && (
+ <div className="pt-2 ">
+ <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1.5 flex justify-between">
+ <span>Redeem Points</span>
+ <span className="text-amber-600 dark:text-amber-400 font-bold">Avail: {customers.find(c => c.id === selectedCustomerId)?.points || 0}</span>
+ </label>
+ <div className="flex items-center gap-3">
+ <input 
+ type="number"
+ placeholder="Redeem points..."
+ value={pointsToRedeem || ''}
+ onChange={(e) => {
+ const maxP = customers.find(c => c.id === selectedCustomerId)?.points || 0;
+ setPointsToRedeem(Math.min(Math.max(0, Number(e.target.value)), maxP));
+ }}
+ className="flex-1 bg-input rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all"
+ />
+ <div className="bg-red-500 text-slate-900 dark:text-slate-100 px-4 py-3 rounded-xl text-xs font-black shadow-red-500/20 whitespace-nowrap">
+ -{ (pointsToRedeem * 10).toLocaleString() } Ks
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+
+ {/* Payments & Split Payment */}
+ <div className="space-y-3">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-4">
+ <div className="flex justify-between items-center mb-1">
+ <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2 text-sm sm:text-base">
+ <DollarSign size={18} className="text-amber-600 dark:text-amber-400" /> Split Payments
+ </h3>
+ <button 
+ type="button"
+ onClick={addPaymentMethod} 
+ className="text-xs text-amber-600 dark:text-amber-400 font-extrabold uppercase tracking-widest bg-amber-100/50 dark:bg-amber-900/30 hover:bg-amber-200/50 dark:bg-amber-900/40 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+ >
+ <Plus size={14} /> Add Payment Method
+ </button>
+ </div>
+
+ <p className="text-xs text-slate-700 dark:text-slate-300">
+ Split total across payment options (Cash, KBZPay, WavePay, AYA Pay, etc.).
+ </p>
+
+ <div className="space-y-3 pt-1">
+ {payments.map((payment, index) => (
+ <div key={index} className="flex gap-2.5 items-center bg-muted/30 p-2.5 rounded-xl ">
+ <div className="flex-1 min-w-0">
+ <label className="text-[9px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1 block">Method {index + 1}</label>
+ <select
+ value={payment.method}
+ onChange={(e) => updatePayment(index, { method: e.target.value as any })}
+ className="w-full bg-input rounded-lg px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all appearance-none"
+ >
+ {paymentMethods.map(pm => (
+ <option key={pm.id} value={pm.id}>{pm.label}</option>
+ ))}
+ </select>
+ </div>
+
+ <div className="w-32 sm:w-36">
+ <div className="flex justify-between items-center mb-1">
+ <label className="text-[9px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Amount</label>
+ {remainingAmount > 0 && payments.length > 1 && (
+ <button 
+ type="button"
+ onClick={() => updatePayment(index, { amount: payment.amount + remainingAmount })}
+ className="text-amber-600 dark:text-amber-400 hover:underline font-bold text-[9px] lowercase cursor-pointer"
+ >
+ +fill
+ </button>
+ )}
+ </div>
+ <div className="relative">
+ <input
+ type="number"
+ value={payment.amount === 0 ? '' : payment.amount}
+ placeholder="0"
+ onChange={(e) => updatePayment(index, { amount: e.target.value === '' ? 0 : Number(e.target.value) })}
+ className="w-full bg-input rounded-lg px-2.5 py-2 text-xs font-extrabold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all text-right pr-7"
+ />
+ <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-700 dark:text-slate-300 pointer-events-none font-bold">
+ Ks
+ </span>
+ </div>
+ </div>
+
+ {payments.length > 1 && (
+ <button 
+ type="button"
+ onClick={() => removePaymentMethod(index)} 
+ className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 mt-4 cursor-pointer"
+ title="Remove payment method"
+ >
+ <Trash2 size={16} />
+ </button>
+ )}
+ </div>
+ ))}
+ </div>
+
+ {/* Payment Summary & Balance Status */}
+ <div className="pt-4 space-y-2">
+ <div className="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
+ <span>Total Allocated</span>
+ <span className="text-slate-900 dark:text-slate-100">{totalPaid.toLocaleString()} Ks</span>
+ </div>
+ <div className="flex justify-between items-center">
+ <span className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Balance Status</span>
+ <span className={`text-sm font-black ${remainingAmount > 0 ? 'text-red-500' : remainingAmount < 0 ? 'text-amber-500' : 'text-green-500'}`}>
+ {remainingAmount === 0 ? (
+ <span className="inline-flex items-center gap-1 bg-green-500/10 text-green-600 dark:text-green-400 px-2.5 py-1 rounded-lg text-xs font-extrabold">
+ ✓ Balanced ({netTotal.toLocaleString()} Ks)
+ </span>
+ ) : remainingAmount > 0 ? (
+ <span className="inline-flex items-center gap-1 bg-red-500/10 text-red-500 px-2.5 py-1 rounded-lg text-xs font-extrabold">
+ Unpaid: {remainingAmount.toLocaleString()} Ks
+ </span>
+ ) : (
+ <span className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-500 px-2.5 py-1 rounded-lg text-xs font-extrabold">
+ Overpaid: {Math.abs(remainingAmount).toLocaleString()} Ks
+ </span>
+ )}
+ </span>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+
+ {/* Bottom Footer (Fixed, shrink-0) */}
+ <div className="flex-shrink-0 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/95 backdrop-blur-md p-4 z-20 shadow-[0_-20px_40px_rgba(0,0,0,0.05)]">
+ <div className="max-w-5xl mx-auto w-full flex justify-between items-center gap-4">
+ {/* Left Info / Back Buttons */}
+ <div className="hidden sm:block">
+ {currentStep !== 'services' && (
+ <button onClick={() => setCurrentStep(currentStep === 'checkout' ? 'cart' : 'services')} className="text-slate-700 dark:text-slate-300 font-bold hover:text-slate-900 dark:text-slate-100 transition-colors uppercase tracking-widest text-xs px-4 py-2 -transparent hover: rounded-lg">
+ Back
+ </button>
+ )}
+ </div>
+
+ {/* Action Buttons */}
+ <div className="flex-1 sm:flex-none flex justify-end">
+ {currentStep === 'services' && (
+ <button 
+ onClick={() => setCurrentStep('cart')} 
+ className="w-full sm:w-auto bg-primary text-amber-600 dark:text-amber-400-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 group"
+ >
+ PROCEED TO CART 
+ {cart.length > 0 && (
+ <div className="bg-white/20 px-2 py-0.5 rounded-full text-xs group-hover:bg-white/30 transition-colors">
+ {cart.length}
+ </div>
+ )}
+ <ChevronRight size={18} />
+ </button>
+ )}
+ 
+ {currentStep === 'cart' && (
+ <button 
+ onClick={handleProceedToCheckout} 
+ disabled={cart.length === 0 || !isCartValid}
+ className="w-full sm:w-auto bg-primary text-amber-600 dark:text-amber-400-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+ >
+ CHECKOUT <ChevronRight size={18} />
+ </button>
+ )}
+
+ {currentStep === 'checkout' && (
+ <button 
+ onClick={() => handleCheckout()} 
+ disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid}
+ className="w-full sm:w-auto bg-primary text-amber-600 dark:text-amber-400-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
+ >
+ COMPLETE SALE <ChevronRight size={18} />
+ </button>
+ )}
+ </div>
+ </div>
+ </div>
+ 
+ {showPrintPreview && pendingSaleParams && (
+ <PrintPreviewModal
+ isOpen={true}
+ onClose={() => {
+ setShowPrintPreview(false);
+ setPendingSaleParams(null);
+ }}
+ text={generateReceiptHTML(pendingSaleParams.sale, shopSettings)}
+ onPrint={() => confirmCheckout(true)}
+ onSkipPrint={() => confirmCheckout(false)}
+ title="Checkout & Print Preview"
+ />
+ )}
+
+ {confirmAction && (
+ <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-sm rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-200">
+ <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 mb-2">Confirm Action</h3>
+ <p className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-4 md:mb-8">{confirmAction.message}</p>
+ <div className="flex gap-3">
+ <button 
+ onClick={() => setConfirmAction(null)}
+ className="flex-1 bg-muted text-slate-700 dark:text-slate-300 font-bold py-3.5 rounded-xl hover:bg-muted/80 transition-colors"
+ >
+ Cancel
+ </button>
+ <button 
+ onClick={confirmAction.onConfirm}
+ className="flex-1 bg-red-500 text-white font-bold py-3.5 rounded-xl hover:bg-red-600 transition-colors shadow-red-500/20"
+ >
+ Confirm
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ );
 };
 export const getEffectiveStaffItems = (s: any, staffName: string) => {
-  return s.items?.map((item: any) => {
-    if (item.staffAssignments && item.staffAssignments.length > 0) {
-      const assignment = item.staffAssignments.find((a: any) => a.name === staffName);
-      if (assignment) {
-        return { 
-          ...item, 
-          qty: assignment.qty, 
-          commission: assignment.commission, 
-          originalQty: item.qty,
-          originalCommission: item.commission
-        };
-      }
-      return null;
-    } else if (item.staffName) {
-      if (item.staffName === staffName) {
-        return { ...item, originalQty: item.qty, originalCommission: item.commission };
-      }
-      return null;
-    } else {
-      let hasSpecificStaff = false;
-      if (s.items) {
-        hasSpecificStaff = s.items.some((i: any) => (i.staffAssignments && i.staffAssignments.length > 0) || i.staffName);
-      }
-      if (!hasSpecificStaff && (s.staff === staffName || s.staffEmail === staffName)) {
-        return { ...item, originalQty: item.qty, originalCommission: item.commission };
-      }
-      return null;
-    }
-  }).filter(Boolean) || [];
+ return s.items?.map((item: any) => {
+ if (item.staffAssignments && item.staffAssignments.length > 0) {
+ const assignment = item.staffAssignments.find((a: any) => a.name === staffName);
+ if (assignment) {
+ return { 
+ ...item, 
+ qty: assignment.qty, 
+ commission: assignment.commission, 
+ originalQty: item.qty,
+ originalCommission: item.commission
+ };
+ }
+ return null;
+ } else if (item.staffName) {
+ if (item.staffName === staffName) {
+ return { ...item, originalQty: item.qty, originalCommission: item.commission };
+ }
+ return null;
+ } else {
+ let hasSpecificStaff = false;
+ if (s.items) {
+ hasSpecificStaff = s.items.some((i: any) => (i.staffAssignments && i.staffAssignments.length > 0) || i.staffName);
+ }
+ if (!hasSpecificStaff && (s.staff === staffName || s.staffEmail === staffName)) {
+ return { ...item, originalQty: item.qty, originalCommission: item.commission };
+ }
+ return null;
+ }
+ }).filter(Boolean) || [];
 };
 
 
 export const MonthlySummaryPage: React.FC = () => {
-  const { profile, isAdmin, isCashier } = useAuth();
-  if (!isAdmin && !isCashier) return <Navigate to="/" />;
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
+ const { profile, isAdmin, isCashier } = useAuth();
+ if (!isAdmin && !isCashier) return <Navigate to="/" />;
+ const [sales, setSales] = useState<Sale[]>([]);
+ const [expenses, setExpenses] = useState<Expense[]>([]);
+ const [year, setYear] = useState(new Date().getFullYear().toString());
+ const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
 
-  useEffect(() => {
-    if (!isAdmin && !isCashier) return;
-    const qSales = query(collection(db, 'sales'), orderBy('date', 'desc'));
-    const unsubSales = onSnapshot(qSales, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
-      setSales(data);
-      const allYears = [...new Set(data.map(s => s.date.substring(0, 4)))];
-      setYears(prev => [...new Set([...prev, ...allYears])].sort().reverse());
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+ useEffect(() => {
+ if (!isAdmin && !isCashier) return;
+ const qSales = query(collection(db, 'sales'), orderBy('date', 'desc'));
+ const unsubSales = onSnapshot(qSales, (snapshot) => {
+ const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+ setSales(data);
+ const allYears = [...new Set(data.map(s => s.date.substring(0, 4)))];
+ setYears(prev => [...new Set([...prev, ...allYears])].sort().reverse());
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
-    const qExp = query(collection(db, 'expenses'), orderBy('date', 'desc'));
-    const unsubExp = onSnapshot(qExp, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
-      setExpenses(data);
-      const allYears = [...new Set(data.map(e => e.date.substring(0, 4)))];
-      setYears(prev => [...new Set([...prev, ...allYears])].sort().reverse());
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
+ const qExp = query(collection(db, 'expenses'), orderBy('date', 'desc'));
+ const unsubExp = onSnapshot(qExp, (snapshot) => {
+ const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
+ setExpenses(data);
+ const allYears = [...new Set(data.map(e => e.date.substring(0, 4)))];
+ setYears(prev => [...new Set([...prev, ...allYears])].sort().reverse());
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
 
-    return () => { unsubSales(); unsubExp(); };
-  }, [profile]);
+ return () => { unsubSales(); unsubExp(); };
+ }, [profile]);
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
-  const monthlyData = months.map((mName, i) => {
-    const monthStr = (i + 1).toString().padStart(2, '0');
-    const prefix = `${year}-${monthStr}`;
-    const mSales = sales.filter(s => s.date.startsWith(prefix));
-    const mExp = expenses.filter(e => e.date.startsWith(prefix));
-    
-    const income = mSales.reduce((sum, s) => sum + s.total, 0);
-    const comms = mSales.reduce((sum, s) => sum + s.commission, 0);
-    const shopExp = mExp.reduce((sum, e) => sum + e.amount, 0);
-    const totalExp = shopExp + comms;
-    const profit = income - totalExp;
+ const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+ 
+ const monthlyData = months.map((mName, i) => {
+ const monthStr = (i + 1).toString().padStart(2, '0');
+ const prefix = `${year}-${monthStr}`;
+ const mSales = sales.filter(s => s.date.startsWith(prefix));
+ const mExp = expenses.filter(e => e.date.startsWith(prefix));
+ 
+ const income = mSales.reduce((sum, s) => sum + s.total, 0);
+ const comms = mSales.reduce((sum, s) => sum + s.commission, 0);
+ const shopExp = mExp.reduce((sum, e) => sum + e.amount, 0);
+ const totalExp = shopExp + comms;
+ const profit = income - totalExp;
 
-    return { mName, income, comms, shopExp, totalExp, profit };
-  }).filter(d => d.income > 0 || d.totalExp > 0);
+ return { mName, income, comms, shopExp, totalExp, profit };
+ }).filter(d => d.income > 0 || d.totalExp > 0);
 
-  const gIncome = monthlyData.reduce((sum, d) => sum + d.income, 0);
-  const gExp = monthlyData.reduce((sum, d) => sum + d.totalExp, 0);
-  const gProfit = gIncome - gExp;
+ const gIncome = monthlyData.reduce((sum, d) => sum + d.income, 0);
+ const gExp = monthlyData.reduce((sum, d) => sum + d.totalExp, 0);
+ const gProfit = gIncome - gExp;
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
-        <div className="space-y-1">
-          <h3 className="text-3xl font-light tracking-tight text-foreground">Monthly <span className="italic font-serif">Summary</span></h3>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Financial Performance Overview</p>
-        </div>
-        <div className="flex items-center gap-4 bg-card/50 p-2 rounded-2xl border border-border shadow-sm">
-          <div className="flex flex-col px-3">
-            <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Fiscal Year</label>
-            <CustomSelect
-              value={year}
-              onChange={setYear}
-              options={years.map(y => ({ value: y, label: y }))}
-            />
-          </div>
-        </div>
-      </div>
+ return (
+ <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
+ <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
+ <div className="space-y-1">
+ <h3 className="text-3xl font-light tracking-tight text-slate-900 dark:text-slate-100">Monthly <span className="italic font-serif">Summary</span></h3>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em]">Financial Performance Overview</p>
+ </div>
+ <div className="flex items-center gap-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-2 rounded-2xl ">
+ <div className="flex flex-col px-3">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest mb-0.5">Fiscal Year</label>
+ <CustomSelect
+ value={year}
+ onChange={setYear}
+ options={years.map(y => ({ value: y, label: y }))}
+ />
+ </div>
+ </div>
+ </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card p-6 rounded-3xl border border-border shadow-sm space-y-1 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingUp size={48} className="text-green-500" />
-          </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Incomes</p>
-          <h2 className="text-3xl font-mono tracking-tighter text-foreground">{gIncome.toLocaleString()} <span className="text-sm font-sans font-normal text-muted-foreground uppercase">Ks</span></h2>
-          <div className="h-1 w-12 bg-green-500/30 rounded-full" />
-        </div>
-        <div className="bg-card p-6 rounded-3xl border border-border shadow-sm space-y-1 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <TrendingDown size={48} className="text-red-500" />
-          </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Expenses</p>
-          <h2 className="text-3xl font-mono tracking-tighter text-foreground">{gExp.toLocaleString()} <span className="text-sm font-sans font-normal text-muted-foreground uppercase">Ks</span></h2>
-          <div className="h-1 w-12 bg-red-500/30 rounded-full" />
-        </div>
-        <div className="bg-card p-6 rounded-3xl border border-border shadow-sm space-y-1 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-            <DollarSign size={48} className={cn(gProfit >= 0 ? "text-primary" : "text-red-500")} />
-          </div>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Net Profit</p>
-          <h2 className={cn("text-3xl font-mono tracking-tighter", gProfit >= 0 ? "text-primary" : "text-red-500")}>
-            {gProfit.toLocaleString()} <span className="text-sm font-sans font-normal opacity-50 uppercase">Ks</span>
-          </h2>
-          <div className={cn("h-1 w-12 rounded-full", gProfit >= 0 ? "bg-primary/30" : "bg-red-500/30")} />
-        </div>
-      </div>
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-1 relative overflow-hidden group">
+ <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+ <TrendingUp size={48} className="text-green-500" />
+ </div>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Total Incomes</p>
+ <h2 className="text-3xl font-mono tracking-tighter text-slate-900 dark:text-slate-100">{gIncome.toLocaleString()} <span className="text-sm font-sans font-normal text-slate-700 dark:text-slate-300 uppercase">Ks</span></h2>
+ <div className="h-1 w-12 bg-green-500/30 rounded-full" />
+ </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-1 relative overflow-hidden group">
+ <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+ <TrendingDown size={48} className="text-red-500" />
+ </div>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Total Expenses</p>
+ <h2 className="text-3xl font-mono tracking-tighter text-slate-900 dark:text-slate-100">{gExp.toLocaleString()} <span className="text-sm font-sans font-normal text-slate-700 dark:text-slate-300 uppercase">Ks</span></h2>
+ <div className="h-1 w-12 bg-red-500/30 rounded-full" />
+ </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-1 relative overflow-hidden group">
+ <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+ <DollarSign size={48} className={cn(gProfit >= 0 ? "text-amber-600 dark:text-amber-400" : "text-red-500")} />
+ </div>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Net Profit</p>
+ <h2 className={cn("text-3xl font-mono tracking-tighter", gProfit >= 0 ? "text-amber-600 dark:text-amber-400" : "text-red-500")}>
+ {gProfit.toLocaleString()} <span className="text-sm font-sans font-normal opacity-50 uppercase">Ks</span>
+ </h2>
+ <div className={cn("h-1 w-12 rounded-full", gProfit >= 0 ? "bg-primary/30" : "bg-red-500/30")} />
+ </div>
+ </div>
 
-      <div className="bg-card rounded-[2rem] border border-border shadow-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-muted/30">
-                <th className="px-8 py-5 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Month</th>
-                <th className="px-8 py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Income</th>
-                <th className="px-8 py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Expense</th>
-                <th className="px-8 py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Profit</th>
-                <th className="px-8 py-5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50">
-              {monthlyData.map((d, i) => (
-                <tr key={i} className="hover:bg-primary/[0.02] transition-colors group">
-                  <td className="px-8 py-6">
-                    <span className="text-lg font-serif italic text-foreground group-hover:text-primary transition-colors">{d.mName}</span>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <span className="font-mono text-base text-foreground">{d.income.toLocaleString()}</span>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <span className="font-mono text-base text-red-500/80">{d.totalExp.toLocaleString()}</span>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <span className={cn("font-mono text-lg font-bold", d.profit >= 0 ? "text-primary" : "text-red-500")}>
-                      {d.profit.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6 text-center">
-                    <div className={cn(
-                      "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                      d.profit >= 0 ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
-                    )}>
-                      <div className={cn("w-1.5 h-1.5 rounded-full", d.profit >= 0 ? "bg-green-500" : "bg-red-500")} />
-                      {d.profit >= 0 ? "Profitable" : "Loss"}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {monthlyData.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center gap-3 opacity-30">
-                      <FileText size={48} />
-                      <p className="text-sm font-medium italic">No financial records found for {year}</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden">
+ <div className="overflow-x-auto">
+ <table className="w-full -collapse">
+ <thead>
+ <tr className=" bg-muted/30">
+ <th className="px-4 md:px-8 py-3 md:py-5 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Month</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Income</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Expense</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Profit</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Status</th>
+ </tr>
+ </thead>
+ <tbody className="divide-y divide-/50">
+ {monthlyData.map((d, i) => (
+ <tr key={i} className="hover:bg-primary/[0.02] transition-colors group">
+ <td className="px-4 md:px-8 py-4 md:py-6">
+ <span className="text-lg font-serif italic text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:text-amber-400 transition-colors">{d.mName}</span>
+ </td>
+ <td className="px-4 md:px-8 py-4 md:py-6 text-right">
+ <span className="font-mono text-base text-slate-900 dark:text-slate-100">{d.income.toLocaleString()}</span>
+ </td>
+ <td className="px-4 md:px-8 py-4 md:py-6 text-right">
+ <span className="font-mono text-base text-red-500/80">{d.totalExp.toLocaleString()}</span>
+ </td>
+ <td className="px-4 md:px-8 py-4 md:py-6 text-right">
+ <span className={cn("font-mono text-lg font-bold", d.profit >= 0 ? "text-amber-600 dark:text-amber-400" : "text-red-500")}>
+ {d.profit.toLocaleString()}
+ </span>
+ </td>
+ <td className="px-4 md:px-8 py-4 md:py-6 text-center">
+ <div className={cn(
+ "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
+ d.profit >= 0 ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
+ )}>
+ <div className={cn("w-1.5 h-1.5 rounded-full", d.profit >= 0 ? "bg-green-500" : "bg-red-500")} />
+ {d.profit >= 0 ? "Profitable" : "Loss"}
+ </div>
+ </td>
+ </tr>
+ ))}
+ {monthlyData.length === 0 && (
+ <tr>
+ <td colSpan={5} className="px-4 md:px-8 py-20 text-center">
+ <div className="flex flex-col items-center gap-3 opacity-30">
+ <FileText size={48} />
+ <p className="text-sm font-medium italic">No financial records found for {year}</p>
+ </div>
+ </td>
+ </tr>
+ )}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ );
 };
 
 export const ExpenseListPage: React.FC = () => {
-  const { profile, isAdmin, isCashier } = useAuth();
-  if (!isAdmin && !isCashier) return <Navigate to="/" />;
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
-  const [staffList, setStaffList] = useState<UserProfile[]>([]);
-  const today = getLocalISODate();
-  const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo] = useState(today);
-  const [expFilterCat, setExpFilterCat] = useState('');
-  const [expFilterStaff, setExpFilterStaff] = useState('');
+ const { profile, isAdmin, isCashier } = useAuth();
+ if (!isAdmin && !isCashier) return <Navigate to="/" />;
+ const [expenses, setExpenses] = useState<Expense[]>([]);
+ const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
+ const [staffList, setStaffList] = useState<UserProfile[]>([]);
+ const today = getLocalISODate();
+ const [dateFrom, setDateFrom] = useState(today);
+ const [dateTo, setDateTo] = useState(today);
+ const [expFilterCat, setExpFilterCat] = useState('');
+ const [expFilterStaff, setExpFilterStaff] = useState('');
 
-  const [showExpCatForm, setShowExpCatForm] = useState(false);
-  const [showExpForm, setShowExpForm] = useState(false);
-  const [expCatName, setExpCatName] = useState('');
-  const [expDesc, setExpDesc] = useState('');
-  const [expAmt, setExpAmt] = useState('');
-  const [expCategory, setExpCategory] = useState('');
-  const [assignedStaff, setAssignedStaff] = useState('');
-  const [editingExpenseCategory, setEditingExpenseCategory] = useState<ExpenseCategory | null>(null);
-  const [isExporting, setIsExporting] = useState(false);
-  const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
-  
-  const [showConfirm, setShowConfirm] = useState<{coll: string, id: string} | null>(null);
+ const [showExpCatForm, setShowExpCatForm] = useState(false);
+ const [showExpForm, setShowExpForm] = useState(false);
+ const [expCatName, setExpCatName] = useState('');
+ const [expDesc, setExpDesc] = useState('');
+ const [expAmt, setExpAmt] = useState('');
+ const [expCategory, setExpCategory] = useState('');
+ const [assignedStaff, setAssignedStaff] = useState('');
+ const [editingExpenseCategory, setEditingExpenseCategory] = useState<ExpenseCategory | null>(null);
+ const [isExporting, setIsExporting] = useState(false);
+ const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
+ 
+ const [showConfirm, setShowConfirm] = useState<{coll: string, id: string} | null>(null);
 
-  useEffect(() => {
-    if (!isAdmin && !isCashier) return;
-    const q = query(collection(db, 'expenses'), orderBy('date', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
-    
-    const unsubCat = onSnapshot(query(collection(db, 'expense_categories'), orderBy('name')), (snapshot) => {
-      setExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExpenseCategory)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'expense_categories'));
+ useEffect(() => {
+ if (!isAdmin && !isCashier) return;
+ const q = query(collection(db, 'expenses'), orderBy('date', 'desc'));
+ const unsubscribe = onSnapshot(q, (snapshot) => {
+ setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
+ 
+ const unsubCat = onSnapshot(query(collection(db, 'expense_categories'), orderBy('name')), (snapshot) => {
+ setExpenseCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ExpenseCategory)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'expense_categories'));
 
-    const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
-      const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
-      const staff = users.filter(u => ['owner', 'cashier', 'staff'].includes(u.role || ''));
-      setStaffList(staff);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
-    
-    return () => { unsubscribe(); unsubCat(); unsubStaff(); };
-  }, [profile]);
+ const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
+ const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+ const staff = users.filter(u => ['owner', 'cashier', 'staff'].includes(u.role || ''));
+ setStaffList(staff);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+ 
+ return () => { unsubscribe(); unsubCat(); unsubStaff(); };
+ }, [profile]);
 
-  const filteredExpenses = expenses.filter(e => 
-    (!dateFrom || e.date >= dateFrom) && 
-    (!dateTo || e.date <= dateTo) &&
-    (!expFilterCat || e.category === expFilterCat) &&
-    (!expFilterStaff || e.assignedStaff === expFilterStaff)
-  );
+ const filteredExpenses = expenses.filter(e => 
+ (!dateFrom || e.date >= dateFrom) && 
+ (!dateTo || e.date <= dateTo) &&
+ (!expFilterCat || e.category === expFilterCat) &&
+ (!expFilterStaff || e.assignedStaff === expFilterStaff)
+ );
 
-  const totalExp = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+ const totalExp = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-  const groupedExpenses = useMemo(() => {
-    const groups: Record<string, Expense[]> = {};
-    filteredExpenses.forEach(e => {
-      const date = new Date(e.date).toDateString();
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(e);
-    });
-    return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
-  }, [filteredExpenses]);
+ const groupedExpenses = useMemo(() => {
+ const groups: Record<string, Expense[]> = {};
+ filteredExpenses.forEach(e => {
+ const date = new Date(e.date).toDateString();
+ if (!groups[date]) groups[date] = [];
+ groups[date].push(e);
+ });
+ return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
+ }, [filteredExpenses]);
 
-  const handleExportCSV = async () => {
-    if (filteredExpenses.length === 0) return;
-    setIsExporting(true);
-    
-    try {
-      const headers = ['Date', 'Description', 'Category', 'Assigned Staff', 'Maker', 'Amount (Ks)'];
-      
-      const csvData = filteredExpenses.map(e => [
-        e.date,
-        e.desc,
-        e.category || 'General',
-        e.assignedStaff || '',
-        e.createdBy || '',
-        e.amount
-      ]);
-      
-      await exportToCSVAndShare(
-        `Expense_Report_${dateFrom}_to_${dateTo}.xlsx`,
-        headers,
-        csvData
-      );
-    } catch (error) {
-      console.error('Error exporting expenses:', error);
-      alert('Failed to export. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
+ const handleExportCSV = async () => {
+ if (filteredExpenses.length === 0) return;
+ setIsExporting(true);
+ 
+ try {
+ const headers = ['Date', 'Description', 'Category', 'Assigned Staff', 'Maker', 'Amount (Ks)'];
+ 
+ const csvData = filteredExpenses.map(e => [
+ e.date,
+ e.desc,
+ e.category || 'General',
+ e.assignedStaff || '',
+ e.createdBy || '',
+ e.amount
+ ]);
+ 
+ await exportToCSVAndShare(
+ `Expense_Report_${dateFrom}_to_${dateTo}.xlsx`,
+ headers,
+ csvData
+ );
+ } catch (error) {
+ console.error('Error exporting expenses:', error);
+ alert('Failed to export. Please try again.');
+ } finally {
+ setIsExporting(false);
+ }
+ };
 
-  const handleAddExpense = async () => {
-    if (!expDesc || !expAmt) return;
-    const now = new Date();
-    const localDateStr = getLocalISODate(now);
-    
-    try {
-      const newExpense: any = {
-         date: localDateStr,
-         dateTime: now.toISOString(),
-         desc: expDesc,
-         amount: Number(expAmt),
-         category: expCategory || 'General',
-         createdBy: profile?.name || 'Unknown User'
-      };
+ const handleAddExpense = async () => {
+ if (!expDesc || !expAmt) return;
+ const now = new Date();
+ const localDateStr = getLocalISODate(now);
+ 
+ try {
+ const newExpense: any = {
+ date: localDateStr,
+ dateTime: now.toISOString(),
+ desc: expDesc,
+ amount: Number(expAmt),
+ category: expCategory || 'General',
+ createdBy: profile?.name || 'Unknown User'
+ };
 
-      if ((expCategory === 'Staff Salary' || expCategory === 'Advance Pay') && assignedStaff) {
-         newExpense.assignedStaff = assignedStaff;
-      }
+ if ((expCategory === 'Staff Salary' || expCategory === 'Advance Pay') && assignedStaff) {
+ newExpense.assignedStaff = assignedStaff;
+ }
 
-      await addDoc(collection(db, 'expenses'), newExpense);
-      setExpDesc(''); setExpAmt(''); setExpCategory(''); setAssignedStaff('');
-      setShowExpForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'expenses');
-    }
-  };
+ await addDoc(collection(db, 'expenses'), newExpense);
+ setExpDesc(''); setExpAmt(''); setExpCategory(''); setAssignedStaff('');
+ setShowExpForm(false);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.CREATE, 'expenses');
+ }
+ };
 
-  const handleAddExpenseCategory = async () => {
-    if (!expCatName) return;
-    try {
-      await addDoc(collection(db, 'expense_categories'), { name: expCatName.trim() });
-      setExpCatName('');
-      setShowExpCatForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'expense_categories');
-    }
-  };
+ const handleAddExpenseCategory = async () => {
+ if (!expCatName) return;
+ try {
+ await addDoc(collection(db, 'expense_categories'), { name: expCatName.trim() });
+ setExpCatName('');
+ setShowExpCatForm(false);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.CREATE, 'expense_categories');
+ }
+ };
 
-  const handleUpdateExpenseCategory = async () => {
-    if (!editingExpenseCategory || !expCatName) return;
-    try {
-      await updateDoc(doc(db, 'expense_categories', editingExpenseCategory.id), { name: expCatName.trim() });
-      setEditingExpenseCategory(null);
-      setExpCatName('');
-      setShowExpCatForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `expense_categories/${editingExpenseCategory.id}`);
-    }
-  };
+ const handleUpdateExpenseCategory = async () => {
+ if (!editingExpenseCategory || !expCatName) return;
+ try {
+ await updateDoc(doc(db, 'expense_categories', editingExpenseCategory.id), { name: expCatName.trim() });
+ setEditingExpenseCategory(null);
+ setExpCatName('');
+ setShowExpCatForm(false);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.UPDATE, `expense_categories/${editingExpenseCategory.id}`);
+ }
+ };
 
-  const handleDelete = async (coll: string, id: string) => {
-    try {
-      await deleteDoc(doc(db, coll, id));
-      setShowConfirm(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `${coll}/${id}`);
-    }
-  };
+ const handleDelete = async (coll: string, id: string) => {
+ try {
+ await deleteDoc(doc(db, coll, id));
+ setShowConfirm(null);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.DELETE, `${coll}/${id}`);
+ }
+ };
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
-      <Modal 
-        isOpen={showExpForm} 
-        onClose={() => { setShowExpForm(false); setExpDesc(''); setExpAmt(''); setExpCategory(''); setAssignedStaff(''); }} 
-        title="Add Daily Expense"
-      >
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Expense Type</label>
-            <CustomSelect
-              value={expCategory}
-              onChange={(val) => {
-                 setExpCategory(val);
-                 if (val !== 'Staff Salary' && val !== 'Advance Pay') {
-                    setAssignedStaff('');
-                 }
-              }}
-              options={[
-                { value: '', label: 'General' },
-                ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
-              ]}
-              buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
-            />
-          </div>
+ return (
+ <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
+ <Modal 
+ isOpen={showExpForm} 
+ onClose={() => { setShowExpForm(false); setExpDesc(''); setExpAmt(''); setExpCategory(''); setAssignedStaff(''); }} 
+ title="Add Daily Expense"
+ >
+ <div className="space-y-4">
+ <div className="space-y-1.5">
+ <label className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest ml-1">Expense Type</label>
+ <CustomSelect
+ value={expCategory}
+ onChange={(val) => {
+ setExpCategory(val);
+ if (val !== 'Staff Salary' && val !== 'Advance Pay') {
+ setAssignedStaff('');
+ }
+ }}
+ options={[
+ { value: '', label: 'General' },
+ ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
+ ]}
+ buttonClassName="w-full bg-input rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 text-sm focus:-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
+ />
+ </div>
 
-          {(expCategory === 'Staff Salary' || expCategory === 'Advance Pay') && (
-            <div className="space-y-1.5 animate-in fade-in zoom-in duration-200">
-              <label className="text-[10px] text-primary [.midnight_&]:text-[#D4AF37] font-bold uppercase tracking-widest ml-1">Assign Staff</label>
-              <CustomSelect
-                value={assignedStaff}
-                onChange={setAssignedStaff}
-                placeholder="Select Staff Member..."
-                options={staffList.map(s => ({ value: s.name, label: s.name }))}
-                buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:border-[#D4AF37]/50"
-              />
-            </div>
-          )}
+ {(expCategory === 'Staff Salary' || expCategory === 'Advance Pay') && (
+ <div className="space-y-1.5 animate-in fade-in zoom-in duration-200">
+ <label className="text-[10px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37] font-bold uppercase tracking-widest ml-1">Assign Staff</label>
+ <CustomSelect
+ value={assignedStaff}
+ onChange={setAssignedStaff}
+ placeholder="Select Staff Member..."
+ options={staffList.map(s => ({ value: s.name, label: s.name }))}
+ buttonClassName="w-full bg-input rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 text-sm focus:-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:-[#D4AF37]/50"
+ />
+ </div>
+ )}
 
-          <FloatingInput 
-            label="Note (Description)"
-            value={expDesc}
-            onChange={setExpDesc}
-            onFocusClear
-          />
-          <FloatingInput 
-            label="Amount (Ks)"
-            type="number"
-            value={expAmt}
-            onChange={setExpAmt}
-            onFocusClear
-          />
-          <button onClick={handleAddExpense} className="w-full bg-primary text-white font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Add Expense</button>
-        </div>
-      </Modal>
+ <FloatingInput 
+ label="Note (Description)"
+ value={expDesc}
+ onChange={setExpDesc}
+ onFocusClear
+ />
+ <FloatingInput 
+ label="Amount (Ks)"
+ type="number"
+ value={expAmt}
+ onChange={setExpAmt}
+ onFocusClear
+ />
+ <button onClick={handleAddExpense} className="w-full bg-primary text-white font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:-[#D4AF37]">Add Expense</button>
+ </div>
+ </Modal>
 
-      <Modal 
-        isOpen={showExpCatForm} 
-        onClose={() => { setShowExpCatForm(false); setEditingExpenseCategory(null); setExpCatName(''); }} 
-        title={editingExpenseCategory ? "Edit Expense Category" : "Manage Expense Categories"}
-      >
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <FloatingInput 
-              label={editingExpenseCategory ? "Edit Category Name" : "New Category Name"}
-              value={expCatName}
-              onChange={setExpCatName}
-              onFocusClear
-            />
-            {editingExpenseCategory ? (
-              <button onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Update Category</button>
-            ) : (
-              <button onClick={handleAddExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]">Add Category</button>
-            )}
-          </div>
-          <div className="space-y-3 pt-6 border-t border-border">
-            <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Existing Categories</h4>
-            <div className="flex flex-wrap gap-2">
-              {expenseCategories.map(c => (
-                <div key={c.id} className="flex items-center gap-2 bg-background border border-border px-3 py-1.5 rounded-full group hover:border-primary/50 transition-all">
-                  <span className="text-xs font-bold text-foreground">{c.name}</span>
-                  <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-muted-foreground hover:text-primary hover:scale-110 transition-all"><Settings size={12} /></button>
-                  {isAdmin && (
-                    <button onClick={() => setShowConfirm({ coll: 'expense_categories', id: c.id })} className="text-red-500 hover:text-red-600 hover:scale-110 transition-all"><Trash2 size={12} /></button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </Modal>
+ <Modal 
+ isOpen={showExpCatForm} 
+ onClose={() => { setShowExpCatForm(false); setEditingExpenseCategory(null); setExpCatName(''); }} 
+ title={editingExpenseCategory ? "Edit Expense Category" : "Manage Expense Categories"}
+ >
+ <div className="space-y-3">
+ <div className="space-y-4">
+ <FloatingInput 
+ label={editingExpenseCategory ? "Edit Category Name" : "New Category Name"}
+ value={expCatName}
+ onChange={setExpCatName}
+ onFocusClear
+ />
+ {editingExpenseCategory ? (
+ <button onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:-[#D4AF37]">Update Category</button>
+ ) : (
+ <button onClick={handleAddExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:-[#D4AF37]">Add Category</button>
+ )}
+ </div>
+ <div className="space-y-3 pt-6 ">
+ <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">Existing Categories</h4>
+ <div className="flex flex-wrap gap-2">
+ {expenseCategories.map(c => (
+ <div key={c.id} className="flex items-center gap-2 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] px-3 py-1.5 rounded-full group hover:-primary/50 transition-all">
+ <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{c.name}</span>
+ <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:text-amber-400 hover:scale-110 transition-all"><Settings size={12} /></button>
+ {isAdmin && (
+ <button onClick={() => setShowConfirm({ coll: 'expense_categories', id: c.id })} className="text-red-500 hover:text-red-600 hover:scale-110 transition-all"><Trash2 size={12} /></button>
+ )}
+ </div>
+ ))}
+ </div>
+ </div>
+ </div>
+ </Modal>
 
-      {/* Confirm Delete Modal */}
-      <Modal 
-        isOpen={!!showConfirm} 
-        onClose={() => setShowConfirm(null)} 
-        title="Confirm Deletion"
-      >
-        <div className="space-y-6">
-          <p className="text-sm text-muted-foreground">Are you sure you want to delete this record? This action cannot be undone.</p>
-          <div className="flex gap-4">
-            <button onClick={() => setShowConfirm(null)} className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:opacity-80 transition-opacity">Cancel</button>
-            <button onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20">Delete</button>
-          </div>
-        </div>
-      </Modal>
+ {/* Confirm Delete Modal */}
+ <Modal 
+ isOpen={!!showConfirm} 
+ onClose={() => setShowConfirm(null)} 
+ title="Confirm Deletion"
+ >
+ <div className="space-y-3">
+ <p className="text-sm text-slate-700 dark:text-slate-300">Are you sure you want to delete this record? This action cannot be undone.</p>
+ <div className="flex gap-4">
+ <button onClick={() => setShowConfirm(null)} className="flex-1 bg-muted text-slate-900 dark:text-slate-100 font-bold py-3 rounded-xl hover:opacity-80 transition-opacity">Cancel</button>
+ <button onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-red-500/20">Delete</button>
+ </div>
+ </div>
+ </Modal>
 
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
-        <div className="space-y-1 flex-1 min-w-0">
-          <h3 className="text-3xl font-light tracking-tight text-foreground">Shop <span className="italic font-serif">Expenses</span></h3>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-4">Operating Cost Management</p>
-          <div className="flex items-center gap-3 mt-4">
-            <button 
-              onClick={() => setShowExpForm(true)}
-              className="bg-primary text-white px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-lg shadow-primary/20 hover:opacity-90 transition-all active:scale-95 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
-            >
-              <Plus size={14} /> ADD EXPENSE
-            </button>
-            <button 
-              onClick={() => setShowExpCatForm(true)}
-              className="bg-card border border-border text-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 hover:border-primary/30 transition-colors"
-            >
-              <Settings size={14} /> MANAGE CATEGORIES
-            </button>
-          </div>
-        </div>
-        
-        <div className="bg-card rounded-[2rem] border border-border shadow-2xl z-40 relative min-w-[320px] [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C]">
-          <div className={cn("grid grid-cols-1", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') ? "md:grid-cols-4" : "md:grid-cols-3")}>
-            <CustomDatePicker 
-              label="FROM" 
-              value={dateFrom} 
-              onChange={setDateFrom} 
-              iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
-              className="border-b md:border-b-0 md:border-r border-border/50"
-            />
-            <CustomDatePicker 
-              label="TO" 
-              value={dateTo} 
-              onChange={setDateTo} 
-              iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
-              className="border-b md:border-b-0 md:border-r border-border/50"
-            />
-            <div className={cn("flex flex-col p-4", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && "border-b md:border-b-0 md:border-r border-border/50")}>
-               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                 <Settings size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> CATEGORY
-               </label>
-               <CustomSelect
-                 value={expFilterCat}
-                 onChange={(val) => {
-                    setExpFilterCat(val);
-                    if (val !== 'Staff Salary' && val !== 'Advance Pay') {
-                       setExpFilterStaff('');
-                    }
-                 }}
-                 placeholder="All Categories"
-                 options={[
-                   { value: '', label: 'All Categories' },
-                   { value: 'General', label: 'General' },
-                   ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
-                 ]}
-                 buttonClassName="bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
-               />
-            </div>
-            {(expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && (
-              <div className="flex flex-col p-4 animate-in fade-in zoom-in duration-200">
-                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                   <UsersIcon size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> STAFF
-                 </label>
-                 <CustomSelect
-                   value={expFilterStaff}
-                   onChange={setExpFilterStaff}
-                   placeholder="All Staff"
-                   options={[
-                     { value: '', label: 'All Staff' },
-                     ...staffList.map(s => ({ value: s.name, label: s.name }))
-                   ]}
-                   buttonClassName="bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
-                 />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+ <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
+ <div className="space-y-1 flex-1 min-w-0">
+ <h3 className="text-3xl font-light tracking-tight text-slate-900 dark:text-slate-100">Shop <span className="italic font-serif">Expenses</span></h3>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em] mb-4">Operating Cost Management</p>
+ <div className="flex items-center gap-3 mt-4">
+ <button 
+ onClick={() => setShowExpForm(true)}
+ className="bg-primary text-white px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-primary/20 hover:opacity-90 transition-all active:scale-95 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:-[#D4AF37]"
+ >
+ <Plus size={14} /> ADD EXPENSE
+ </button>
+ <button 
+ onClick={() => setShowExpCatForm(true)}
+ className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 text-slate-900 dark:text-slate-100 px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 hover:-primary/30 transition-colors"
+ >
+ <Settings size={14} /> MANAGE CATEGORIES
+ </button>
+ </div>
+ </div>
+ 
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl z-40 relative min-w-[320px] [.midnight_&]:bg-[#221C18] [.midnight_&]:-[#3D322C]">
+ <div className={cn("grid grid-cols-1", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') ? "md:grid-cols-4" : "md:grid-cols-3")}>
+ <CustomDatePicker 
+ label="FROM" 
+ value={dateFrom} 
+ onChange={setDateFrom} 
+ iconColor="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]"
+ className=" md:-0 md: "
+ />
+ <CustomDatePicker 
+ label="TO" 
+ value={dateTo} 
+ onChange={setDateTo} 
+ iconColor="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]"
+ className=" md:-0 md: "
+ />
+ <div className={cn("flex flex-col p-4", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && " md:-0 md: ")}>
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <Settings size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]" /> CATEGORY
+ </label>
+ <CustomSelect
+ value={expFilterCat}
+ onChange={(val) => {
+ setExpFilterCat(val);
+ if (val !== 'Staff Salary' && val !== 'Advance Pay') {
+ setExpFilterStaff('');
+ }
+ }}
+ placeholder="All Categories"
+ options={[
+ { value: '', label: 'All Categories' },
+ { value: 'General', label: 'General' },
+ ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
+ ]}
+ buttonClassName="bg-input rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 text-xs focus:-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
+ />
+ </div>
+ {(expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && (
+ <div className="flex flex-col p-4 animate-in fade-in zoom-in duration-200">
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <UsersIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]" /> STAFF
+ </label>
+ <CustomSelect
+ value={expFilterStaff}
+ onChange={setExpFilterStaff}
+ placeholder="All Staff"
+ options={[
+ { value: '', label: 'All Staff' },
+ ...staffList.map(s => ({ value: s.name, label: s.name }))
+ ]}
+ buttonClassName="bg-input rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 text-xs focus:-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
+ />
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
 
-      <div className="bg-card p-10 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-6 relative overflow-hidden group [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C]">
-        <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="relative z-10 space-y-2">
-          <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Total Operating Expenditure</span>
-          <div className="flex items-center justify-center gap-4">
-            <TrendingDown size={32} className="text-red-500/50 [.midnight_&]:text-red-400/50" />
-            <h1 className="text-6xl font-mono tracking-tighter text-red-500 drop-shadow-sm [.midnight_&]:text-[#D4AF37]">
-              {totalExp.toLocaleString()} <span className="text-2xl font-sans font-normal opacity-50">Ks</span>
-            </h1>
-          </div>
-          <div className="h-1 bg-red-500/20 w-24 mx-auto rounded-full [.midnight_&]:bg-[#D4AF37]/20" />
-        </div>
-        {filteredExpenses.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
-          <div className="relative z-10 flex justify-center mt-4">
-            <button 
-              onClick={handleExportCSV}
-              disabled={isExporting}
-              className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 [.midnight_&]:from-[#3A2F28] [.midnight_&]:to-[#2E2520] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
-              title="Export to Excel"
-            >
-              {isExporting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin [.midnight_&]:border-[#D4AF37]/30 [.midnight_&]:border-t-[#D4AF37]" />
-                  <span className="text-xs uppercase tracking-widest font-bold [.midnight_&]:text-[#D4AF37]">Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={18} className="[.midnight_&]:text-[#D4AF37]" />
-                  <span className="text-xs uppercase tracking-widest font-bold [.midnight_&]:text-[#D4AF37]">Export Excel</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl text-center space-y-3 relative overflow-hidden group [.midnight_&]:bg-[#221C18] [.midnight_&]:-[#3D322C]">
+ <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+ <div className="relative z-10 space-y-2">
+ <span className="text-slate-700 dark:text-slate-300 text-[11px] font-bold uppercase tracking-[0.3em]">Total Operating Expenditure</span>
+ <div className="flex items-center justify-center gap-4">
+ <TrendingDown size={32} className="text-red-500/50 [.midnight_&]:text-red-400/50" />
+ <h1 className="text-6xl font-mono tracking-tighter text-red-500 drop- [.midnight_&]:text-[#D4AF37]">
+ {totalExp.toLocaleString()} <span className="text-2xl font-sans font-normal opacity-50">Ks</span>
+ </h1>
+ </div>
+ <div className="h-1 bg-red-500/20 w-24 mx-auto rounded-full [.midnight_&]:bg-[#D4AF37]/20" />
+ </div>
+ {filteredExpenses.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
+ <div className="relative z-10 flex justify-center mt-4">
+ <button 
+ onClick={handleExportCSV}
+ disabled={isExporting}
+ className="px-4 md:px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full hover: hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 [.midnight_&]:from-[#3A2F28] [.midnight_&]:to-[#2E2520] [.midnight_&]: [.midnight_&]:-[#D4AF37]"
+ title="Export to Excel"
+ >
+ {isExporting ? (
+ <>
+ <div className="w-4 h-4 -2 -primary-foreground/30 -primary-foreground rounded-full animate-spin [.midnight_&]:-[#D4AF37]/30 [.midnight_&]:-[#D4AF37]" />
+ <span className="text-xs uppercase tracking-widest font-bold [.midnight_&]:text-[#D4AF37]">Generating...</span>
+ </>
+ ) : (
+ <>
+ <Download size={18} className="[.midnight_&]:text-[#D4AF37]" />
+ <span className="text-xs uppercase tracking-widest font-bold [.midnight_&]:text-[#D4AF37]">Export Excel</span>
+ </>
+ )}
+ </button>
+ </div>
+ )}
+ </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Transaction Ledger</h4>
-          <span className="text-[10px] font-mono text-muted-foreground">{filteredExpenses.length} Entries</span>
-        </div>
+ <div className="space-y-4">
+ <div className="flex items-center justify-between px-2">
+ <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Transaction Ledger</h4>
+ <span className="text-[10px] font-mono text-slate-700 dark:text-slate-300">{filteredExpenses.length} Entries</span>
+ </div>
 
-        <div className="space-y-12">
-          {groupedExpenses.length === 0 ? (
-            <div className="text-center py-20 bg-card rounded-[2rem] border border-dashed border-border [.midnight_&]:bg-[#1A1613]">
-              <div className="flex flex-col items-center gap-3 opacity-30">
-                <Receipt size={48} className="[.midnight_&]:text-[#D4AF37]" />
-                <p className="text-sm font-medium italic text-muted-foreground">No expense records found for this period.</p>
-              </div>
-            </div>
-          ) : (
-            groupedExpenses.map(([date, expenses]) => (
-              <div key={date} className="space-y-4">
-                <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background/90 backdrop-blur-sm border-b border-border/30">
-                  <div className="flex items-center gap-3 px-5 py-2 bg-primary/10 border border-primary/20 rounded-2xl shadow-sm shadow-primary/5 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:border-[#D4AF37]/20">
-                    <CalendarIcon size={14} className="text-primary [.midnight_&]:text-[#D4AF37]" />
-                    <span className="text-xs font-black uppercase tracking-[0.15em] text-primary [.midnight_&]:text-[#D4AF37]">
-                      {formatDisplayDate(date)}
-                    </span>
-                  </div>
-                  <div className="h-px flex-1 bg-gradient-to-r from-border/50 to-transparent" />
-                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-lg border border-border/50">
-                    <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest">
-                      {expenses.length} {expenses.length === 1 ? 'Entry' : 'Entries'}
-                    </span>
-                  </div>
-                </div>
+ <div className="space-y-12">
+ {groupedExpenses.length === 0 ? (
+ <div className="text-center py-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed [.midnight_&]:bg-[#1A1613]">
+ <div className="flex flex-col items-center gap-3 opacity-30">
+ <Receipt size={48} className="[.midnight_&]:text-[#D4AF37]" />
+ <p className="text-sm font-medium italic text-slate-700 dark:text-slate-300">No expense records found for this period.</p>
+ </div>
+ </div>
+ ) : (
+ groupedExpenses.map(([date, expenses]) => (
+ <div key={date} className="space-y-4">
+ <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/90 backdrop-blur-sm ">
+ <div className="flex items-center gap-3 px-3 md:px-5 py-2 bg-amber-100/50 dark:bg-amber-900/30 -primary/20 rounded-2xl shadow-primary/5 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:-[#D4AF37]/20">
+ <CalendarIcon size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]" />
+ <span className="text-xs font-black uppercase tracking-[0.15em] text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]">
+ {formatDisplayDate(date)}
+ </span>
+ </div>
+ <div className="h-px flex-1 bg-gradient-to-r from-/50 to-transparent" />
+ <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-lg ">
+ <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+ {expenses.length} {expenses.length === 1 ? 'Entry' : 'Entries'}
+ </span>
+ </div>
+ </div>
 
-                <div className="grid grid-cols-1 gap-3">
-                  {expenses.map(e => (
-                    <div 
-                      onClick={() => setSelectedExpense(e)}
-                      
-                      key={e.id} 
-                      className="group bg-card border border-border rounded-2xl p-5 flex items-center justify-between shadow-sm hover:shadow-md hover:border-primary/30 transition-all relative overflow-hidden cursor-pointer [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C] [.midnight_&]:hover:border-[#D4AF37]/50"
-                    >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors [.midnight_&]:bg-[#D4AF37]/20 [.midnight_&]:group-hover:bg-[#D4AF37]" />
-                      <div className="flex items-start gap-4 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform shrink-0 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:text-[#D4AF37]">
-                          <Receipt size={20} />
-                        </div>
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-bold text-foreground uppercase tracking-widest [.midnight_&]:text-[#E6DFD9]">
-                              {e.assignedStaff ? `${e.category || 'General'} - ${e.assignedStaff}` : (e.category || 'General')}
-                            </span>
-                          </div>
-                          {e.desc && (
-                            <p className="text-sm text-muted-foreground font-medium leading-tight max-w-[200px] sm:max-w-xs truncate [.midnight_&]:text-[#9C9086]">
-                              {e.desc}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-3 mt-2">
-                            <span className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider flex items-center gap-1">
-                              <Clock size={10} /> {new Date(e.dateTime || e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                            {e.createdBy && (
-                              <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest flex items-center gap-1 [.midnight_&]:text-[#9C9086]/70">
-                                Maker: {e.createdBy}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col items-end gap-2 shrink-0 pl-4">
-                        <div className="text-right whitespace-nowrap shrink-0">
-                          <span className="text-lg sm:text-xl font-mono font-bold text-red-500 group-hover:text-red-600 transition-colors [.midnight_&]:text-[#D4AF37] [.midnight_&]:group-hover:text-[#F3C853]">
-                            {e.amount.toLocaleString()} <span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">Ks</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      
-      <Modal 
-        isOpen={!!selectedExpense} 
-        onClose={() => setSelectedExpense(null)} 
-        title="Expense Details"
-        maxWidth="max-w-md"
-      >
-        {selectedExpense && (
-          <div className="space-y-6">
-            <div className="bg-muted/30 p-6 rounded-[2rem] border border-border/50 space-y-6 shadow-inner [.midnight_&]:bg-[#221C18]/50 [.midnight_&]:border-[#D4AF37]/10">
-              <div className="bg-background/50 p-5 rounded-2xl border border-border/50 grid grid-cols-2 gap-5 [.midnight_&]:bg-[#1A1613] [.midnight_&]:border-[#3D322C]">
-                <div className="space-y-1 col-span-2">
-                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Transaction ID (Txn ID)</span>
-                  <span className="text-[10px] font-mono text-muted-foreground [.midnight_&]:text-[#9C9086] truncate block">{selectedExpense.id}</span>
-                </div>
+ <div className="grid grid-cols-1 gap-3">
+ {expenses.map(e => (
+ <div 
+ onClick={() => setSelectedExpense(e)}
+ 
+ key={e.id} 
+ className="group bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 flex items-center justify-between hover: hover:-primary/30 transition-all relative overflow-hidden cursor-pointer [.midnight_&]:bg-[#221C18] [.midnight_&]:-[#3D322C] [.midnight_&]:hover:-[#D4AF37]/50"
+ >
+ <div className="absolute top-0 left-0 w-1 h-full bg-amber-200/50 dark:bg-amber-900/40 group-hover:bg-primary transition-colors [.midnight_&]:bg-[#D4AF37]/20 [.midnight_&]:group-hover:bg-[#D4AF37]" />
+ <div className="flex items-start gap-4 flex-1 min-w-0">
+ <div className="w-10 h-10 rounded-full bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform shrink-0 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:text-[#D4AF37]">
+ <Receipt size={20} />
+ </div>
+ <div className="space-y-1 flex-1 min-w-0">
+ <div className="flex items-center gap-2 flex-wrap">
+ <span className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-widest [.midnight_&]:text-[#E6DFD9]">
+ {e.assignedStaff ? `${e.category || 'General'} - ${e.assignedStaff}` : (e.category || 'General')}
+ </span>
+ </div>
+ {e.desc && (
+ <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight max-w-[200px] sm:max-w-xs truncate [.midnight_&]:text-[#9C9086]">
+ {e.desc}
+ </p>
+ )}
+ <div className="flex items-center gap-3 mt-2">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300/60 font-mono uppercase tracking-wider flex items-center gap-1">
+ <Clock size={10} /> {new Date(e.dateTime || e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+ </span>
+ {e.createdBy && (
+ <span className="text-[9px] text-slate-700 dark:text-slate-300/50 uppercase tracking-widest flex items-center gap-1 [.midnight_&]:text-[#9C9086]/70">
+ Maker: {e.createdBy}
+ </span>
+ )}
+ </div>
+ </div>
+ </div>
+ 
+ <div className="flex flex-col items-end gap-2 shrink-0 pl-4">
+ <div className="text-right whitespace-nowrap shrink-0">
+ <span className="text-lg sm:text-xl font-mono font-bold text-red-500 group-hover:text-red-600 transition-colors [.midnight_&]:text-[#D4AF37] [.midnight_&]:group-hover:text-[#F3C853]">
+ {e.amount.toLocaleString()} <span className="text-[10px] sm:text-xs font-sans font-normal opacity-50">Ks</span>
+ </span>
+ </div>
+ </div>
+ </div>
+ ))}
+ </div>
+ </div>
+ ))
+ )}
+ </div>
+ 
+ <Modal 
+ isOpen={!!selectedExpense} 
+ onClose={() => setSelectedExpense(null)} 
+ title="Expense Details"
+ maxWidth="max-w-md"
+ >
+ {selectedExpense && (
+ <div className="space-y-3">
+ <div className="bg-muted/30 p-4 rounded-2xl space-y-3 [.midnight_&]:bg-[#221C18]/50 [.midnight_&]:-[#D4AF37]/10">
+ <div className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 p-4 rounded-2xl grid grid-cols-2 gap-3 md:gap-5 [.midnight_&]:bg-[#1A1613] [.midnight_&]:-[#3D322C]">
+ <div className="space-y-1 col-span-2">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Transaction ID (Txn ID)</span>
+ <span className="text-[10px] font-mono text-slate-700 dark:text-slate-300 [.midnight_&]:text-[#9C9086] truncate block">{selectedExpense.id}</span>
+ </div>
 
-                <div className="space-y-1">
-                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Category</span>
-                  <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#E6DFD9]">{selectedExpense.category || 'General'}</span>
-                </div>
-                {selectedExpense.assignedStaff && (
-                  <div className="space-y-1">
-                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Paid To</span>
-                    <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#D4AF37]">{selectedExpense.assignedStaff}</span>
-                  </div>
-                )}
-                <div className="space-y-1">
-                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Maker</span>
-                  <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#9C9086]">{selectedExpense.createdBy || 'Unknown'}</span>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Date & Time</span>
-                  <span className="text-[11px] font-mono text-muted-foreground [.midnight_&]:text-[#9C9086]">
-                    {formatDisplayDate(selectedExpense.date)} {new Date(selectedExpense.dateTime || selectedExpense.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary [.midnight_&]:bg-[#D4AF37]" />
-                  Note / Description
-                </span>
-                <div className="bg-background/50 p-4 rounded-xl border border-border/50 min-h-[80px] [.midnight_&]:bg-[#1A1613] [.midnight_&]:border-[#3D322C]">
-                  <span className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap [.midnight_&]:text-[#E6DFD9]">
-                    {selectedExpense.desc || 'No description provided.'}
-                  </span>
-                </div>
-              </div>
+ <div className="space-y-1">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Category</span>
+ <span className="text-sm font-medium text-slate-900 dark:text-slate-100 [.midnight_&]:text-[#E6DFD9]">{selectedExpense.category || 'General'}</span>
+ </div>
+ {selectedExpense.assignedStaff && (
+ <div className="space-y-1">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Paid To</span>
+ <span className="text-sm font-medium text-slate-900 dark:text-slate-100 [.midnight_&]:text-[#D4AF37]">{selectedExpense.assignedStaff}</span>
+ </div>
+ )}
+ <div className="space-y-1">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Maker</span>
+ <span className="text-sm font-medium text-slate-900 dark:text-slate-100 [.midnight_&]:text-[#9C9086]">{selectedExpense.createdBy || 'Unknown'}</span>
+ </div>
+ <div className="space-y-1">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Date & Time</span>
+ <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 [.midnight_&]:text-[#9C9086]">
+ {formatDisplayDate(selectedExpense.date)} {new Date(selectedExpense.dateTime || selectedExpense.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+ </span>
+ </div>
+ </div>
+ 
+ <div className="space-y-2">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block flex items-center gap-2">
+ <div className="w-1.5 h-1.5 rounded-full bg-primary [.midnight_&]:bg-[#D4AF37]" />
+ Note / Description
+ </span>
+ <div className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 p-4 rounded-xl min-h-[80px] [.midnight_&]:bg-[#1A1613] [.midnight_&]:-[#3D322C]">
+ <span className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-wrap [.midnight_&]:text-[#E6DFD9]">
+ {selectedExpense.desc || 'No description provided.'}
+ </span>
+ </div>
+ </div>
 
-              <div className="pt-4 border-t border-border/30 flex justify-between items-end [.midnight_&]:border-[#3D322C]">
-                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Amount</span>
-                <span className="text-3xl font-mono font-bold text-red-500 [.midnight_&]:text-[#F3C853] tracking-tighter drop-shadow-sm">
-                  {selectedExpense.amount.toLocaleString()} <span className="text-sm font-sans font-normal opacity-50">Ks</span>
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              {(profile?.role === 'super_admin' || profile?.role === 'owner') && (
-                <button 
-                  onClick={() => {
-                    setSelectedExpense(null);
-                    setShowConfirm({ coll: 'expenses', id: selectedExpense.id! });
-                  }}
-                  className="py-4 px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors border border-red-500/20 shadow-sm flex items-center justify-center"
-                  title="Delete Expense"
-                >
-                  <Trash2 size={18} />
-                </button>
-              )}
-              <button 
-                onClick={() => setSelectedExpense(null)}
-                className="flex-1 py-4 bg-muted hover:bg-muted/80 text-foreground font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors border border-border/50 shadow-sm [.midnight_&]:bg-[#2E2520] [.midnight_&]:hover:bg-[#3A2F28] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:border-[#D4AF37]/30"
-              >
-                Close Details
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+ <div className="pt-4 flex justify-between items-end [.midnight_&]:-[#3D322C]">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Total Amount</span>
+ <span className="text-3xl font-mono font-bold text-red-500 [.midnight_&]:text-[#F3C853] tracking-tighter drop-">
+ {selectedExpense.amount.toLocaleString()} <span className="text-sm font-sans font-normal opacity-50">Ks</span>
+ </span>
+ </div>
+ </div>
+ <div className="flex gap-3">
+ {(profile?.role === 'super_admin' || profile?.role === 'owner') && (
+ <button 
+ onClick={() => {
+ setSelectedExpense(null);
+ setShowConfirm({ coll: 'expenses', id: selectedExpense.id! });
+ }}
+ className="py-4 px-4 md:px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors -red-500/20 flex items-center justify-center"
+ title="Delete Expense"
+ >
+ <Trash2 size={18} />
+ </button>
+ )}
+ <button 
+ onClick={() => setSelectedExpense(null)}
+ className="flex-1 py-4 bg-muted hover:bg-muted/80 text-slate-900 dark:text-slate-100 font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors [.midnight_&]:bg-[#2E2520] [.midnight_&]:hover:bg-[#3A2F28] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:-[#D4AF37]/30"
+ >
+ Close Details
+ </button>
+ </div>
+ </div>
+ )}
+ </Modal>
 </div>
-    </div>
-  );
+ </div>
+ );
 };
 
 export const HistoryPage: React.FC = () => {
-  const { profile, isAdmin, isCashier, isStaffMember: isStaff } = useAuth();
+ const { profile, isAdmin, isCashier, isStaffMember: isStaff } = useAuth();
 
-  if (!isAdmin && !isCashier && !isStaff) return <Navigate to="/" />;
+ if (!isAdmin && !isCashier && !isStaff) return <Navigate to="/" />;
 
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
-  const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
-  const today = getLocalISODate();
-  const [dateFrom, setDateFrom] = useState(today);
-  const [dateTo, setDateTo] = useState(today);
-  const [staffFilter, setStaffFilter] = useState(isStaff ? profile.name : '');
-  const [paymentFilter, setPaymentFilter] = useState('');
-  const [staffList, setStaffList] = useState<string[]>([]);
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+ const [sales, setSales] = useState<Sale[]>([]);
+ const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
+ const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
+ const today = getLocalISODate();
+ const [dateFrom, setDateFrom] = useState(today);
+ const [dateTo, setDateTo] = useState(today);
+ const [staffFilter, setStaffFilter] = useState(isStaff ? profile.name : '');
+ const [paymentFilter, setPaymentFilter] = useState('');
+ const [staffList, setStaffList] = useState<string[]>([]);
+ const [showPrintPreview, setShowPrintPreview] = useState(false);
+ const [isExporting, setIsExporting] = useState(false);
 
-  useEffect(() => {
-    if (!profile) return;
-    
-    let unsubStaff: () => void = () => {};
-    if (isAdmin || isCashier) {
-      const qStaff = query(collection(db, 'users'));
-      unsubStaff = onSnapshot(qStaff, (snapshot) => {
-        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
-        const names = snapshot.docs
-          .map(doc => doc.data() as UserProfile)
-          .filter(u => {
-            const isExcluded = u.role === 'super_admin' || 
-                               (u.email && superAdminEmails.includes(u.email.toLowerCase().trim()));
-            return !isExcluded && ['owner', 'cashier', 'staff'].includes(u.role || '');
-          })
-          .map(u => u.name);
-        setStaffList([...new Set(names)].sort());
-      });
-    } else if (isStaff) {
-      setStaffList([profile.name]);
-    }
+ useEffect(() => {
+ if (!profile) return;
+ 
+ let unsubStaff: () => void = () => {};
+ if (isAdmin || isCashier) {
+ const qStaff = query(collection(db, 'users'));
+ unsubStaff = onSnapshot(qStaff, (snapshot) => {
+ const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
+ const names = snapshot.docs
+ .map(doc => doc.data() as UserProfile)
+ .filter(u => {
+ const isExcluded = u.role === 'super_admin' || 
+ (u.email && superAdminEmails.includes(u.email.toLowerCase().trim()));
+ return !isExcluded && ['owner', 'cashier', 'staff'].includes(u.role || '');
+ })
+ .map(u => u.name);
+ setStaffList([...new Set(names)].sort());
+ });
+ } else if (isStaff) {
+ setStaffList([profile.name]);
+ }
 
-    const q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
-    
-    const unsubSales = onSnapshot(q, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
-      
-      if (isStaff && !isAdmin && !isCashier) {
-        data = data.filter(s => {
-          return (s.staffNamesArray && s.staffNamesArray.includes(profile.name)) || 
-                 
-                 (s.staffNames && s.staffNames.includes(profile.name)) ||
-                 (s.staff && s.staff.includes(profile.name));
-        });
-      }
-      
-      setSales(data);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
-    
-    return () => {
-      unsubStaff();
-      unsubSales();
-    };
-  }, [profile, isAdmin, isCashier, isStaff]);
+ const q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
+ 
+ const unsubSales = onSnapshot(q, (snapshot) => {
+ let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+ 
+ if (isStaff && !isAdmin && !isCashier) {
+ data = data.filter(s => {
+ return (s.staffNamesArray && s.staffNamesArray.includes(profile.name)) || 
+ 
+ (s.staffNames && s.staffNames.includes(profile.name)) ||
+ (s.staff && s.staff.includes(profile.name));
+ });
+ }
+ 
+ setSales(data);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+ 
+ return () => {
+ unsubStaff();
+ unsubSales();
+ };
+ }, [profile, isAdmin, isCashier, isStaff]);
 
-  useEffect(() => {
-    const docRef = doc(db, 'settings', 'salon');
-    const unsubscribe = onSnapshot(docRef, (docSnap) => {
-      if (docSnap.exists()) setShopSettings(docSnap.data() as ShopSettings);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'settings/salon'));
-    return unsubscribe;
-  }, []);
+ useEffect(() => {
+ const docRef = doc(db, 'settings', 'salon');
+ const unsubscribe = onSnapshot(docRef, (docSnap) => {
+ if (docSnap.exists()) setShopSettings(docSnap.data() as ShopSettings);
+ }, (error) => handleFirestoreError(error, OperationType.GET, 'settings/salon'));
+ return unsubscribe;
+ }, []);
 
-  const filteredSales = sales
-    .filter(s => {
-      if (dateFrom && s.date < dateFrom) return false;
-      if (dateTo && s.date > dateTo) return false;
-      
-      if (paymentFilter) {
-        if (paymentFilter === 'Split') {
-          if (!(s.payments?.length > 1 || (s.method && s.method.includes(',')))) return false;
-        } else {
-          if (s.method !== paymentFilter) return false;
-        }
-      }
+ const filteredSales = sales
+ .filter(s => {
+ if (dateFrom && s.date < dateFrom) return false;
+ if (dateTo && s.date > dateTo) return false;
+ 
+ if (paymentFilter) {
+ if (paymentFilter === 'Split') {
+ if (!(s.payments?.length > 1 || (s.method && s.method.includes(',')))) return false;
+ } else {
+ if (s.method !== paymentFilter) return false;
+ }
+ }
 
-      if (staffFilter) {
-        const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
-        if (itemStaffNames.length > 0) {
-          if (!itemStaffNames.includes(staffFilter)) return false;
-        } else {
-          if (s.staff !== staffFilter) return false;
-        }
-      }
-      
-      return true;
-    })
-    .sort((a, b) => (b.dateTime || '').localeCompare(a.dateTime || ''));
+ if (staffFilter) {
+ const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
+ if (itemStaffNames.length > 0) {
+ if (!itemStaffNames.includes(staffFilter)) return false;
+ } else {
+ if (s.staff !== staffFilter) return false;
+ }
+ }
+ 
+ return true;
+ })
+ .sort((a, b) => (b.dateTime || '').localeCompare(a.dateTime || ''));
 
-  const totalIncome = filteredSales.reduce((sum, s) => {
-    if (staffFilter) {
-      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
-      const hasSpecificStaff = itemStaffNames.length > 0;
-      const staffItems = getEffectiveStaffItems(s, staffFilter);
-      if (staffItems.length > 0) {
-        return sum + staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
-      }
-      return sum;
-    }
-    return sum + s.total;
-  }, 0);
+ const totalIncome = filteredSales.reduce((sum, s) => {
+ if (staffFilter) {
+ const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
+ const hasSpecificStaff = itemStaffNames.length > 0;
+ const staffItems = getEffectiveStaffItems(s, staffFilter);
+ if (staffItems.length > 0) {
+ return sum + staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
+ }
+ return sum;
+ }
+ return sum + s.total;
+ }, 0);
 
-  const totalComm = filteredSales.reduce((sum, s) => {
-    if (staffFilter) {
-      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
-      const hasSpecificStaff = itemStaffNames.length > 0;
-      const staffItems = getEffectiveStaffItems(s, staffFilter);
-      if (staffItems.length > 0) {
-        return sum + staffItems.reduce((itemSum, item) => {
-          if (item.commission !== undefined) return itemSum + item.commission;
-          // Fallback to proportional commission
-          const itemsTotal = item.price * item.qty * (1 - (item.disP || 0) / 100);
-          const invoiceSubtotal = s.items?.reduce((invSum, i) => invSum + (i.price * i.qty * (1 - (i.disP || 0) / 100)), 0) || 1;
-          const proportion = itemsTotal / invoiceSubtotal;
-          return itemSum + Math.round((s.commission || 0) * proportion);
-        }, 0);
-      }
-      return sum;
-    }
-    return sum + (s.commission || 0);
-  }, 0);
+ const totalComm = filteredSales.reduce((sum, s) => {
+ if (staffFilter) {
+ const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
+ const hasSpecificStaff = itemStaffNames.length > 0;
+ const staffItems = getEffectiveStaffItems(s, staffFilter);
+ if (staffItems.length > 0) {
+ return sum + staffItems.reduce((itemSum, item) => {
+ if (item.commission !== undefined) return itemSum + item.commission;
+ // Fallback to proportional commission
+ const itemsTotal = item.price * item.qty * (1 - (item.disP || 0) / 100);
+ const invoiceSubtotal = s.items?.reduce((invSum, i) => invSum + (i.price * i.qty * (1 - (i.disP || 0) / 100)), 0) || 1;
+ const proportion = itemsTotal / invoiceSubtotal;
+ return itemSum + Math.round((s.commission || 0) * proportion);
+ }, 0);
+ }
+ return sum;
+ }
+ return sum + (s.commission || 0);
+ }, 0);
 
-  const totalCash = filteredSales.reduce((sum, s) => {
-    let amt = 0;
-    if (s.payments && s.payments.length > 0) {
-      amt = s.payments.filter(p => p.method === 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
-    } else {
-      amt = (s.method === 'Cash' || !s.method) ? s.total : 0;
-    }
-    if (staffFilter) {
-      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
-      const hasSpecificStaff = itemStaffNames.length > 0;
-      const staffItems = getEffectiveStaffItems(s, staffFilter);
-      if (staffItems.length > 0) {
-        const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
-        const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
-        const proportion = itemsTotal / invoiceSubtotal;
-        return sum + Math.round(amt * proportion);
-      }
-      return sum;
-    }
-    return sum + amt;
-  }, 0);
+ const totalCash = filteredSales.reduce((sum, s) => {
+ let amt = 0;
+ if (s.payments && s.payments.length > 0) {
+ amt = s.payments.filter(p => p.method === 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
+ } else {
+ amt = (s.method === 'Cash' || !s.method) ? s.total : 0;
+ }
+ if (staffFilter) {
+ const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
+ const hasSpecificStaff = itemStaffNames.length > 0;
+ const staffItems = getEffectiveStaffItems(s, staffFilter);
+ if (staffItems.length > 0) {
+ const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
+ const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
+ const proportion = itemsTotal / invoiceSubtotal;
+ return sum + Math.round(amt * proportion);
+ }
+ return sum;
+ }
+ return sum + amt;
+ }, 0);
 
-  const totalDigital = filteredSales.reduce((sum, s) => {
-    let amt = 0;
-    if (s.payments && s.payments.length > 0) {
-      amt = s.payments.filter(p => p.method !== 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
-    } else {
-      amt = (s.method && s.method !== 'Cash' ? s.total : 0);
-    }
-    if (staffFilter) {
-      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
-      const hasSpecificStaff = itemStaffNames.length > 0;
-      const staffItems = getEffectiveStaffItems(s, staffFilter);
-      if (staffItems.length > 0) {
-        const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
-        const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
-        const proportion = itemsTotal / invoiceSubtotal;
-        return sum + Math.round(amt * proportion);
-      }
-      return sum;
-    }
-    return sum + amt;
-  }, 0);
+ const totalDigital = filteredSales.reduce((sum, s) => {
+ let amt = 0;
+ if (s.payments && s.payments.length > 0) {
+ amt = s.payments.filter(p => p.method !== 'Cash').reduce((pSum, p) => pSum + p.amount, 0);
+ } else {
+ amt = (s.method && s.method !== 'Cash' ? s.total : 0);
+ }
+ if (staffFilter) {
+ const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
+ const hasSpecificStaff = itemStaffNames.length > 0;
+ const staffItems = getEffectiveStaffItems(s, staffFilter);
+ if (staffItems.length > 0) {
+ const itemsTotal = staffItems.reduce((itemSum, item) => itemSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
+ const invoiceSubtotal = s.items?.reduce((invSum, item) => invSum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0) || 1;
+ const proportion = itemsTotal / invoiceSubtotal;
+ return sum + Math.round(amt * proportion);
+ }
+ return sum;
+ }
+ return sum + amt;
+ }, 0);
 
-  const handleExportCSV = async () => {
-    if (filteredSales.length === 0) return;
-    setIsExporting(true);
-    
-    try {
-      const headers = ['Date', 'Time', 'Receipt No', 'Total (Ks)', 'Commission (Ks)', 'Method', 'Staff'];
-      
-      const csvData = filteredSales.map(s => {
-        let timeStr = '';
-        try {
-          if (s.dateTime) {
-             timeStr = new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          }
-        } catch (e) {}
+ const handleExportCSV = async () => {
+ if (filteredSales.length === 0) return;
+ setIsExporting(true);
+ 
+ try {
+ const headers = ['Date', 'Time', 'Receipt No', 'Total (Ks)', 'Commission (Ks)', 'Method', 'Staff'];
+ 
+ const csvData = filteredSales.map(s => {
+ let timeStr = '';
+ try {
+ if (s.dateTime) {
+ timeStr = new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+ }
+ } catch (e) {}
 
-        return [
-          s.date,
-          timeStr,
-          s.id.slice(0, 8).toUpperCase(),
-          s.total,
-          s.commission,
-          s.payments && s.payments.length > 1 ? s.payments.map(p => `${p.method}: ${p.amount}`).join(' | ') : (s.method || 'Cash'),
-          [...new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]) || [s.staff])].join(', ')
-        ];
-      });
-      
-      await exportToCSVAndShare(
-        `Sales_Report_${dateFrom}_to_${dateTo}.xlsx`,
-        headers,
-        csvData
-      );
-    } catch (error) {
-      console.error('Error exporting sales:', error);
-      alert('Failed to export. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
+ return [
+ s.date,
+ timeStr,
+ s.id.slice(0, 8).toUpperCase(),
+ s.total,
+ s.commission,
+ s.payments && s.payments.length > 1 ? s.payments.map(p => `${p.method}: ${p.amount}`).join(' | ') : (s.method || 'Cash'),
+ [...new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]) || [s.staff])].join(', ')
+ ];
+ });
+ 
+ await exportToCSVAndShare(
+ `Sales_Report_${dateFrom}_to_${dateTo}.xlsx`,
+ headers,
+ csvData
+ );
+ } catch (error) {
+ console.error('Error exporting sales:', error);
+ alert('Failed to export. Please try again.');
+ } finally {
+ setIsExporting(false);
+ }
+ };
 
-  const handlePrintAll = () => {
-    if (filteredSales.length === 0) return;
-    setShowPrintPreview(true);
-  };
+ const handlePrintAll = () => {
+ if (filteredSales.length === 0) return;
+ setShowPrintPreview(true);
+ };
 
-  const confirmPrintAll = () => {
-    if (filteredSales.length === 0) return;
-    const printText = generateConsolidatedReceiptHTML(filteredSales, shopSettings, dateFrom, dateTo);
-    
-    if (Capacitor.isNativePlatform()) {
-      const htmlStr = `<html><body style='margin:0;padding:10px;'>${printText}</body></html>`;
-      CapPrinter.printHtml({ name: 'Consolidated_Report', html: htmlStr }).catch(e => {
-        console.error('Printer error:', e);
-        alert('Failed to print: ' + String(e));
-      });
-    } else {
-      const isAndroid = /android/i.test(navigator.userAgent);
-      if (isAndroid) {
-        const rawText = generateConsolidatedReceiptText(filteredSales, shopSettings, dateFrom, dateTo);
-        triggerRawbtPrint(rawText);
-      } else {
-        window.dispatchEvent(new CustomEvent('print-html', { detail: printText }));
-      }
-    }
-  };
+ const confirmPrintAll = () => {
+ if (filteredSales.length === 0) return;
+ const printText = generateConsolidatedReceiptHTML(filteredSales, shopSettings, dateFrom, dateTo);
+ 
+ if (Capacitor.isNativePlatform()) {
+ const htmlStr = `<html><body style='margin:0;padding:10px;'>${printText}</body></html>`;
+ CapPrinter.printHtml({ name: 'Consolidated_Report', html: htmlStr }).catch(e => {
+ console.error('Printer error:', e);
+ alert('Failed to print: ' + String(e));
+ });
+ } else {
+ const isAndroid = /android/i.test(navigator.userAgent);
+ if (isAndroid) {
+ const rawText = generateConsolidatedReceiptText(filteredSales, shopSettings, dateFrom, dateTo);
+ triggerRawbtPrint(rawText);
+ } else {
+ window.dispatchEvent(new CustomEvent('print-html', { detail: printText }));
+ }
+ }
+ };
 
-  const groupedSales = useMemo(() => {
-    const groups: Record<string, Sale[]> = {};
-    filteredSales.forEach(s => {
-      const date = new Date(s.dateTime).toDateString();
-      if (!groups[date]) groups[date] = [];
-      groups[date].push(s);
-    });
-    return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
-  }, [filteredSales]);
+ const groupedSales = useMemo(() => {
+ const groups: Record<string, Sale[]> = {};
+ filteredSales.forEach(s => {
+ const date = new Date(s.dateTime).toDateString();
+ if (!groups[date]) groups[date] = [];
+ groups[date].push(s);
+ });
+ return Object.entries(groups).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
+ }, [filteredSales]);
 
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-border">
-        <div className="space-y-1">
-          <h3 className="text-3xl font-light tracking-tight text-foreground">Daily <span className="italic font-serif">Sales List</span></h3>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
-        </div>
-        
-        <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full z-50 relative">
-          <div className="flex flex-col md:flex-row md:items-center">
-            <CustomDatePicker 
-              label="FROM" 
-              value={dateFrom} 
-              onChange={setDateFrom} 
-              className="border-b md:border-b-0 md:border-r border-border/50 flex-1"
-            />
-            <CustomDatePicker 
-              label="TO" 
-              value={dateTo} 
-              onChange={setDateTo} 
-              className="border-b md:border-b-0 md:border-r border-border/50 flex-1"
-            />
-            <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
-               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                 <UserIcon size={12} className="text-primary" /> STAFF
-               </label>
-               <CustomSelect
-                 value={staffFilter} 
-                 onChange={setStaffFilter}
-                 placeholder="All Staff"
-                 options={[
-                   { value: '', label: 'All Staff' },
-                   ...staffList.map(name => ({ value: name, label: name }))
-                 ]}
-               />
-            </div>
-            <div className="flex flex-col p-4 flex-1">
-               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                 <CreditCard size={12} className="text-primary" /> PAYMENT
-               </label>
-               <CustomSelect
-                 value={paymentFilter} 
-                 onChange={setPaymentFilter}
-                 placeholder="All Payments"
-                 options={[
-                   { value: '', label: 'All Payments' },
-                   { value: 'Cash', label: 'Cash' },
-                   { value: 'KBZPay', label: 'KBZPay' },
-                   { value: 'WavePay', label: 'WavePay' },
-                   { value: 'AYA Pay', label: 'AYA Pay' },
-                   { value: 'CB PAY', label: 'CB PAY' },
-                   { value: 'OK$', label: 'OK$' },
-                   { value: 'Split', label: 'Split / Mixed' }
-                 ]}
-               />
-            </div>
-          </div>
-        </div>
-      </div>
+ return (
+ <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
+ <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
+ <div className="space-y-1">
+ <h3 className="text-3xl font-light tracking-tight text-slate-900 dark:text-slate-100">Daily <span className="italic font-serif">Sales List</span></h3>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
+ </div>
+ 
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full z-50 relative">
+ <div className="flex flex-col md:flex-row md:items-center">
+ <CustomDatePicker 
+ label="FROM" 
+ value={dateFrom} 
+ onChange={setDateFrom} 
+ className=" md:-0 md: flex-1"
+ />
+ <CustomDatePicker 
+ label="TO" 
+ value={dateTo} 
+ onChange={setDateTo} 
+ className=" md:-0 md: flex-1"
+ />
+ <div className="flex flex-col p-4 md:-0 md: flex-1">
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <UserIcon size={12} className="text-amber-600 dark:text-amber-400" /> STAFF
+ </label>
+ <CustomSelect
+ value={staffFilter} 
+ onChange={setStaffFilter}
+ placeholder="All Staff"
+ options={[
+ { value: '', label: 'All Staff' },
+ ...staffList.map(name => ({ value: name, label: name }))
+ ]}
+ />
+ </div>
+ <div className="flex flex-col p-4 flex-1">
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <CreditCard size={12} className="text-amber-600 dark:text-amber-400" /> PAYMENT
+ </label>
+ <CustomSelect
+ value={paymentFilter} 
+ onChange={setPaymentFilter}
+ placeholder="All Payments"
+ options={[
+ { value: '', label: 'All Payments' },
+ { value: 'Cash', label: 'Cash' },
+ { value: 'KBZPay', label: 'KBZPay' },
+ { value: 'WavePay', label: 'WavePay' },
+ { value: 'AYA Pay', label: 'AYA Pay' },
+ { value: 'CB PAY', label: 'CB PAY' },
+ { value: 'OK$', label: 'OK$' },
+ { value: 'Split', label: 'Split / Mixed' }
+ ]}
+ />
+ </div>
+ </div>
+ </div>
+ </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-4 relative overflow-hidden group">
-          <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10 space-y-1">
-            <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Gross Revenue</span>
-            <h1 className="text-5xl font-mono tracking-tighter text-primary drop-shadow-sm">
-              {totalIncome.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span>
-            </h1>
-          </div>
-          <div className="relative z-10 flex items-center justify-center gap-6 pt-2 border-t border-border/50 max-w-xs mx-auto">
-            <div className="text-center">
-              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Total Cash</span>
-              <span className="text-sm font-mono font-bold text-green-600">{totalCash.toLocaleString()} Ks</span>
-            </div>
-            <div className="w-px h-6 bg-border/50"></div>
-            <div className="text-center">
-              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Total KPay/Digital</span>
-              <span className="text-sm font-mono font-bold text-blue-600">{totalDigital.toLocaleString()} Ks</span>
-            </div>
-          </div>
-          {filteredSales.length > 0 && (
-            <div className="relative z-10 mt-6 pt-2 flex flex-wrap items-center justify-center gap-3">
-              {['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
-                <button 
-                  onClick={handleExportCSV}
-                  disabled={isExporting}
-                  className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                  title="Export to Excel"
-                >
-                  {isExporting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download size={18} />
-                      <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
-                    </>
-                  )}
-                </button>
-              )}
-              <button 
-                onClick={handlePrintAll}
-                className="px-6 py-2.5 bg-primary/10 text-primary font-semibold rounded-full border border-primary/20 hover:bg-primary hover:text-white transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
-                title="Print Consolidated Report"
-              >
-                <Printer size={18} />
-                <span className="text-xs uppercase tracking-widest font-bold">Print Report</span>
-              </button>
-            </div>
-          )}
-        </div>
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl text-center space-y-4 relative overflow-hidden group">
+ <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+ <div className="relative z-10 space-y-1">
+ <span className="text-slate-700 dark:text-slate-300 text-[11px] font-bold uppercase tracking-[0.3em]">Gross Revenue</span>
+ <h1 className="text-5xl font-mono tracking-tighter text-amber-600 dark:text-amber-400 drop-">
+ {totalIncome.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span>
+ </h1>
+ </div>
+ <div className="relative z-10 flex items-center justify-center gap-3 pt-2 max-w-xs mx-auto">
+ <div className="text-center">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block mb-0.5">Total Cash</span>
+ <span className="text-sm font-mono font-bold text-green-600">{totalCash.toLocaleString()} Ks</span>
+ </div>
+ <div className="w-px h-6 bg-/50"></div>
+ <div className="text-center">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block mb-0.5">Total KPay/Digital</span>
+ <span className="text-sm font-mono font-bold text-blue-600">{totalDigital.toLocaleString()} Ks</span>
+ </div>
+ </div>
+ {filteredSales.length > 0 && (
+ <div className="relative z-10 mt-6 pt-2 flex flex-wrap items-center justify-center gap-3">
+ {['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
+ <button 
+ onClick={handleExportCSV}
+ disabled={isExporting}
+ className="px-4 md:px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full hover: hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+ title="Export to Excel"
+ >
+ {isExporting ? (
+ <>
+ <div className="w-4 h-4 -2 -primary-foreground/30 -primary-foreground rounded-full animate-spin" />
+ <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
+ </>
+ ) : (
+ <>
+ <Download size={18} />
+ <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
+ </>
+ )}
+ </button>
+ )}
+ <button 
+ onClick={handlePrintAll}
+ className="px-4 md:px-6 py-2.5 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-semibold rounded-full -primary/20 hover:bg-primary hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+ title="Print Consolidated Report"
+ >
+ <Printer size={18} />
+ <span className="text-xs uppercase tracking-widest font-bold">Print Report</span>
+ </button>
+ </div>
+ )}
+ </div>
 
-        {staffFilter ? (
-          <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-2xl text-center space-y-2 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-green-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="relative z-10 space-y-1">
-              <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Staff Commission</span>
-              <h1 className="text-5xl font-mono tracking-tighter text-green-500 drop-shadow-sm">
-                {totalComm.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span>
-              </h1>
-              <div className="h-1 bg-green-500/20 w-16 mx-auto rounded-full" />
-            </div>
-          </div>
-        ) : (
-          <div className="bg-card p-8 rounded-[2.5rem] border border-border shadow-2xl flex items-center justify-center text-center">
-            <div className="space-y-2 opacity-30">
-              <UsersIcon size={32} className="mx-auto" />
-              <p className="text-[10px] font-bold uppercase tracking-widest">Select staff to view commission</p>
-            </div>
-          </div>
-        )}
-      </div>
+ {staffFilter ? (
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl text-center space-y-2 relative overflow-hidden group">
+ <div className="absolute inset-0 bg-green-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+ <div className="relative z-10 space-y-1">
+ <span className="text-slate-700 dark:text-slate-300 text-[11px] font-bold uppercase tracking-[0.3em]">Staff Commission</span>
+ <h1 className="text-5xl font-mono tracking-tighter text-green-500 drop-">
+ {totalComm.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span>
+ </h1>
+ <div className="h-1 bg-green-500/20 w-16 mx-auto rounded-full" />
+ </div>
+ </div>
+ ) : (
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex items-center justify-center text-center">
+ <div className="space-y-2 opacity-30">
+ <UsersIcon size={32} className="mx-auto" />
+ <p className="text-[10px] font-bold uppercase tracking-widest">Select staff to view commission</p>
+ </div>
+ </div>
+ )}
+ </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Transaction History</h4>
-          <span className="text-[10px] font-mono text-muted-foreground">{filteredSales.length} Records</span>
-        </div>
+ <div className="space-y-4">
+ <div className="flex items-center justify-between px-2">
+ <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Transaction History</h4>
+ <span className="text-[10px] font-mono text-slate-700 dark:text-slate-300">{filteredSales.length} Records</span>
+ </div>
 
-        <div className="space-y-12">
-          {groupedSales.length === 0 ? (
-            <div className="text-center py-24 bg-card rounded-[2.5rem] border border-dashed border-border">
-              <div className="flex flex-col items-center gap-4 opacity-20">
-                <HistoryIcon size={64} />
-                <p className="text-base font-medium italic">No transaction history found for this period.</p>
-              </div>
-            </div>
-          ) : (
-            groupedSales.map(([date, sales]) => (
-              <div key={date} className="space-y-4">
-                <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background/90  border-b border-border/30">
-                  <div className="flex items-center gap-3 px-5 py-2 bg-primary/10 border border-border rounded-2xl shadow-sm shadow-primary/5">
-                    <CalendarIcon size={14} className="text-primary" />
-                    <span className="text-xs font-black uppercase tracking-[0.15em] text-primary">
-                      {formatDisplayDate(date)}
-                    </span>
-                  </div>
-                  <div className="h-px flex-1 bg-gradient-to-r from-border/50 to-transparent" />
-                  <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-lg border border-border/50">
-                    <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest">
-                      {sales.length} {sales.length === 1 ? 'Sale' : 'Sales'}
-                    </span>
-                  </div>
-                </div>
+ <div className="space-y-12">
+ {groupedSales.length === 0 ? (
+ <div className="text-center py-24 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed ">
+ <div className="flex flex-col items-center gap-4 opacity-20">
+ <HistoryIcon size={64} />
+ <p className="text-base font-medium italic">No transaction history found for this period.</p>
+ </div>
+ </div>
+ ) : (
+ groupedSales.map(([date, sales]) => (
+ <div key={date} className="space-y-4">
+ <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/90 ">
+ <div className="flex items-center gap-3 px-3 md:px-5 py-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-2xl shadow-primary/5">
+ <CalendarIcon size={14} className="text-amber-600 dark:text-amber-400" />
+ <span className="text-xs font-black uppercase tracking-[0.15em] text-amber-600 dark:text-amber-400">
+ {formatDisplayDate(date)}
+ </span>
+ </div>
+ <div className="h-px flex-1 bg-gradient-to-r from-/50 to-transparent" />
+ <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-lg ">
+ <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+ {sales.length} {sales.length === 1 ? 'Sale' : 'Sales'}
+ </span>
+ </div>
+ </div>
 
-                <div className="grid grid-cols-1 gap-4">
-                  {sales.map(s => (
-              <div 
-                key={s.id} 
-                onClick={() => setExpandedSaleId(expandedSaleId === s.id ? null : s.id)}
-                className={cn(
-                  "group bg-card border border-border rounded-[2rem] overflow-hidden transition-all duration-300 cursor-pointer hover:shadow-2xl hover:border-primary/30",
-                  expandedSaleId === s.id ? "ring-2 ring-primary/20 shadow-2xl border-primary/30" : "shadow-sm"
-                )}
-              >
-                <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-5">
-                    <div className={cn(
-                      "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
-                      s.method === 'Cash' ? "bg-green-500/10 text-green-500" : "bg-primary/10 text-primary"
-                    )}>
-                      {s.method === 'Cash' ? <DollarSign size={28} /> : <CreditCard size={28} />}
-                    </div>
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">
-                          {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
-                          {s.payments && s.payments.length > 1 
-                            ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
-                            : (s.method || 'Cash')}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
-                        <span>{formatDisplayDate(s.dateTime)}</span>
-                        <span className="w-1 h-1 rounded-full bg-border" />
-                        <span>{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                    </div>
-                  </div>
+ <div className="grid grid-cols-1 gap-4">
+ {sales.map(s => (
+ <div 
+ key={s.id} 
+ onClick={() => setExpandedSaleId(expandedSaleId === s.id ? null : s.id)}
+ className={cn(
+ "group bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover: hover:-primary/30",
+ expandedSaleId === s.id ? "ring-2 ring-primary/20 -primary/30" : ""
+ )}
+ >
+ <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+ <div className="flex items-center gap-3 md:gap-5">
+ <div className={cn(
+ "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
+ s.method === 'Cash' ? "bg-green-500/10 text-green-500" : "bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+ )}>
+ {s.method === 'Cash' ? <DollarSign size={28} /> : <CreditCard size={28} />}
+ </div>
+ <div className="space-y-0.5">
+ <div className="flex items-center gap-2">
+ <span className="text-xl font-serif italic text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:text-amber-400 transition-colors">
+ {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
+ </span>
+ <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
+ {s.payments && s.payments.length > 1 
+ ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+ : (s.method || 'Cash')}
+ </span>
+ </div>
+ <div className="flex items-center gap-3 text-[10px] text-slate-700 dark:text-slate-300 font-mono uppercase tracking-wider">
+ <span>{formatDisplayDate(s.dateTime)}</span>
+ <span className="w-1 h-1 rounded-full bg-" />
+ <span>{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+ </div>
+ </div>
+ </div>
 
-                  <div className="flex items-center justify-between md:justify-end gap-8 border-t md:border-t-0 pt-4 md:pt-0 border-border/50">
-                    <div className="text-right space-y-0.5">
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block">Total Amount</span>
-                      <span className="text-2xl font-mono font-bold text-primary">{s.total.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
-                    </div>
-                    <div className="text-right space-y-0.5">
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block">Commission</span>
-                      <span className="text-lg font-mono font-bold text-green-500">{s.commission.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
-                    </div>
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground transition-transform duration-300",
-                      expandedSaleId === s.id ? "rotate-180 bg-primary/10 text-primary" : "group-hover:bg-primary/5"
-                    )}>
-                      <ChevronDown size={18} />
-                    </div>
-                  </div>
-                </div>
+ <div className="flex items-center justify-between md:justify-end gap-3 md:-0 pt-4 md:pt-0 ">
+ <div className="text-right space-y-0.5">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Total Amount</span>
+ <span className="text-2xl font-mono font-bold text-amber-600 dark:text-amber-400">{s.total.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
+ </div>
+ <div className="text-right space-y-0.5">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Commission</span>
+ <span className="text-lg font-mono font-bold text-green-500">{s.commission.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
+ </div>
+ <div className={cn(
+ "w-8 h-8 rounded-full flex items-center justify-center bg-muted text-slate-700 dark:text-slate-300 transition-transform duration-300",
+ expandedSaleId === s.id ? "rotate-180 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "group-hover:bg-amber-50/50 dark:bg-amber-900/20"
+ )}>
+ <ChevronDown size={18} />
+ </div>
+ </div>
+ </div>
 
-                {expandedSaleId === s.id && (
-                  <div className="px-6 pb-6 animate-in slide-in-from-top-4 duration-300">
-                    <div className="pt-6 border-t border-border/50 grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-3">
-                        <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          Purchased Items
-                        </h5>
-                        <div className="space-y-2">
-                          {s.items.map((item, idx) => (
-                            <div key={idx} className="bg-muted/30 p-4 rounded-2xl border border-border/50 flex items-center justify-between group/item hover:bg-muted/50 transition-colors">
-                              <div className="space-y-0.5">
-                                <span className="text-sm font-bold text-foreground group-hover/item:text-primary transition-colors">{item.name}</span>
-                                <div className="text-[10px] text-muted-foreground font-mono">
-                                  {item.qty} × {item.price.toLocaleString()} Ks
-                                </div>
-                                {(item.staffAssignments && item.staffAssignments.length > 0) ? (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    {item.staffAssignments.map((a: any, i: number) => (
-                                      <span key={i} className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{a.name} ({a.qty})</span>
-                                    ))}
-                                  </div>
-                                ) : item.staffName ? (
-                                  <div className="flex flex-wrap gap-1 mt-1">
-                                    <span className="text-[8px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{item.staffName}</span>
-                                  </div>
-                                ) : null}
-                              </div>
-                              <div className="text-right space-y-0.5">
-                                <span className="text-sm font-mono font-bold text-foreground">{(item.qty * item.price).toLocaleString()} Ks</span>
-                                {item.disP > 0 && (
-                                  <span className="block text-[9px] font-bold text-red-500 uppercase tracking-tighter">
-                                    Disc: -{item.disP}% (-{((item.qty * item.price) * item.disP / 100).toLocaleString()} Ks)
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+ {expandedSaleId === s.id && (
+ <div className="px-4 md:px-6 pb-6 animate-in slide-in-from-top-4 duration-300">
+ <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+ <div className="space-y-3">
+ <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2">
+ <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+ Purchased Items
+ </h5>
+ <div className="space-y-2">
+ {s.items.map((item, idx) => (
+ <div key={idx} className="bg-muted/30 p-4 rounded-2xl flex items-center justify-between group/item hover:bg-muted/50 transition-colors">
+ <div className="space-y-0.5">
+ <span className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover/item:text-amber-600 dark:text-amber-400 transition-colors">{item.name}</span>
+ <div className="text-[10px] text-slate-700 dark:text-slate-300 font-mono">
+ {item.qty} × {item.price.toLocaleString()} Ks
+ </div>
+ {(item.staffAssignments && item.staffAssignments.length > 0) ? (
+ <div className="flex flex-wrap gap-1 mt-1">
+ {item.staffAssignments.map((a: any, i: number) => (
+ <span key={i} className="text-[8px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{a.name} ({a.qty})</span>
+ ))}
+ </div>
+ ) : item.staffName ? (
+ <div className="flex flex-wrap gap-1 mt-1">
+ <span className="text-[8px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{item.staffName}</span>
+ </div>
+ ) : null}
+ </div>
+ <div className="text-right space-y-0.5">
+ <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100">{(item.qty * item.price).toLocaleString()} Ks</span>
+ {item.disP > 0 && (
+ <span className="block text-[9px] font-bold text-red-500 uppercase tracking-tighter">
+ Disc: -{item.disP}% (-{((item.qty * item.price) * item.disP / 100).toLocaleString()} Ks)
+ </span>
+ )}
+ </div>
+ </div>
+ ))}
+ </div>
+ </div>
 
-                      <div className="space-y-3">
-                        <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          Transaction Metadata
-                        </h5>
-                        <div className="bg-muted/30 p-6 rounded-2xl border border-border/50 space-y-4">
-                          <div className="bg-background/50 p-4 rounded-xl border border-border/50 grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Customer</span>
-                              <span className="text-sm font-medium text-foreground">{s.customerName || 'Walk-in Customer'}</span>
-                            </div>
-                            <div className="text-right space-y-1">
-                              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Payment Method</span>
-                              <span className="text-sm font-medium text-foreground">
-                                {s.payments && s.payments.length > 1 
-                                  ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
-                                  : (s.method || 'Cash')}
-                              </span>
-                            </div>
-                            <div className="space-y-1">
-                              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Transaction ID</span>
-                              <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px] block">{s.id}</span>
-                            </div>
-                            <div className="text-right space-y-1">
-                              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Points Redeemed</span>
-                              <span className="text-sm font-mono font-bold text-primary">-{s.pointsRedeemed || 0}</span>
-                            </div>
-                          </div>
-                          <div className="pt-4 border-t border-border/50 flex justify-between items-center">
-                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Net Total</span>
-                            <span className="text-2xl font-mono font-bold text-primary">{s.total.toLocaleString()} Ks</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-                  ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+ <div className="space-y-3">
+ <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2">
+ <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+ Transaction Metadata
+ </h5>
+ <div className="bg-muted/30 p-4 rounded-2xl space-y-4">
+ <div className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 p-4 rounded-xl grid grid-cols-2 gap-4">
+ <div className="space-y-1">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Customer</span>
+ <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{s.customerName || 'Walk-in Customer'}</span>
+ </div>
+ <div className="text-right space-y-1">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Payment Method</span>
+ <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+ {s.payments && s.payments.length > 1 
+ ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+ : (s.method || 'Cash')}
+ </span>
+ </div>
+ <div className="space-y-1">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Transaction ID</span>
+ <span className="text-[10px] font-mono text-slate-700 dark:text-slate-300 truncate max-w-[120px] block">{s.id}</span>
+ </div>
+ <div className="text-right space-y-1">
+ <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Points Redeemed</span>
+ <span className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400">-{s.pointsRedeemed || 0}</span>
+ </div>
+ </div>
+ <div className="pt-4 flex justify-between items-center">
+ <span className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">Net Total</span>
+ <span className="text-2xl font-mono font-bold text-amber-600 dark:text-amber-400">{s.total.toLocaleString()} Ks</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ ))}
+ </div>
+ </div>
+ ))
+ )}
+ </div>
+ </div>
 
-      <PrintPreviewModal
-        isOpen={showPrintPreview}
-        onClose={() => setShowPrintPreview(false)}
-        text={generateConsolidatedReceiptHTML(filteredSales, shopSettings, dateFrom, dateTo)}
-        onPrint={confirmPrintAll}
-        title="Consolidated Report Preview"
-        printLabel="Print Report"
-      />
-    </div>
-  );
+ <PrintPreviewModal
+ isOpen={showPrintPreview}
+ onClose={() => setShowPrintPreview(false)}
+ text={generateConsolidatedReceiptHTML(filteredSales, shopSettings, dateFrom, dateTo)}
+ onPrint={confirmPrintAll}
+ title="Consolidated Report Preview"
+ printLabel="Print Report"
+ />
+ </div>
+ );
 };
 
 export const StaffCommissionsPage: React.FC = () => {
-  const { profile, isAdmin, isCashier, isStaffMember: isStaff } = useAuth();
+ const { profile, isAdmin, isCashier, isStaffMember: isStaff } = useAuth();
 
-  if (!isAdmin && !isCashier && !isStaff) return <Navigate to="/" />;
+ if (!isAdmin && !isCashier && !isStaff) return <Navigate to="/" />;
 
-  const [sales, setSales] = useState<Sale[]>([]);
-  const today = getLocalISODate();
-  
-  const [dateFrom, setDateFrom] = useState<string>(today);
-  const [dateTo, setDateTo] = useState<string>(today);
-  const [staffFilter, setStaffFilter] = useState(isStaff ? profile.name : '');
-  const [staffList, setStaffList] = useState<string[]>([]);
+ const [sales, setSales] = useState<Sale[]>([]);
+ const today = getLocalISODate();
+ 
+ const [dateFrom, setDateFrom] = useState<string>(today);
+ const [dateTo, setDateTo] = useState<string>(today);
+ const [staffFilter, setStaffFilter] = useState(isStaff ? profile.name : '');
+ const [staffList, setStaffList] = useState<string[]>([]);
 
-  const [isExporting, setIsExporting] = useState(false);
+ const [isExporting, setIsExporting] = useState(false);
 
-  useEffect(() => {
-    if (!profile) return;
-    
-    // Fetch staff names for filter
-    if (isAdmin || isCashier) {
-      const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
-        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
-        const names = snapshot.docs
-          .map(doc => doc.data() as UserProfile)
-          .filter(u => {
-            const isExcluded = u.role === 'super_admin' || 
-                               (u.email && superAdminEmails.includes(u.email.toLowerCase().trim()));
-            return !isExcluded && ['owner', 'cashier', 'staff'].includes(u.role || '');
-          })
-          .map(u => u.name);
-        setStaffList([...new Set(names)].sort());
-      });
-      
-      const q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
-      const unsubSales = onSnapshot(q, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
-        setSales(data);
-      }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+ useEffect(() => {
+ if (!profile) return;
+ 
+ // Fetch staff names for filter
+ if (isAdmin || isCashier) {
+ const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
+ const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
+ const names = snapshot.docs
+ .map(doc => doc.data() as UserProfile)
+ .filter(u => {
+ const isExcluded = u.role === 'super_admin' || 
+ (u.email && superAdminEmails.includes(u.email.toLowerCase().trim()));
+ return !isExcluded && ['owner', 'cashier', 'staff'].includes(u.role || '');
+ })
+ .map(u => u.name);
+ setStaffList([...new Set(names)].sort());
+ });
+ 
+ const q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
+ const unsubSales = onSnapshot(q, (snapshot) => {
+ const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+ setSales(data);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
-      return () => {
-        unsubStaff();
-        unsubSales();
-      };
-    } else if (isStaff) {
-      setStaffList([profile.name]);
-      const q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
-      const unsubSales = onSnapshot(q, (snapshot) => {
-        let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
-        data = data.filter(s => {
-          return (s.staffNamesArray && s.staffNamesArray.includes(profile.name)) || 
-                 
-                 (s.staffNames && s.staffNames.includes(profile.name)) ||
-                 (s.staff && s.staff.includes(profile.name));
-        });
-        setSales(data);
-      }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
-      return unsubSales;
-    }
-  }, [profile, isAdmin, isCashier, isStaff]);
+ return () => {
+ unsubStaff();
+ unsubSales();
+ };
+ } else if (isStaff) {
+ setStaffList([profile.name]);
+ const q = query(collection(db, 'sales'), orderBy('dateTime', 'desc'));
+ const unsubSales = onSnapshot(q, (snapshot) => {
+ let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+ data = data.filter(s => {
+ return (s.staffNamesArray && s.staffNamesArray.includes(profile.name)) || 
+ 
+ (s.staffNames && s.staffNames.includes(profile.name)) ||
+ (s.staff && s.staff.includes(profile.name));
+ });
+ setSales(data);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+ return unsubSales;
+ }
+ }, [profile, isAdmin, isCashier, isStaff]);
 
-  const filteredSales = sales.filter(s => 
-    (!dateFrom || s.date >= dateFrom) && 
-    (!dateTo || s.date <= dateTo)
-  );
+ const filteredSales = sales.filter(s => 
+ (!dateFrom || s.date >= dateFrom) && 
+ (!dateTo || s.date <= dateTo)
+ );
 
-  const staffAggregates = staffList.map(name => {
-    let totalSales = 0;
-    let totalComm = 0;
-    let count = 0;
+ const staffAggregates = staffList.map(name => {
+ let totalSales = 0;
+ let totalComm = 0;
+ let count = 0;
 
-    filteredSales.forEach(s => {
-      const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
-      const hasSpecificStaff = itemStaffNames.length > 0;
-      
-      const staffItems = getEffectiveStaffItems(s, name);
-      
-      if (staffItems.length > 0) {
-        const itemsTotal = staffItems.reduce((sum, item) => sum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
-        totalSales += itemsTotal;
-        count += 1; // Count the invoice/sale, not the item quantity
-        
-        staffItems.forEach(item => {
-          if (item.commission !== undefined) {
-            totalComm += item.commission;
-          } else {
-            const itemSubtotal = item.price * item.qty * (1 - (item.disP || 0) / 100);
-            const invoiceSubtotal = s.items?.reduce((invSum, i) => invSum + (i.price * i.qty * (1 - (i.disP || 0) / 100)), 0) || 1;
-            const proportion = itemSubtotal / invoiceSubtotal;
-            totalComm += Math.round((s.commission || 0) * proportion);
-          }
-        });
-      }
-    });
+ filteredSales.forEach(s => {
+ const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
+ const hasSpecificStaff = itemStaffNames.length > 0;
+ 
+ const staffItems = getEffectiveStaffItems(s, name);
+ 
+ if (staffItems.length > 0) {
+ const itemsTotal = staffItems.reduce((sum, item) => sum + (item.price * item.qty * (1 - (item.disP || 0) / 100)), 0);
+ totalSales += itemsTotal;
+ count += 1; // Count the invoice/sale, not the item quantity
+ 
+ staffItems.forEach(item => {
+ if (item.commission !== undefined) {
+ totalComm += item.commission;
+ } else {
+ const itemSubtotal = item.price * item.qty * (1 - (item.disP || 0) / 100);
+ const invoiceSubtotal = s.items?.reduce((invSum, i) => invSum + (i.price * i.qty * (1 - (i.disP || 0) / 100)), 0) || 1;
+ const proportion = itemSubtotal / invoiceSubtotal;
+ totalComm += Math.round((s.commission || 0) * proportion);
+ }
+ });
+ }
+ });
 
-    return { name, totalSales, totalComm, count };
-  }).filter(a => !staffFilter || a.name === staffFilter).sort((a, b) => b.totalComm - a.totalComm);
+ return { name, totalSales, totalComm, count };
+ }).filter(a => !staffFilter || a.name === staffFilter).sort((a, b) => b.totalComm - a.totalComm);
 
-  const grandTotalComm = staffAggregates.reduce((sum, a) => sum + a.totalComm, 0);
+ const grandTotalComm = staffAggregates.reduce((sum, a) => sum + a.totalComm, 0);
 
-  const displaySalesDetails = filteredSales.filter(s => {
-    if (!staffFilter) return true;
-    const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
-    if (itemStaffNames.length > 0) {
-      return itemStaffNames.includes(staffFilter);
-    }
-    return s.staff === staffFilter;
-  });
+ const displaySalesDetails = filteredSales.filter(s => {
+ if (!staffFilter) return true;
+ const itemStaffNames = Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName]).filter(Boolean)));
+ if (itemStaffNames.length > 0) {
+ return itemStaffNames.includes(staffFilter);
+ }
+ return s.staff === staffFilter;
+ });
 
-  const handleExportCSV = async () => {
-    if (staffAggregates.length === 0) return;
-    setIsExporting(true);
-    
-    try {
-      const headers = ['Staff Name', 'Total Sales (Ks)', 'Total Commission (Ks)', 'Services Performed'];
-      
-      const csvData = staffAggregates.map(a => [
-        a.name,
-        a.totalSales,
-        a.totalComm,
-        a.count
-      ]);
-      
-      await exportToCSVAndShare(
-        `Staff_Commissions_${dateFrom}_to_${dateTo}.xlsx`,
-        headers,
-        csvData
-      );
-    } catch (error) {
-      console.error('Error exporting staff commissions:', error);
-      alert('Failed to export. Please try again.');
-    } finally {
-      setIsExporting(false);
-    }
-  };
+ const handleExportCSV = async () => {
+ if (staffAggregates.length === 0) return;
+ setIsExporting(true);
+ 
+ try {
+ const headers = ['Staff Name', 'Total Sales (Ks)', 'Total Commission (Ks)', 'Services Performed'];
+ 
+ const csvData = staffAggregates.map(a => [
+ a.name,
+ a.totalSales,
+ a.totalComm,
+ a.count
+ ]);
+ 
+ await exportToCSVAndShare(
+ `Staff_Commissions_${dateFrom}_to_${dateTo}.xlsx`,
+ headers,
+ csvData
+ );
+ } catch (error) {
+ console.error('Error exporting staff commissions:', error);
+ alert('Failed to export. Please try again.');
+ } finally {
+ setIsExporting(false);
+ }
+ };
 
-  return (
-    <div className="p-4 space-y-6">
-      <h3 className="text-primary text-2xl font-bold tracking-tight">Staff Commissions</h3>
-      
-      <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative">
-        <div className="flex flex-col md:flex-row md:items-center">
-          <CustomDatePicker 
-            label="FROM" 
-            value={dateFrom} 
-            onChange={setDateFrom} 
-            className="border-b md:border-b-0 md:border-r border-border/50 flex-1"
-          />
-          <CustomDatePicker 
-            label="TO" 
-            value={dateTo} 
-            onChange={setDateTo} 
-            className="border-b md:border-b-0 md:border-r border-border/50 flex-1"
-          />
-          {!isStaff && (
-            <div className="flex flex-col p-4 flex-1">
-               <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                 <UserIcon size={12} className="text-primary" /> STAFF
-               </label>
-               <CustomSelect
-                 value={staffFilter} 
-                 onChange={setStaffFilter}
-                 placeholder="All Staff"
-                 options={[
-                   { value: '', label: 'All Staff' },
-                   ...staffList.map(name => ({ value: name, label: name }))
-                 ]}
-               />
-            </div>
-          )}
-        </div>
-      </div>
+ return (
+ <div className="w-full px-3 py-4 md:p-6 space-y-3">
+ <h3 className="text-amber-600 dark:text-amber-400 text-2xl font-bold tracking-tight">Staff Commissions</h3>
+ 
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
+ <div className="flex flex-col md:flex-row md:items-center">
+ <CustomDatePicker 
+ label="FROM" 
+ value={dateFrom} 
+ onChange={setDateFrom} 
+ className=" md:-0 md: flex-1"
+ />
+ <CustomDatePicker 
+ label="TO" 
+ value={dateTo} 
+ onChange={setDateTo} 
+ className=" md:-0 md: flex-1"
+ />
+ {!isStaff && (
+ <div className="flex flex-col p-4 flex-1">
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <UserIcon size={12} className="text-amber-600 dark:text-amber-400" /> STAFF
+ </label>
+ <CustomSelect
+ value={staffFilter} 
+ onChange={setStaffFilter}
+ placeholder="All Staff"
+ options={[
+ { value: '', label: 'All Staff' },
+ ...staffList.map(name => ({ value: name, label: name }))
+ ]}
+ />
+ </div>
+ )}
+ </div>
+ </div>
 
-      <div className="bg-card p-8 rounded-[2.5rem] border border-green-500/20 text-center shadow-xl group relative overflow-hidden space-y-4">
-        <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div className="relative z-10 space-y-1">
-          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.3em] block mb-1">Total Commissions (Period)</span>
-          <b className="text-green-500 text-5xl font-mono tracking-tighter drop-shadow-sm block">{grandTotalComm.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span></b>
-        </div>
-        {staffAggregates.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
-          <div className="relative z-10 flex justify-center mt-4 pt-2">
-            <button 
-              onClick={handleExportCSV}
-              disabled={isExporting}
-              className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-              title="Export to Excel"
-            >
-              {isExporting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
-                </>
-              ) : (
-                <>
-                  <Download size={18} />
-                  <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl -green-500/20 text-center group relative overflow-hidden space-y-4">
+ <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+ <div className="relative z-10 space-y-1">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.3em] block mb-1">Total Commissions (Period)</span>
+ <b className="text-green-500 text-5xl font-mono tracking-tighter drop- block">{grandTotalComm.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span></b>
+ </div>
+ {staffAggregates.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
+ <div className="relative z-10 flex justify-center mt-4 pt-2">
+ <button 
+ onClick={handleExportCSV}
+ disabled={isExporting}
+ className="px-4 md:px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full hover: hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+ title="Export to Excel"
+ >
+ {isExporting ? (
+ <>
+ <div className="w-4 h-4 -2 -white/30 -white rounded-full animate-spin" />
+ <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
+ </>
+ ) : (
+ <>
+ <Download size={18} />
+ <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
+ </>
+ )}
+ </button>
+ </div>
+ )}
+ </div>
 
-      <div className="space-y-4">
-        <h4 className="text-primary font-bold px-1 flex items-center gap-2 uppercase tracking-widest text-xs">
-          <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-          Staff Summary
-        </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {staffAggregates.length === 0 ? (
-            <div className="col-span-full text-center py-12 bg-card/50 rounded-3xl border border-dashed border-border transition-colors duration-300">
-              <p className="text-muted-foreground text-sm font-medium italic">No data found for this period.</p>
-            </div>
-          ) : (
-            staffAggregates.map(a => (
-              <div key={a.name} className="bg-card border-l-4 border-green-500 rounded-xl p-5 flex justify-between items-center shadow-lg hover:translate-x-1 transition-all group">
-                <div className="flex-1">
-                  <span className="font-bold text-foreground block text-lg group-hover:text-primary transition-colors">{a.name}</span>
-                  <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wider">{a.count} Sales | Total: {a.totalSales.toLocaleString()} Ks</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Commission</span>
-                  <span className="font-bold text-green-500 text-xl">{a.totalComm.toLocaleString()} Ks</span>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+ <div className="space-y-4">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold px-1 flex items-center gap-2 uppercase tracking-widest text-xs">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Staff Summary
+ </h4>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ {staffAggregates.length === 0 ? (
+ <div className="col-span-full text-center py-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed transition-colors duration-300">
+ <p className="text-slate-700 dark:text-slate-300 text-sm font-medium italic">No data found for this period.</p>
+ </div>
+ ) : (
+ staffAggregates.map(a => (
+ <div key={a.name} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 -l-4 -green-500 rounded-xl p-4 flex justify-between items-center hover:translate-x-1 transition-all group">
+ <div className="flex-1">
+ <span className="font-bold text-slate-900 dark:text-slate-100 block text-lg group-hover:text-amber-600 dark:text-amber-400 transition-colors">{a.name}</span>
+ <span className="text-slate-700 dark:text-slate-300 text-[11px] font-medium uppercase tracking-wider">{a.count} Sales | Total: {a.totalSales.toLocaleString()} Ks</span>
+ </div>
+ <div className="text-right">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block mb-0.5">Commission</span>
+ <span className="font-bold text-green-500 text-xl">{a.totalComm.toLocaleString()} Ks</span>
+ </div>
+ </div>
+ ))
+ )}
+ </div>
+ </div>
 
-      <div className="space-y-4">
-        <h4 className="text-primary font-bold px-1 flex items-center gap-2 uppercase tracking-widest text-xs">
-          <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-          Sales Details
-        </h4>
-        <div className="space-y-2">
-          {displaySalesDetails.length === 0 ? (
-            <div className="text-center py-12 bg-card/50 rounded-3xl border border-dashed border-border">
-              <p className="text-muted-foreground text-sm font-medium italic">No detailed sales found.</p>
-            </div>
-          ) : (
-            displaySalesDetails.map(s => (
-              <div key={s.id} className="bg-card p-4 rounded-2xl border border-border flex justify-between items-center shadow-sm hover:border-primary/30 transition-all group">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-foreground font-bold text-sm group-hover:text-primary transition-colors">
-                      {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
-                    {s.payments && s.payments.length > 1 
-                      ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
-                      : (s.method || 'Cash')}
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-foreground font-bold text-sm">{s.total.toLocaleString()} Ks</div>
-                  <div className="text-green-500 text-[10px] font-bold uppercase tracking-tighter">Comm: {s.commission.toLocaleString()} Ks</div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    </div>
-  );
+ <div className="space-y-4">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold px-1 flex items-center gap-2 uppercase tracking-widest text-xs">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Sales Details
+ </h4>
+ <div className="space-y-2">
+ {displaySalesDetails.length === 0 ? (
+ <div className="text-center py-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed ">
+ <p className="text-slate-700 dark:text-slate-300 text-sm font-medium italic">No detailed sales found.</p>
+ </div>
+ ) : (
+ displaySalesDetails.map(s => (
+ <div key={s.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-3.5 rounded-2xl flex justify-between items-center hover:-primary/30 transition-all group">
+ <div className="space-y-1">
+ <div className="flex items-center gap-2">
+ <span className="text-slate-900 dark:text-slate-100 font-bold text-sm group-hover:text-amber-600 dark:text-amber-400 transition-colors">
+ {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
+ </span>
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+ </div>
+ <div className="text-[10px] text-slate-700 dark:text-slate-300 font-medium uppercase tracking-widest">
+ {s.payments && s.payments.length > 1 
+ ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+ : (s.method || 'Cash')}
+ </div>
+ </div>
+ <div className="text-right">
+ <div className="text-slate-900 dark:text-slate-100 font-bold text-sm">{s.total.toLocaleString()} Ks</div>
+ <div className="text-green-500 text-[10px] font-bold uppercase tracking-tighter">Comm: {s.commission.toLocaleString()} Ks</div>
+ </div>
+ </div>
+ ))
+ )}
+ </div>
+ </div>
+ </div>
+ );
 };
 
 export const SalesReportPage: React.FC = () => {
-  const { profile, isAdmin, isCashier } = useAuth();
-  if (!isAdmin && !isCashier) return <Navigate to="/" />;
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
+ const { profile, isAdmin, isCashier } = useAuth();
+ if (!isAdmin && !isCashier) return <Navigate to="/" />;
+ const [sales, setSales] = useState<Sale[]>([]);
+ const [year, setYear] = useState(new Date().getFullYear().toString());
+ const [years, setYears] = useState<string[]>([new Date().getFullYear().toString()]);
 
-  useEffect(() => {
-    if (!isAdmin && !isCashier) return;
-    const q = query(collection(db, 'sales'), orderBy('date', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
-      setSales(data);
-      const allYears = [...new Set(data.map(s => s.date.substring(0, 4)))];
-      setYears(prev => [...new Set([...prev, ...allYears])].sort().reverse());
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
-    return unsubscribe;
-  }, [profile]);
+ useEffect(() => {
+ if (!isAdmin && !isCashier) return;
+ const q = query(collection(db, 'sales'), orderBy('date', 'desc'));
+ const unsubscribe = onSnapshot(q, (snapshot) => {
+ const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+ setSales(data);
+ const allYears = [...new Set(data.map(s => s.date.substring(0, 4)))];
+ setYears(prev => [...new Set([...prev, ...allYears])].sort().reverse());
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+ return unsubscribe;
+ }, [profile]);
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  
-  const reportData = months.map((mName, i) => {
-    const monthStr = (i + 1).toString().padStart(2, '0');
-    const prefix = `${year}-${monthStr}`;
-    const mSales = sales.filter(s => s.date.startsWith(prefix));
-    
-    const totalSales = mSales.reduce((sum, s) => sum + s.total, 0);
-    const totalComm = mSales.reduce((sum, s) => sum + s.commission, 0);
-    const count = mSales.length;
+ const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+ 
+ const reportData = months.map((mName, i) => {
+ const monthStr = (i + 1).toString().padStart(2, '0');
+ const prefix = `${year}-${monthStr}`;
+ const mSales = sales.filter(s => s.date.startsWith(prefix));
+ 
+ const totalSales = mSales.reduce((sum, s) => sum + s.total, 0);
+ const totalComm = mSales.reduce((sum, s) => sum + s.commission, 0);
+ const count = mSales.length;
 
-    return { mName, totalSales, totalComm, count };
-  });
+ return { mName, totalSales, totalComm, count };
+ });
 
-  const grandTotal = reportData.reduce((sum, d) => sum + d.totalSales, 0);
-  const grandComm = reportData.reduce((sum, d) => sum + d.totalComm, 0);
-  const totalCount = reportData.reduce((sum, d) => sum + d.count, 0);
+ const grandTotal = reportData.reduce((sum, d) => sum + d.totalSales, 0);
+ const grandComm = reportData.reduce((sum, d) => sum + d.totalComm, 0);
+ const totalCount = reportData.reduce((sum, d) => sum + d.count, 0);
 
-  return (
-    <div className="p-4 space-y-6 relative">
-      <h3 className="text-primary text-2xl font-bold tracking-tight">Sales Report</h3>
-      
-      <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative group">
-        <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem] pointer-events-none" />
-        <div className="flex flex-col p-6 space-y-4">
-           <div className="flex flex-col max-w-[200px]">
-             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-               <Settings size={12} className="text-primary" /> YEAR
-             </label>
-             <CustomSelect
-               value={year}
-               onChange={setYear}
-               options={years.map(y => ({ value: y, label: y }))}
-             />
-           </div>
-        </div>
-      </div>
+ return (
+ <div className="w-full px-3 py-4 md:p-6 space-y-3 relative">
+ <h3 className="text-amber-600 dark:text-amber-400 text-2xl font-bold tracking-tight">Sales Report</h3>
+ 
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full mb-3 md:mb-6 z-50 relative group">
+ <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
+ <div className="flex flex-col p-4 space-y-4">
+ <div className="flex flex-col max-w-[200px]">
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <Settings size={12} className="text-amber-600 dark:text-amber-400" /> YEAR
+ </label>
+ <CustomSelect
+ value={year}
+ onChange={setYear}
+ options={years.map(y => ({ value: y, label: y }))}
+ />
+ </div>
+ </div>
+ </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-        <table className="w-full text-sm">
-          <thead className="bg-primary/10 text-primary">
-            <tr>
-              <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Month</th>
-              <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Count</th>
-              <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Sales</th>
-              <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Comm.</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {reportData.map((d, i) => (
-              <tr key={i} className={cn("hover:bg-primary/5 transition-colors", d.count > 0 ? "" : "opacity-30")}>
-                <td className="px-4 py-4 font-bold text-foreground">{d.mName}</td>
-                <td className="px-4 py-4 text-foreground">{d.count}</td>
-                <td className="px-4 py-4 text-foreground">{d.totalSales.toLocaleString()}</td>
-                <td className="px-4 py-4 text-green-500 font-bold">{d.totalComm.toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot className="bg-muted/10 text-foreground border-t-2 border-primary">
-            <tr className="font-bold">
-              <td className="px-4 py-4 uppercase tracking-tighter">Total</td>
-              <td className="px-4 py-4">{totalCount}</td>
-              <td className="px-4 py-4">{grandTotal.toLocaleString()}</td>
-              <td className="px-4 py-4 text-green-500">{grandComm.toLocaleString()}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-  );
+ <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 ">
+ <table className="w-full text-sm">
+ <thead className="bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+ <tr>
+ <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Month</th>
+ <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Count</th>
+ <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Sales</th>
+ <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Comm.</th>
+ </tr>
+ </thead>
+ <tbody className="divide-y divide-">
+ {reportData.map((d, i) => (
+ <tr key={i} className={cn("hover:bg-amber-50/50 dark:bg-amber-900/20 transition-colors", d.count > 0 ? "" : "opacity-30")}>
+ <td className="px-4 py-4 font-bold text-slate-900 dark:text-slate-100">{d.mName}</td>
+ <td className="px-4 py-4 text-slate-900 dark:text-slate-100">{d.count}</td>
+ <td className="px-4 py-4 text-slate-900 dark:text-slate-100">{d.totalSales.toLocaleString()}</td>
+ <td className="px-4 py-4 text-green-500 font-bold">{d.totalComm.toLocaleString()}</td>
+ </tr>
+ ))}
+ </tbody>
+ <tfoot className="bg-muted/10 text-slate-900 dark:text-slate-100 -2 -primary">
+ <tr className="font-bold">
+ <td className="px-4 py-4 uppercase tracking-tighter">Total</td>
+ <td className="px-4 py-4">{totalCount}</td>
+ <td className="px-4 py-4">{grandTotal.toLocaleString()}</td>
+ <td className="px-4 py-4 text-green-500">{grandComm.toLocaleString()}</td>
+ </tr>
+ </tfoot>
+ </table>
+ </div>
+ </div>
+ );
 };
 
 const FloatingInput: React.FC<{
-  label: string;
-  type?: string;
-  value: string | number;
-  onChange: (val: string) => void;
-  onFocusClear?: boolean;
-  placeholder?: string;
-  required?: boolean;
-  className?: string;
+ label: string;
+ type?: string;
+ value: string | number;
+ onChange: (val: string) => void;
+ onFocusClear?: boolean;
+ placeholder?: string;
+ required?: boolean;
+ className?: string;
 }> = ({ label, type = "text", value, onChange, onFocusClear, placeholder, required, className }) => {
-  const [isFocused, setIsFocused] = useState(false);
-  const id = React.useId();
+ const [isFocused, setIsFocused] = useState(false);
+ const id = React.useId();
 
-  return (
-    <div className={cn("relative mt-2", className)}>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        required={required}
-        onFocus={() => {
-          setIsFocused(true);
-          if (onFocusClear) onChange("");
-        }}
-        onBlur={() => setIsFocused(false)}
-        placeholder=" "
-        className="peer w-full bg-input border border-border rounded-xl p-3 text-foreground placeholder-transparent focus:outline-none focus:border-primary transition-all"
-      />
-      <label
-        htmlFor={id}
-        className={cn(
-          "absolute left-3 transition-all pointer-events-none",
-          (isFocused || value !== "") 
-            ? "-top-2.5 left-2 text-[10px] bg-card px-1 text-primary font-bold" 
-            : "top-3 text-sm text-muted-foreground"
-        )}
-      >
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-    </div>
-  );
+ return (
+ <div className={cn("relative mt-2", className)}>
+ <input
+ id={id}
+ type={type}
+ value={value}
+ onChange={(e) => onChange(e.target.value)}
+ required={required}
+ onFocus={() => {
+ setIsFocused(true);
+ if (onFocusClear) onChange("");
+ }}
+ onBlur={() => setIsFocused(false)}
+ placeholder=" "
+ className="peer w-full bg-input rounded-xl p-3 text-slate-900 dark:text-slate-100 placeholder-transparent focus:outline-none focus:-primary transition-all"
+ />
+ <label
+ htmlFor={id}
+ className={cn(
+ "absolute left-3 transition-all pointer-events-none",
+ (isFocused || value !== "") 
+ ? "-top-2.5 left-2 text-[10px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 px-1 text-amber-600 dark:text-amber-400 font-bold" 
+ : "top-3 text-sm text-slate-700 dark:text-slate-300"
+ )}
+ >
+ {label} {required && <span className="text-red-500">*</span>}
+ </label>
+ </div>
+ );
 };
 
 export const AppointmentsPage: React.FC = () => {
-  const { profile, isAdmin, isStaff, isCustomer } = useAuth();
-  const navigate = useNavigate();
-  const today = getLocalISODate();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [services, setServices] = useState<Service[]>([]);
-  const [staff, setStaff] = useState<UserProfile[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
-  const [filterDate, setFilterDate] = useState(getLocalISODate());
-  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [confirmDeleteAppt, setConfirmDeleteAppt] = useState<Appointment | null>(null);
-  const [showSvcSuggestions, setShowSvcSuggestions] = useState(false);
-  const [showCustSuggestions, setShowCustSuggestions] = useState(false);
-  const [viewingCustomerHistory, setViewingCustomerHistory] = useState<Customer | null>(null);
-  const [showOverlapPopup, setShowOverlapPopup] = useState(false);
-  const [apptSearch, setApptSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'status'>('date');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [calendarDate, setCalendarDate] = useState(new Date());
-  const [calendarView, setCalendarView] = useState<any>(Views.MONTH);
-  const [activeTab, setActiveTab] = useState<'appointments' | 'points'>('appointments');
-  const [showAllDates, setShowAllDates] = useState(isCustomer);
-  const [selectedStaffFilter, setSelectedStaffFilter] = useState<string>('all');
-  const [loadingAppts, setLoadingAppts] = useState(true);
-  const [isSubmittingAppt, setIsSubmittingAppt] = useState(false);
-
-  // Form states
-  const [selectedCustId, setSelectedCustId] = useState('');
-  const [manualCustName, setManualCustName] = useState('');
-  const [manualCustPhone, setManualCustPhone] = useState('');
-  const [selectedSvcId, setSelectedSvcId] = useState('');
-  const [manualSvcName, setManualSvcName] = useState('');
-  const [selectedStaffEmail, setSelectedStaffEmail] = useState('');
-  const [apptDate, setApptDate] = useState(getLocalISODate());
-  const [apptTime, setApptTime] = useState('10:00');
-  const [apptNotes, setApptNotes] = useState('');
-  const [apptStatus, setApptStatus] = useState<'pending' | 'confirmed' | 'completed' | 'cancelled'>('pending');
-  const [isHomeService, setIsHomeService] = useState(false);
-  const [pointsToRedeem, setPointsToRedeem] = useState(0);
-  const [willEarnPoints, setWillEarnPoints] = useState(0);
-  const [apptEndTime, setApptEndTime] = useState('');
-  const [apptDuration, setApptDuration] = useState(30);
-  const [formStep, setFormStep] = useState<1 | 2>(1);
-
-  // Validate that selected staff works on the chosen date
-  useEffect(() => {
-    if (!selectedStaffEmail) return;
-    const s = staff.find(member => member.email === selectedStaffEmail);
-    if (!s) return;
-    
-    const [year, month, day] = (apptDate || getLocalISODate()).split('-');
-    const apptDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-    const apptDayName = apptDateObj.toLocaleDateString('en-US', { weekday: 'long' });
-    const isWorking = !s.workingDays || s.workingDays.includes(apptDayName);
-    
-    if (!isWorking) {
-      setSelectedStaffEmail(''); // Clear the selection if they don't work that day
-    }
-  }, [apptDate, staff, selectedStaffEmail]);
-
-  useEffect(() => {
-    if (isCustomer && !editingAppointment && isAdding) {
-      if (customers.length > 0) {
-        setSelectedCustId(customers[0].id);
-        setManualCustName(customers[0].name);
-        setManualCustPhone(customers[0].phone || '');
-      } else {
-        setManualCustName(profile.name);
-        setManualCustPhone(profile.phone || '');
-        setSelectedCustId('manual');
-      }
-    }
-  }, [profile, isAdding, editingAppointment, customers, isCustomer]);
-
-  useEffect(() => {
-    if (!profile) return;
-
-    const apptsQuery = isCustomer
-      ? query(collection(db, 'appointments'), where('creatorEmail', '==', profile.email))
-      : query(collection(db, 'appointments'));
-
-    const unsubAppts = onSnapshot(apptsQuery, (snapshot) => {
-      let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
-      data.sort((a, b) => {
-        if (a.date !== b.date) return b.date.localeCompare(a.date);
-        return b.time.localeCompare(a.time);
-      });
-      setAppointments(data);
-      setLoadingAppts(false);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'appointments');
-      setLoadingAppts(false);
-    });
-
-    const unsubCusts = (!isCustomer)
-      ? onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
-          setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
-        }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'))
-      : onSnapshot(query(collection(db, 'customers'), where('email', '==', profile.email)), (snapshot) => {
-          setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
-        }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
-
-    const unsubSvcs = onSnapshot(query(collection(db, 'services'), orderBy('name')), (snapshot) => {
-      setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'services'));
-
-    const unsubStaff = onSnapshot(query(collection(db, 'users')), (snapshot) => {
-      const uniqueStaff = new Map<string, UserProfile>();
-      snapshot.docs.forEach(doc => {
-        const data = doc.data() as UserProfile;
-        // Client-side filtering: Hide super_admin and customers from the staff list
-        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
-        const isExcluded = data.role === 'super_admin' || 
-                          data.role === 'customer' || 
-                          (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
-        if (data.email && !isExcluded) {
-          const email = data.email.toLowerCase().trim();
-          if (!uniqueStaff.has(email) || data.uid) {
-            uniqueStaff.set(email, { ...data, id: doc.id });
-          }
-        }
-      });
-      const staffList = Array.from(uniqueStaff.values());
-      const roleOrder: Record<string, number> = { owner: 0, cashier: 1, staff: 2 };
-      staffList.sort((a, b) => {
-        const roleA = roleOrder[a.role] ?? 99;
-        const roleB = roleOrder[b.role] ?? 99;
-        if (roleA !== roleB) return roleA - roleB;
-        return (a.name || '').localeCompare(b.name || '');
-      });
-      setStaff(staffList);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
-
-    let unsubSales: () => void = () => {};
-    if (profile.role !== 'customer') {
-      unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('dateTime', 'desc')), (snapshot) => {
-        setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
-      }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
-    }
-
-    return () => {
-      unsubAppts();
-      unsubCusts();
-      unsubSvcs();
-      unsubStaff();
-      unsubSales();
-    };
-  }, [profile]);
-
-  useEffect(() => {
-    if (selectedSvcId && selectedSvcId !== 'manual') {
-      const s = services.find(s => s.id === selectedSvcId);
-      if (s) {
-        setWillEarnPoints(Math.floor(s.price / 1000));
-        if (s.duration) {
-          setApptDuration(s.duration);
-        }
-      }
-    } else {
-      setWillEarnPoints(0);
-    }
-  }, [selectedSvcId, services]);
-
-  useEffect(() => {
-    if (apptTime && apptDuration) {
-      const [hours, minutes] = apptTime.split(':').map(Number);
-      const date = new Date();
-      date.setHours(hours);
-      date.setMinutes(minutes + apptDuration);
-      const endHours = date.getHours().toString().padStart(2, '0');
-      const endMinutes = date.getMinutes().toString().padStart(2, '0');
-      setApptEndTime(`${endHours}:${endMinutes}`);
-    }
-  }, [apptTime, apptDuration]);
-
-  const checkOverlap = (date: string, time: string, duration: number, staffEmail: string, excludeId?: string) => {
-    return appointments.some(a => {
-      if (a.date !== date || a.status === 'cancelled' || a.id === excludeId || a.staffEmail !== staffEmail) return false;
-      
-      const apptStart = new Date(`${date}T${a.time}`);
-      const apptEnd = new Date(apptStart.getTime() + (a.duration * 60000));
-      
-      const newStart = new Date(`${date}T${time}`);
-      const newEnd = new Date(newStart.getTime() + (duration * 60000));
-      
-      return newStart < apptEnd && newEnd > apptStart;
-    });
-  };
-
-  const handleAddAppointment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (checkOverlap(apptDate, apptTime, apptDuration, selectedStaffEmail)) {
-      setShowOverlapPopup(true);
-      return;
-    }
-    setIsSubmittingAppt(true);
-    try {
-      let cName = manualCustName;
-      let cPhone = manualCustPhone;
-      if (selectedCustId && selectedCustId !== 'manual') {
-        const c = customers.find(c => c.id === selectedCustId);
-        if (c) {
-          cName = c.name;
-          cPhone = c.phone;
-        }
-      }
-
-      let sName = manualSvcName;
-      if (selectedSvcId && selectedSvcId !== 'manual') {
-        const s = services.find(s => s.id === selectedSvcId);
-        if (s) sName = s.name;
-      }
-
-      let stfName = '';
-      if (selectedStaffEmail) {
-        const st = staff.find(s => s.email === selectedStaffEmail);
-        if (st) stfName = st.name;
-      }
-
-      const newAppt: any = {
-        customerName: cName,
-        customerPhone: cPhone,
-        serviceName: sName,
-        date: apptDate,
-        time: apptTime,
-        endTime: apptEndTime,
-        duration: apptDuration,
-        status: apptStatus,
-        isHomeService,
-        notes: apptNotes,
-        pointsToRedeem,
-        willEarnPoints,
-        createdAt: new Date().toISOString()
-      };
-
-      if (selectedCustId && selectedCustId !== 'manual') {
-        newAppt.customerId = selectedCustId;
-        const c = customers.find(c => c.id === selectedCustId);
-        if (c && c.email) newAppt.customerEmail = c.email;
-      } else {
-        delete newAppt.customerId;
-      }
-      
-      if (selectedSvcId && selectedSvcId !== 'manual') {
-        newAppt.serviceId = selectedSvcId;
-      } else {
-        delete newAppt.serviceId;
-      }
-
-      if (stfName) newAppt.staffName = stfName;
-      if (selectedStaffEmail) newAppt.staffEmail = selectedStaffEmail;
-      
-      // Track who created the appointment
-      if (profile) {
-        newAppt.creatorName = profile.name;
-        newAppt.creatorEmail = profile.email;
-      }
-
-      const docRef = await addDoc(collection(db, 'appointments'), newAppt);
-      
-      if (apptStatus === 'completed') {
-        await processAppointmentPoints({ id: docRef.id, ...newAppt }, true);
-      }
-
-      setStatusMsg({ type: 'success', text: 'Appointment added successfully' });
-      resetForm();
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'appointments');
-      setStatusMsg({ type: 'error', text: 'Failed to add appointment' });
-    } finally {
-      setIsSubmittingAppt(false);
-    }
-  };
-
-  const handleUpdateAppointment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingAppointment) return;
-    if (checkOverlap(apptDate, apptTime, apptDuration, selectedStaffEmail, editingAppointment.id)) {
-      setShowOverlapPopup(true);
-      return;
-    }
-    setIsSubmittingAppt(true);
-    try {
-      let cName = manualCustName;
-      let cPhone = manualCustPhone;
-      if (selectedCustId && selectedCustId !== 'manual') {
-        const c = customers.find(c => c.id === selectedCustId);
-        if (c) {
-          cName = c.name;
-          cPhone = c.phone;
-        }
-      }
-
-      let sName = manualSvcName;
-      if (selectedSvcId && selectedSvcId !== 'manual') {
-        const s = services.find(s => s.id === selectedSvcId);
-        if (s) sName = s.name;
-      }
-
-      let stfName = '';
-      if (selectedStaffEmail) {
-        const st = staff.find(s => s.email === selectedStaffEmail);
-        if (st) stfName = st.name;
-      }
-
-      const updatedAppt: any = {
-        customerName: cName,
-        customerPhone: cPhone,
-        serviceName: sName,
-        date: apptDate,
-        time: apptTime,
-        endTime: apptEndTime,
-        duration: apptDuration,
-        status: apptStatus,
-        isHomeService,
-        notes: apptNotes,
-        pointsToRedeem,
-        willEarnPoints
-      };
-
-      if (selectedCustId && selectedCustId !== 'manual') {
-        updatedAppt.customerId = selectedCustId;
-      } else {
-        updatedAppt.customerId = null; // Use null to remove it if needed
-      }
-
-      if (selectedSvcId && selectedSvcId !== 'manual') {
-        updatedAppt.serviceId = selectedSvcId;
-      } else {
-        updatedAppt.serviceId = null;
-      }
-
-      if (stfName) updatedAppt.staffName = stfName;
-      if (selectedStaffEmail) updatedAppt.staffEmail = selectedStaffEmail;
-
-      await updateDoc(doc(db, 'appointments', editingAppointment.id), updatedAppt);
-      
-      if (apptStatus === 'completed' && editingAppointment.status !== 'completed') {
-        await processAppointmentPoints({ ...editingAppointment, ...updatedAppt }, true);
-      } else if (editingAppointment.status === 'completed' && apptStatus !== 'completed') {
-        await processAppointmentPoints({ ...editingAppointment, ...updatedAppt }, false);
-      }
-
-      setStatusMsg({ type: 'success', text: 'Appointment updated successfully' });
-      resetForm();
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'appointments');
-      setStatusMsg({ type: 'error', text: 'Failed to update appointment' });
-    } finally {
-      setIsSubmittingAppt(false);
-    }
-  };
-
-  const handleDeleteAppointment = async () => {
-    if (!confirmDeleteAppt) return;
-    try {
-      // If appointment was completed, reverse points before deleting
-      if (confirmDeleteAppt.status === 'completed' && confirmDeleteAppt.pointsProcessed) {
-        await processAppointmentPoints(confirmDeleteAppt, false);
-      }
-      
-      await deleteDoc(doc(db, 'appointments', confirmDeleteAppt.id));
-      setStatusMsg({ type: 'success', text: 'Appointment deleted' });
-      setConfirmDeleteAppt(null);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, `appointments/${confirmDeleteAppt.id}`);
-      setStatusMsg({ type: 'error', text: 'Failed to delete appointment' });
-    }
-  };
-
-  const resetForm = () => {
-    setIsAdding(false);
-    setEditingAppointment(null);
-    setSelectedCustId('');
-    setManualCustName('');
-    setManualCustPhone('');
-    setSelectedSvcId('');
-    setManualSvcName('');
-    setSelectedStaffEmail('');
-    setApptDate(getLocalISODate());
-    setApptTime('10:00');
-    setApptNotes('');
-    setApptStatus('pending');
-    setIsHomeService(false);
-    setPointsToRedeem(0);
-    setWillEarnPoints(0);
-    setApptEndTime('');
-    setApptDuration(30);
-    setFormStep(1);
-    setShowSvcSuggestions(false);
-    setShowCustSuggestions(false);
-    setCustomerSearch('');
-  };
-
-  const startEdit = (appt: Appointment) => {
-    setEditingAppointment(appt);
-    setSelectedCustId(appt.customerId || 'manual');
-    setManualCustName(appt.customerName);
-    setManualCustPhone(appt.customerPhone);
-    setSelectedSvcId(appt.serviceId || 'manual');
-    setManualSvcName(appt.serviceName);
-    setSelectedStaffEmail(appt.staffEmail || '');
-    setApptDate(appt.date);
-    setApptTime(appt.time);
-    setApptNotes(appt.notes || '');
-    setApptStatus(appt.status);
-    setIsHomeService(appt.isHomeService || false);
-    setPointsToRedeem(appt.pointsToRedeem || 0);
-    setWillEarnPoints(appt.willEarnPoints || 0);
-    setApptDuration(appt.duration || 30);
-    setApptEndTime(appt.endTime || '');
-    setFormStep(1);
-    setIsAdding(true);
-  };
-
-  const processAppointmentPoints = async (appt: Appointment, isCompleting: boolean) => {
-    if (!appt.customerId || appt.customerId === 'manual') return;
-    if (appt.pointsProcessed === isCompleting) return; // Already processed or already reversed
-
-    try {
-      const customerRef = doc(db, 'customers', appt.customerId);
-      const customerSnap = await getDoc(customerRef);
-      if (customerSnap.exists()) {
-        const currentPoints = customerSnap.data().points || 0;
-        const earn = appt.willEarnPoints || 0;
-        const redeem = appt.pointsToRedeem || 0;
-        
-        let newPoints = currentPoints;
-        if (isCompleting) {
-          newPoints = currentPoints + earn - redeem;
-        } else {
-          // Reversing completion
-          newPoints = currentPoints - earn + redeem;
-        }
-        
-        const finalPoints = Math.max(0, newPoints);
-        await updateDoc(customerRef, { points: finalPoints });
-        await updateDoc(doc(db, 'appointments', appt.id), { pointsProcessed: isCompleting });
-        
-        // Update user profile points if email is present
-        if (customerSnap.data().email) {
-          const userDocRef = doc(db, 'users', customerSnap.data().email.toLowerCase());
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-             await updateDoc(userDocRef, { points: finalPoints });
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error processing points:", error);
-    }
-  };
-
-  const handleQuickStatusUpdate = async (apptId: string, newStatus: Appointment['status']) => {
-    try {
-      const appt = appointments.find(a => a.id === apptId);
-      if (!appt) return;
-
-      await updateDoc(doc(db, 'appointments', apptId), { status: newStatus });
-      
-      if (newStatus === 'completed') {
-        await processAppointmentPoints(appt, true);
-      } else if (appt.status === 'completed') {
-        await processAppointmentPoints(appt, false);
-      }
-
-      setStatusMsg({ type: 'success', text: `Status updated to ${newStatus}` });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'appointments');
-      setStatusMsg({ type: 'error', text: 'Failed to update status' });
-    }
-  };
-
-  const filteredAppts = appointments
-    .filter(a => {
-      const matchesDate = showAllDates || a.date === filterDate;
-      const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-      const matchesSearch = !apptSearch || 
-        a.customerName.toLowerCase().includes(apptSearch.toLowerCase()) || 
-        a.customerPhone.includes(apptSearch) ||
-        a.serviceName.toLowerCase().includes(apptSearch.toLowerCase());
-      const matchesUser = profile?.role !== 'customer' || a.creatorEmail === profile?.email;
-      const matchesStaff = selectedStaffFilter === 'all' || a.staffEmail === selectedStaffFilter;
-      return matchesDate && matchesStatus && matchesSearch && matchesUser && matchesStaff;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'date') {
-        const dateA = `${a.date}T${a.time}`;
-        const dateB = `${b.date}T${b.time}`;
-        return sortOrder === 'asc' ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
-      } else {
-        // Sort by status priority or alphabetically
-        const statusPriority: Record<string, number> = {
-          'confirmed': 1,
-          'pending': 2,
-          'completed': 3,
-          'cancelled': 4
-        };
-        const prioA = statusPriority[a.status] || 99;
-        const prioB = statusPriority[b.status] || 99;
-        return sortOrder === 'asc' ? prioA - prioB : prioB - prioA;
-      }
-    });
-
-  const calendarEvents = appointments
-    .filter(a => {
-      const matchesUser = profile?.role !== 'customer' || a.creatorEmail === profile?.email;
-      const matchesStaff = selectedStaffFilter === 'all' || a.staffEmail === selectedStaffFilter;
-      const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-      const matchesSearch = !apptSearch.trim() || 
-        a.customerName.toLowerCase().includes(apptSearch.toLowerCase()) ||
-        a.customerPhone.includes(apptSearch) ||
-        a.serviceName.toLowerCase().includes(apptSearch.toLowerCase());
-      return matchesUser && matchesStaff && matchesStatus && matchesSearch;
-    })
-    .map(appt => {
-      try {
-        if (!appt.date || !appt.time) return null;
-        const dateParts = appt.date.split('-');
-        const timeParts = appt.time.split(':');
-        
-        if (dateParts.length !== 3 || timeParts.length < 2) return null;
-        
-        const [year, month, day] = dateParts.map(Number);
-        const [hour, minute] = timeParts.map(Number);
-        
-        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) return null;
-        
-        const start = new Date(year, month - 1, day, hour, minute);
-        if (isNaN(start.getTime())) return null;
-        
-        let end: Date;
-        if (appt.endTime) {
-          const endTimeParts = appt.endTime.split(':');
-          if (endTimeParts.length >= 2) {
-            const [endHour, endMinute] = endTimeParts.map(Number);
-            if (!isNaN(endHour) && !isNaN(endMinute)) {
-              end = new Date(year, month - 1, day, endHour, endMinute);
-            } else {
-              end = new Date(start.getTime() + (appt.duration || 60) * 60000);
-            }
-          } else {
-            end = new Date(start.getTime() + (appt.duration || 60) * 60000);
-          }
-        } else {
-          end = new Date(start.getTime() + (appt.duration || 60) * 60000);
-        }
-        
-        if (isNaN(end.getTime())) {
-          end = new Date(start.getTime() + 60 * 60 * 1000);
-        }
-
-        return {
-          id: appt.id,
-          title: `${appt.customerName} - ${appt.serviceName}`,
-          start,
-          end,
-          resource: appt,
-          allDay: false
-        };
-      } catch (e) {
-        console.error("Error parsing appointment for calendar:", e, appt);
-        return null;
-      }
-    })
-    .filter((e): e is any => e !== null);
-
-  const handleSelectEvent = (event: any) => {
-    const appt = event.resource;
-    if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
-      startEdit(appt);
-    }
-  };
-
-  const handleSelectSlot = ({ start }: { start: Date }) => {
-    resetForm();
-    setApptDate(format(start, 'yyyy-MM-dd'));
-    setApptTime(format(start, 'HH:mm'));
-    setIsAdding(true);
-  };
-
-  const eventPropGetter = (event: any) => {
-    const appt = event.resource;
-    let backgroundColor = 'rgba(212, 175, 55, 0.15)';
-    let borderColor = '#d4af37';
-    let textColor = '#d4af37';
-
-    if (appt.status === 'pending') {
-      backgroundColor = 'rgba(234, 179, 8, 0.18)';
-      borderColor = '#eab308';
-      textColor = '#ca8a04';
-    } else if (appt.status === 'confirmed') {
-      backgroundColor = 'rgba(37, 99, 235, 0.18)';
-      borderColor = '#2563eb';
-      textColor = '#1d4ed8';
-    } else if (appt.status === 'completed') {
-      backgroundColor = 'rgba(22, 163, 74, 0.18)';
-      borderColor = '#16a34a';
-      textColor = '#15803d';
-    } else if (appt.status === 'cancelled') {
-      backgroundColor = 'rgba(220, 38, 38, 0.18)';
-      borderColor = '#dc2626';
-      textColor = '#b91c1c';
-    }
-
-    return {
-      style: {
-        backgroundColor,
-        borderLeft: `4px solid ${borderColor}`,
-        borderRadius: '10px',
-        color: textColor,
-        borderTop: '1px solid rgba(0,0,0,0.05)',
-        borderRight: '1px solid rgba(0,0,0,0.05)',
-        borderBottom: '1px solid rgba(0,0,0,0.05)',
-        boxShadow: '0 2px 8px -2px rgba(0,0,0,0.08)',
-        display: 'block',
-        overflow: 'hidden'
-      }
-    };
-  };
-
-  const CustomCalendarEvent = ({ event }: { event: any }) => {
-    const appt = event.resource;
-    const isMonthView = calendarView === 'month';
-
-    const statusBg = 
-      appt.status === 'confirmed' ? 'bg-blue-500' :
-      appt.status === 'completed' ? 'bg-emerald-500' :
-      appt.status === 'cancelled' ? 'bg-rose-500' : 'bg-amber-500';
-
-    if (isMonthView) {
-      return (
-        <div className="flex items-center gap-1 px-1 py-0.5 truncate text-[10px] font-bold">
-          <span className={cn("w-2 h-2 rounded-full shrink-0 shadow-sm", statusBg)} />
-          <span className="font-mono text-[9px] opacity-75 shrink-0">{format(event.start, 'h:mm a')}</span>
-          <span className="truncate">{appt.serviceName || appt.customerName}</span>
-        </div>
-      );
-    }
-
-    return (
-      <div className="p-1.5 h-full flex flex-col justify-between overflow-hidden text-[11px] font-medium leading-tight">
-        <div>
-          <div className="flex items-center justify-between gap-1 mb-0.5">
-            <span className="font-extrabold truncate text-foreground/90">{appt.serviceName}</span>
-            <span className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-md text-white shrink-0 shadow-sm", statusBg)}>
-              {appt.status}
-            </span>
-          </div>
-          <div className="text-[10px] opacity-90 truncate font-bold">
-            {appt.customerName}
-          </div>
-          {appt.staffName && (
-            <div className="text-[9px] opacity-75 truncate italic">
-              Staff: {appt.staffName}
-            </div>
-          )}
-        </div>
-        <div className="text-[9px] font-mono opacity-80 mt-1 font-semibold">
-          {format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}
-        </div>
-      </div>
-    );
-  };
-
-  const CustomCalendarToolbar = (toolbar: any) => {
-    const goToBack = () => {
-      const prevDate = new Date(toolbar.date);
-      if (toolbar.view === 'month') prevDate.setMonth(prevDate.getMonth() - 1);
-      else if (toolbar.view === 'week') prevDate.setDate(prevDate.getDate() - 7);
-      else if (toolbar.view === 'day') prevDate.setDate(prevDate.getDate() - 1);
-      
-      toolbar.onNavigate('PREV');
-      setCalendarDate(prevDate);
-      setFilterDate(format(prevDate, 'yyyy-MM-dd'));
-    };
-
-    const goToNext = () => {
-      const nextDate = new Date(toolbar.date);
-      if (toolbar.view === 'month') nextDate.setMonth(nextDate.getMonth() + 1);
-      else if (toolbar.view === 'week') nextDate.setDate(nextDate.getDate() + 7);
-      else if (toolbar.view === 'day') nextDate.setDate(nextDate.getDate() + 1);
-
-      toolbar.onNavigate('NEXT');
-      setCalendarDate(nextDate);
-      setFilterDate(format(nextDate, 'yyyy-MM-dd'));
-    };
-
-    const goToToday = () => {
-      const today = new Date();
-      toolbar.onNavigate('TODAY');
-      setCalendarDate(today);
-      setFilterDate(format(today, 'yyyy-MM-dd'));
-    };
-
-    return (
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-muted/30 p-2.5 sm:p-3 rounded-2xl border border-border/50 shadow-xs shrink-0">
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={goToBack}
-              className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-95 border border-border/60 bg-background shadow-xs"
-              title="Previous"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={goToToday}
-              className="px-3.5 py-2 bg-primary/10 text-primary [.midnight_&]:text-amber-400 hover:bg-primary/20 rounded-xl font-black text-xs uppercase tracking-wider transition-all border border-primary/20 active:scale-95 shadow-xs"
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              onClick={goToNext}
-              className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-95 border border-border/60 bg-background shadow-xs"
-              title="Next"
-            >
-              <ChevronRight size={18} />
-            </button>
-          </div>
-
-          <div className="sm:hidden text-xs font-black tracking-tight text-foreground uppercase">
-            {toolbar.label}
-          </div>
-        </div>
-
-        <div className="hidden sm:block text-sm md:text-base font-black tracking-tight text-foreground uppercase">
-          {toolbar.label}
-        </div>
-
-        <div className="flex bg-muted p-1 rounded-xl border border-border/50 shadow-inner w-full sm:w-auto justify-center">
-          {(['month', 'week', 'day'] as const).map((view) => (
-            <button
-              key={view}
-              type="button"
-              onClick={() => {
-                toolbar.onView(view);
-                setCalendarView(view);
-              }}
-              className={cn(
-                "flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
-                toolbar.view === view 
-                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20 scale-[1.02]" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {view}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground [.midnight_&]:text-slate-200 leading-none">
-            {isCustomer ? 'My Appointments' : 'Customer Appointments'}
-          </h1>
-          {isCustomer && profile.points !== undefined && (
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-bold bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full border border-primary/30 shadow-sm">
-                {profile.points.toLocaleString()} Points Available
-              </span>
-            </div>
-          )}
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex bg-muted p-1 rounded-xl border border-border shadow-xl ">
-            <button
-              onClick={() => setViewMode('list')}
-              className={cn(
-                "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
-                viewMode === 'list' 
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              List
-            </button>
-            <button
-              onClick={() => setViewMode('calendar')}
-              className={cn(
-                "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
-                viewMode === 'calendar' 
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" 
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <CalendarIcon size={16} />
-              Calendar
-            </button>
-          </div>
-
-          <button
-            onClick={() => { resetForm(); setIsAdding(true); }}
-            className="bg-primary text-foreground [.midnight_&]:text-slate-200 px-6 py-3 rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-primary/20 font-bold group"
-          >
-            <div className="bg-black/10 p-1 rounded-full group-hover:bg-black/20 transition-colors">
-              <Plus size={20} />
-            </div>
-            <div className="text-left leading-none">
-              <div className="text-[9px] uppercase tracking-widest font-bold opacity-70 mb-0.5">Book</div>
-              <div className="text-sm tracking-tight">Appointment</div>
-            </div>
-          </button>
-        </div>
-      </div>
-
-      {statusMsg && (
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={cn(
-            "p-4 rounded-2xl flex items-center justify-between border shadow-lg",
-            statusMsg.type === 'success' ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-red-500/10 text-red-600 border-red-500/20"
-          )}
-        >
-          <div className="flex items-center gap-3">
-            {statusMsg.type === 'success' ? <Check size={20} /> : <X size={20} />}
-            <span className="font-bold">{statusMsg.text}</span>
-          </div>
-          <button onClick={() => setStatusMsg(null)} className="p-1 hover:bg-black/5 rounded-full"><X size={18} /></button>
-        </motion.div>
-      )}
-
-      {activeTab === 'appointments' ? (
-        <div className="space-y-4">
-          {/* Filter Card */}
-          <div className="bg-card rounded-[2rem] border border-border shadow-2xl w-full mb-6 z-50 relative">
-            <div className="p-4 border-b border-border/50 relative group">
-              <input
-                type="text"
-                placeholder="Search customer or service..."
-                value={apptSearch}
-                onChange={(e) => setApptSearch(e.target.value)}
-                className="w-full p-2 pl-10 border-none outline-none bg-transparent text-foreground [.midnight_&]:text-slate-200 font-bold text-sm transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300/50"
-              />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400" size={16} />
-            </div>
-            <div className="flex flex-col md:flex-row md:items-center">
-              <CustomDatePicker 
-                label="FILTER DATE" 
-                value={filterDate} 
-                onChange={(val) => {
-                  setFilterDate(val);
-                  setShowAllDates(false);
-                  if (val) {
-                    const [y, m, d] = val.split('-').map(Number);
-                    if (y && m && d) setCalendarDate(new Date(y, m - 1, d));
-                  }
-                }}
-                disabled={showAllDates}
-                className={cn("border-b md:border-b-0 md:border-r border-border/50 flex-1", showAllDates && "opacity-50")}
-              />
-              {profile?.role !== 'customer' && (
-                <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
-                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                     <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" /> STAFF
-                   </label>
-                   <CustomSelect
-                     value={selectedStaffFilter} 
-                     onChange={setSelectedStaffFilter}
-                     placeholder="All Staff"
-                     options={[
-                       { value: 'all', label: 'All Staff' },
-                       ...staff.filter(s => s.role !== 'super_admin').map(s => ({ value: s.email, label: s.name }))
-                     ]}
-                   />
-                </div>
-              )}
-              <div className="flex flex-col p-4 border-b md:border-b-0 md:border-r border-border/50 flex-1">
-                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                   <Activity size={12} className="text-primary [.midnight_&]:text-amber-400" /> STATUS
-                 </label>
-                 <CustomSelect
-                   value={statusFilter} 
-                   onChange={setStatusFilter}
-                   placeholder="All Status"
-                   options={[
-                     { value: 'all', label: 'All Status' },
-                     { value: 'pending', label: 'Pending' },
-                     { value: 'confirmed', label: 'Confirmed' },
-                     { value: 'completed', label: 'Completed' },
-                     { value: 'cancelled', label: 'Cancelled' }
-                   ]}
-                 />
-              </div>
-              <div className="flex flex-col p-4 flex-1">
-                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
-                   <Settings size={12} className="text-primary [.midnight_&]:text-amber-400" /> OPTIONS
-                 </label>
-                 <div className="flex items-center gap-2">
-                   <button
-                     onClick={() => setShowAllDates(!showAllDates)}
-                     className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20" : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground")}
-                   >
-                     {showAllDates ? 'All Dates' : 'Show All'}
-                   </button>
-                   <button
-                     onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
-                     className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                   >
-                     Sort: {sortBy}
-                   </button>
-                 </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="p-0">
-            {loadingAppts ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="bg-card border border-border rounded-2xl p-5 shadow-sm transition-all group relative overflow-hidden animate-pulse h-[160px]">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="w-16 h-10 bg-primary/20 rounded-xl"></div>
-                      <div className="w-20 h-6 bg-primary/10 rounded-full"></div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="w-1/2 h-5 bg-primary/20 rounded-md"></div>
-                      <div className="w-3/4 h-4 bg-primary/10 rounded-md"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : viewMode === 'calendar' ? (
-            <div className="h-[750px] md:h-[800px] bg-card rounded-3xl p-3 sm:p-5 border border-border shadow-xl flex flex-col overflow-hidden w-full max-w-full">
-              <style>{`
-                .rbc-calendar { font-family: inherit; font-size: 12px; display: flex !important; flex-direction: column !important; height: 100% !important; width: 100% !important; min-height: 0 !important; overflow: hidden !important; }
-                .rbc-month-view, .rbc-time-view { border: 1px solid var(--border) !important; border-radius: 20px; overflow: hidden; background: var(--card); display: flex !important; flex-direction: column !important; flex: 1 1 0% !important; min-height: 0 !important; width: 100% !important; }
-                .rbc-header { padding: 6px 2px !important; font-weight: 800; text-transform: uppercase; font-size: 10px; sm:font-size: 11px; letter-spacing: 0.02em; color: var(--muted-foreground); border-bottom: 2px solid var(--border) !important; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                .rbc-header + .rbc-header { border-left: 1px solid var(--border) !important; }
-                .rbc-today { background-color: rgba(212, 175, 55, 0.08) !important; }
-                .rbc-off-range-bg { background-color: rgba(0, 0, 0, 0.04) !important; }
-                .dark .rbc-off-range-bg { background-color: rgba(255, 255, 255, 0.03) !important; }
-                .rbc-date-cell { padding: 4px 8px !important; font-weight: 800; font-size: 11px; text-align: right; }
-                .rbc-month-row { border-top: 1px solid var(--border) !important; flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; }
-                .rbc-row-content { height: 100% !important; }
-                .rbc-day-bg + .rbc-day-bg { border-left: 1px solid var(--border) !important; }
-                .rbc-time-header { border-bottom: 1px solid var(--border) !important; background: rgba(0,0,0,0.02); }
-                .dark .rbc-time-header { background: rgba(255,255,255,0.02); }
-                .rbc-time-header-content { border-left: 1px solid var(--border) !important; }
-                .rbc-time-content { border-top: 1px solid var(--border) !important; flex: 1 1 0% !important; overflow-y: auto !important; min-height: 0 !important; }
-                .rbc-time-content > * + * > * { border-left: 1px solid var(--border) !important; }
-                .rbc-timeslot-group { border-bottom: 1px solid var(--border) !important; min-height: 44px; }
-                .rbc-time-gutter .rbc-label { font-size: 10px; font-weight: 700; color: var(--muted-foreground); text-transform: uppercase; padding: 0 6px; }
-                .rbc-allday-cell { display: none !important; }
-                .rbc-current-time-indicator { background-color: var(--primary) !important; height: 2px !important; }
-                .rbc-show-more { color: var(--primary); font-weight: 800; font-size: 10px; text-transform: uppercase; padding: 2px 4px; }
-                .rbc-event { padding: 0 !important; background: transparent !important; }
-                .rbc-event:focus { outline: none !important; }
-                .rbc-day-slot .rbc-time-slot { border-top: 1px dashed var(--border) !important; }
-              `}</style>
-              <BigCalendar
-                localizer={localizer}
-                events={calendarEvents}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: '100%' }}
-                onSelectEvent={handleSelectEvent}
-                onSelectSlot={handleSelectSlot}
-                selectable
-                views={['month', 'week', 'day']}
-                view={calendarView}
-                onView={(v) => setCalendarView(v)}
-                date={calendarDate}
-                onNavigate={(d) => {
-                  setCalendarDate(d);
-                  setFilterDate(format(d, 'yyyy-MM-dd'));
-                }}
-                min={new Date(1970, 0, 1, 7, 0, 0)}
-                max={new Date(1970, 0, 1, 21, 0, 0)}
-                step={15}
-                timeslots={2}
-                eventPropGetter={eventPropGetter}
-                components={{
-                  toolbar: CustomCalendarToolbar,
-                  event: CustomCalendarEvent
-                }}
-              />
-            </div>
-          ) : filteredAppts.length === 0 ? (
-            <div className="text-center py-32 bg-muted/5 rounded-[3rem] border-2 border-dashed border-border">
-              <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CalendarIcon className="text-muted-foreground/30" size={48} />
-              </div>
-              <p className="text-muted-foreground text-lg font-bold italic">No appointments found matching your criteria.</p>
-              <button 
-                onClick={() => { resetForm(); setIsAdding(true); }}
-                className="mt-6 text-primary [.midnight_&]:text-amber-400 font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
-              >
-                <Plus size={16} />
-                Book New Appointment
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredAppts.map((appt) => {
-                  const customer = customers.find(c => c.id === appt.customerId);
-                  return (
-                    <motion.div 
-                      layout
-                      key={appt.id} 
-                      onClick={() => {
-                        if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
-                          startEdit(appt);
-                        }
-                      }}
-                      className={cn(
-                        "bg-card border border-border rounded-2xl p-5 shadow-sm transition-all group relative overflow-hidden",
-                        (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) ? "hover:shadow-xl hover:border-primary/30 cursor-pointer" : "opacity-90"
-                      )}
-                    >
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-bl-[3rem] -mr-8 -mt-8 transition-all group-hover:scale-110 group-hover:bg-primary/10"></div>
-                      
-                      <div className="flex justify-between items-start relative z-10 mb-6">
-                        <div className="flex flex-col">
-                          <div className="bg-primary/5 text-primary [.midnight_&]:text-amber-400 px-4 py-2 rounded-xl font-black text-xl tracking-tighter shadow-sm border border-primary/10">
-                            {appt.time}
-                          </div>
-                          <div className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] mt-1.5 ml-1">
-                            {formatDisplayDate(appt.date)}
-                          </div>
-                        </div>
-                        <div className={cn(
-                          "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 border  transition-all",
-                          appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600  border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
-                          appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600  border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
-                          appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-foreground [.midnight_&]:text-slate-200 border-transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
-                          appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600  border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                        )}>
-                          {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
-                          {appt.status === 'confirmed' && <Check size={12} strokeWidth={3} />}
-                          {appt.status === 'completed' && <Check size={12} strokeWidth={3} />}
-                          {appt.status === 'cancelled' && <X size={12} strokeWidth={3} />}
-                          {appt.status}
-                        </div>
-                      </div>
-
-                      <div className="space-y-6 relative z-10">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors truncate tracking-tight leading-tight">{appt.customerName}</h3>
-                            <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-xs mt-3 font-bold">
-                              <div className="flex items-center gap-1.5 bg-muted/5 px-2.5 py-1 rounded-lg border border-border">
-                                <Phone size={14} className="text-primary [.midnight_&]:text-amber-400" />
-                                <span className="text-xs tracking-tight">{appt.customerPhone}</span>
-                              </div>
-                              {customer && (
-                                <span className="bg-primary/5 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full text-[9px] font-black border border-primary/10 tracking-widest shadow-sm">
-                                  {customer.points} PTS
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            {appt.isHomeService && (
-                              <div className="p-2.5 bg-green-600 text-foreground [.midnight_&]:text-slate-200 rounded-xl shadow-lg shadow-green-900/10 transition-transform group-hover:scale-110" title="At Home Service">
-                                <Car size={18} strokeWidth={2.5} />
-                              </div>
-                            )}
-                            {profile?.role !== 'customer' && (
-                              <a 
-                                href={`https://wa.me/${appt.customerPhone.replace(/\\D/g, '')}?text=${encodeURIComponent('Hello ' + appt.customerName + ',\
+ const { profile, isAdmin, isStaff, isCustomer } = useAuth();
+ const navigate = useNavigate();
+ const today = getLocalISODate();
+ const [appointments, setAppointments] = useState<Appointment[]>([]);
+ const [customers, setCustomers] = useState<Customer[]>([]);
+ const [services, setServices] = useState<Service[]>([]);
+ const [staff, setStaff] = useState<UserProfile[]>([]);
+ const [sales, setSales] = useState<Sale[]>([]);
+ const [isAdding, setIsAdding] = useState(false);
+ const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+ const [filterDate, setFilterDate] = useState(getLocalISODate());
+ const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+ const [customerSearch, setCustomerSearch] = useState('');
+ const [confirmDeleteAppt, setConfirmDeleteAppt] = useState<Appointment | null>(null);
+ const [showSvcSuggestions, setShowSvcSuggestions] = useState(false);
+ const [showCustSuggestions, setShowCustSuggestions] = useState(false);
+ const [viewingCustomerHistory, setViewingCustomerHistory] = useState<Customer | null>(null);
+ const [showOverlapPopup, setShowOverlapPopup] = useState(false);
+ const [apptSearch, setApptSearch] = useState('');
+ const [statusFilter, setStatusFilter] = useState<string>('all');
+ const [sortBy, setSortBy] = useState<'date' | 'status'>('date');
+ const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+ const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+ const [calendarDate, setCalendarDate] = useState(new Date());
+ const [calendarView, setCalendarView] = useState<any>(Views.MONTH);
+ const [activeTab, setActiveTab] = useState<'appointments' | 'points'>('appointments');
+ const [showAllDates, setShowAllDates] = useState(isCustomer);
+ const [selectedStaffFilter, setSelectedStaffFilter] = useState<string>('all');
+ const [loadingAppts, setLoadingAppts] = useState(true);
+ const [isSubmittingAppt, setIsSubmittingAppt] = useState(false);
+
+ // Form states
+ const [selectedCustId, setSelectedCustId] = useState('');
+ const [manualCustName, setManualCustName] = useState('');
+ const [manualCustPhone, setManualCustPhone] = useState('');
+ const [selectedSvcId, setSelectedSvcId] = useState('');
+ const [manualSvcName, setManualSvcName] = useState('');
+ const [selectedStaffEmail, setSelectedStaffEmail] = useState('');
+ const [apptDate, setApptDate] = useState(getLocalISODate());
+ const [apptTime, setApptTime] = useState('10:00');
+ const [apptNotes, setApptNotes] = useState('');
+ const [apptStatus, setApptStatus] = useState<'pending' | 'confirmed' | 'completed' | 'cancelled'>('pending');
+ const [isHomeService, setIsHomeService] = useState(false);
+ const [pointsToRedeem, setPointsToRedeem] = useState(0);
+ const [willEarnPoints, setWillEarnPoints] = useState(0);
+ const [apptEndTime, setApptEndTime] = useState('');
+ const [apptDuration, setApptDuration] = useState(30);
+ const [formStep, setFormStep] = useState<1 | 2>(1);
+
+ // Validate that selected staff works on the chosen date
+ useEffect(() => {
+ if (!selectedStaffEmail) return;
+ const s = staff.find(member => member.email === selectedStaffEmail);
+ if (!s) return;
+ 
+ const [year, month, day] = (apptDate || getLocalISODate()).split('-');
+ const apptDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+ const apptDayName = apptDateObj.toLocaleDateString('en-US', { weekday: 'long' });
+ const isWorking = !s.workingDays || s.workingDays.includes(apptDayName);
+ 
+ if (!isWorking) {
+ setSelectedStaffEmail(''); // Clear the selection if they don't work that day
+ }
+ }, [apptDate, staff, selectedStaffEmail]);
+
+ useEffect(() => {
+ if (isCustomer && !editingAppointment && isAdding) {
+ if (customers.length > 0) {
+ setSelectedCustId(customers[0].id);
+ setManualCustName(customers[0].name);
+ setManualCustPhone(customers[0].phone || '');
+ } else {
+ setManualCustName(profile.name);
+ setManualCustPhone(profile.phone || '');
+ setSelectedCustId('manual');
+ }
+ }
+ }, [profile, isAdding, editingAppointment, customers, isCustomer]);
+
+ useEffect(() => {
+ if (!profile) return;
+
+ const apptsQuery = isCustomer
+ ? query(collection(db, 'appointments'), where('creatorEmail', '==', profile.email))
+ : query(collection(db, 'appointments'));
+
+ const unsubAppts = onSnapshot(apptsQuery, (snapshot) => {
+ let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+ data.sort((a, b) => {
+ if (a.date !== b.date) return b.date.localeCompare(a.date);
+ return b.time.localeCompare(a.time);
+ });
+ setAppointments(data);
+ setLoadingAppts(false);
+ }, (error) => {
+ handleFirestoreError(error, OperationType.LIST, 'appointments');
+ setLoadingAppts(false);
+ });
+
+ const unsubCusts = (!isCustomer)
+ ? onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
+ setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'))
+ : onSnapshot(query(collection(db, 'customers'), where('email', '==', profile.email)), (snapshot) => {
+ setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
+
+ const unsubSvcs = onSnapshot(query(collection(db, 'services'), orderBy('name')), (snapshot) => {
+ setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'services'));
+
+ const unsubStaff = onSnapshot(query(collection(db, 'users')), (snapshot) => {
+ const uniqueStaff = new Map<string, UserProfile>();
+ snapshot.docs.forEach(doc => {
+ const data = doc.data() as UserProfile;
+ // Client-side filtering: Hide super_admin and customers from the staff list
+ const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
+ const isExcluded = data.role === 'super_admin' || 
+ data.role === 'customer' || 
+ (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
+ if (data.email && !isExcluded) {
+ const email = data.email.toLowerCase().trim();
+ if (!uniqueStaff.has(email) || data.uid) {
+ uniqueStaff.set(email, { ...data, id: doc.id });
+ }
+ }
+ });
+ const staffList = Array.from(uniqueStaff.values());
+ const roleOrder: Record<string, number> = { owner: 0, cashier: 1, staff: 2 };
+ staffList.sort((a, b) => {
+ const roleA = roleOrder[a.role] ?? 99;
+ const roleB = roleOrder[b.role] ?? 99;
+ if (roleA !== roleB) return roleA - roleB;
+ return (a.name || '').localeCompare(b.name || '');
+ });
+ setStaff(staffList);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+
+ let unsubSales: () => void = () => {};
+ if (profile.role !== 'customer') {
+ unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('dateTime', 'desc')), (snapshot) => {
+ setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+ }
+
+ return () => {
+ unsubAppts();
+ unsubCusts();
+ unsubSvcs();
+ unsubStaff();
+ unsubSales();
+ };
+ }, [profile]);
+
+ useEffect(() => {
+ if (selectedSvcId && selectedSvcId !== 'manual') {
+ const s = services.find(s => s.id === selectedSvcId);
+ if (s) {
+ setWillEarnPoints(Math.floor(s.price / 1000));
+ if (s.duration) {
+ setApptDuration(s.duration);
+ }
+ }
+ } else {
+ setWillEarnPoints(0);
+ }
+ }, [selectedSvcId, services]);
+
+ useEffect(() => {
+ if (apptTime && apptDuration) {
+ const [hours, minutes] = apptTime.split(':').map(Number);
+ const date = new Date();
+ date.setHours(hours);
+ date.setMinutes(minutes + apptDuration);
+ const endHours = date.getHours().toString().padStart(2, '0');
+ const endMinutes = date.getMinutes().toString().padStart(2, '0');
+ setApptEndTime(`${endHours}:${endMinutes}`);
+ }
+ }, [apptTime, apptDuration]);
+
+ const checkOverlap = (date: string, time: string, duration: number, staffEmail: string, excludeId?: string) => {
+ return appointments.some(a => {
+ if (a.date !== date || a.status === 'cancelled' || a.id === excludeId || a.staffEmail !== staffEmail) return false;
+ 
+ const apptStart = new Date(`${date}T${a.time}`);
+ const apptEnd = new Date(apptStart.getTime() + (a.duration * 60000));
+ 
+ const newStart = new Date(`${date}T${time}`);
+ const newEnd = new Date(newStart.getTime() + (duration * 60000));
+ 
+ return newStart < apptEnd && newEnd > apptStart;
+ });
+ };
+
+ const handleAddAppointment = async (e: React.FormEvent) => {
+ e.preventDefault();
+ if (checkOverlap(apptDate, apptTime, apptDuration, selectedStaffEmail)) {
+ setShowOverlapPopup(true);
+ return;
+ }
+ setIsSubmittingAppt(true);
+ try {
+ let cName = manualCustName;
+ let cPhone = manualCustPhone;
+ if (selectedCustId && selectedCustId !== 'manual') {
+ const c = customers.find(c => c.id === selectedCustId);
+ if (c) {
+ cName = c.name;
+ cPhone = c.phone;
+ }
+ }
+
+ let sName = manualSvcName;
+ if (selectedSvcId && selectedSvcId !== 'manual') {
+ const s = services.find(s => s.id === selectedSvcId);
+ if (s) sName = s.name;
+ }
+
+ let stfName = '';
+ if (selectedStaffEmail) {
+ const st = staff.find(s => s.email === selectedStaffEmail);
+ if (st) stfName = st.name;
+ }
+
+ const newAppt: any = {
+ customerName: cName,
+ customerPhone: cPhone,
+ serviceName: sName,
+ date: apptDate,
+ time: apptTime,
+ endTime: apptEndTime,
+ duration: apptDuration,
+ status: apptStatus,
+ isHomeService,
+ notes: apptNotes,
+ pointsToRedeem,
+ willEarnPoints,
+ createdAt: new Date().toISOString()
+ };
+
+ if (selectedCustId && selectedCustId !== 'manual') {
+ newAppt.customerId = selectedCustId;
+ const c = customers.find(c => c.id === selectedCustId);
+ if (c && c.email) newAppt.customerEmail = c.email;
+ } else {
+ delete newAppt.customerId;
+ }
+ 
+ if (selectedSvcId && selectedSvcId !== 'manual') {
+ newAppt.serviceId = selectedSvcId;
+ } else {
+ delete newAppt.serviceId;
+ }
+
+ if (stfName) newAppt.staffName = stfName;
+ if (selectedStaffEmail) newAppt.staffEmail = selectedStaffEmail;
+ 
+ // Track who created the appointment
+ if (profile) {
+ newAppt.creatorName = profile.name;
+ newAppt.creatorEmail = profile.email;
+ }
+
+ const docRef = await addDoc(collection(db, 'appointments'), newAppt);
+ 
+ if (apptStatus === 'completed') {
+ await processAppointmentPoints({ id: docRef.id, ...newAppt }, true);
+ }
+
+ setStatusMsg({ type: 'success', text: 'Appointment added successfully' });
+ resetForm();
+ } catch (error) {
+ handleFirestoreError(error, OperationType.CREATE, 'appointments');
+ setStatusMsg({ type: 'error', text: 'Failed to add appointment' });
+ } finally {
+ setIsSubmittingAppt(false);
+ }
+ };
+
+ const handleUpdateAppointment = async (e: React.FormEvent) => {
+ e.preventDefault();
+ if (!editingAppointment) return;
+ if (checkOverlap(apptDate, apptTime, apptDuration, selectedStaffEmail, editingAppointment.id)) {
+ setShowOverlapPopup(true);
+ return;
+ }
+ setIsSubmittingAppt(true);
+ try {
+ let cName = manualCustName;
+ let cPhone = manualCustPhone;
+ if (selectedCustId && selectedCustId !== 'manual') {
+ const c = customers.find(c => c.id === selectedCustId);
+ if (c) {
+ cName = c.name;
+ cPhone = c.phone;
+ }
+ }
+
+ let sName = manualSvcName;
+ if (selectedSvcId && selectedSvcId !== 'manual') {
+ const s = services.find(s => s.id === selectedSvcId);
+ if (s) sName = s.name;
+ }
+
+ let stfName = '';
+ if (selectedStaffEmail) {
+ const st = staff.find(s => s.email === selectedStaffEmail);
+ if (st) stfName = st.name;
+ }
+
+ const updatedAppt: any = {
+ customerName: cName,
+ customerPhone: cPhone,
+ serviceName: sName,
+ date: apptDate,
+ time: apptTime,
+ endTime: apptEndTime,
+ duration: apptDuration,
+ status: apptStatus,
+ isHomeService,
+ notes: apptNotes,
+ pointsToRedeem,
+ willEarnPoints
+ };
+
+ if (selectedCustId && selectedCustId !== 'manual') {
+ updatedAppt.customerId = selectedCustId;
+ } else {
+ updatedAppt.customerId = null; // Use null to remove it if needed
+ }
+
+ if (selectedSvcId && selectedSvcId !== 'manual') {
+ updatedAppt.serviceId = selectedSvcId;
+ } else {
+ updatedAppt.serviceId = null;
+ }
+
+ if (stfName) updatedAppt.staffName = stfName;
+ if (selectedStaffEmail) updatedAppt.staffEmail = selectedStaffEmail;
+
+ await updateDoc(doc(db, 'appointments', editingAppointment.id), updatedAppt);
+ 
+ if (apptStatus === 'completed' && editingAppointment.status !== 'completed') {
+ await processAppointmentPoints({ ...editingAppointment, ...updatedAppt }, true);
+ } else if (editingAppointment.status === 'completed' && apptStatus !== 'completed') {
+ await processAppointmentPoints({ ...editingAppointment, ...updatedAppt }, false);
+ }
+
+ setStatusMsg({ type: 'success', text: 'Appointment updated successfully' });
+ resetForm();
+ } catch (error) {
+ handleFirestoreError(error, OperationType.UPDATE, 'appointments');
+ setStatusMsg({ type: 'error', text: 'Failed to update appointment' });
+ } finally {
+ setIsSubmittingAppt(false);
+ }
+ };
+
+ const handleDeleteAppointment = async () => {
+ if (!confirmDeleteAppt) return;
+ try {
+ // If appointment was completed, reverse points before deleting
+ if (confirmDeleteAppt.status === 'completed' && confirmDeleteAppt.pointsProcessed) {
+ await processAppointmentPoints(confirmDeleteAppt, false);
+ }
+ 
+ await deleteDoc(doc(db, 'appointments', confirmDeleteAppt.id));
+ setStatusMsg({ type: 'success', text: 'Appointment deleted' });
+ setConfirmDeleteAppt(null);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.DELETE, `appointments/${confirmDeleteAppt.id}`);
+ setStatusMsg({ type: 'error', text: 'Failed to delete appointment' });
+ }
+ };
+
+ const resetForm = () => {
+ setIsAdding(false);
+ setEditingAppointment(null);
+ setSelectedCustId('');
+ setManualCustName('');
+ setManualCustPhone('');
+ setSelectedSvcId('');
+ setManualSvcName('');
+ setSelectedStaffEmail('');
+ setApptDate(getLocalISODate());
+ setApptTime('10:00');
+ setApptNotes('');
+ setApptStatus('pending');
+ setIsHomeService(false);
+ setPointsToRedeem(0);
+ setWillEarnPoints(0);
+ setApptEndTime('');
+ setApptDuration(30);
+ setFormStep(1);
+ setShowSvcSuggestions(false);
+ setShowCustSuggestions(false);
+ setCustomerSearch('');
+ };
+
+ const startEdit = (appt: Appointment) => {
+ setEditingAppointment(appt);
+ setSelectedCustId(appt.customerId || 'manual');
+ setManualCustName(appt.customerName);
+ setManualCustPhone(appt.customerPhone);
+ setSelectedSvcId(appt.serviceId || 'manual');
+ setManualSvcName(appt.serviceName);
+ setSelectedStaffEmail(appt.staffEmail || '');
+ setApptDate(appt.date);
+ setApptTime(appt.time);
+ setApptNotes(appt.notes || '');
+ setApptStatus(appt.status);
+ setIsHomeService(appt.isHomeService || false);
+ setPointsToRedeem(appt.pointsToRedeem || 0);
+ setWillEarnPoints(appt.willEarnPoints || 0);
+ setApptDuration(appt.duration || 30);
+ setApptEndTime(appt.endTime || '');
+ setFormStep(1);
+ setIsAdding(true);
+ };
+
+ const processAppointmentPoints = async (appt: Appointment, isCompleting: boolean) => {
+ if (!appt.customerId || appt.customerId === 'manual') return;
+ if (appt.pointsProcessed === isCompleting) return; // Already processed or already reversed
+
+ try {
+ const customerRef = doc(db, 'customers', appt.customerId);
+ const customerSnap = await getDoc(customerRef);
+ if (customerSnap.exists()) {
+ const currentPoints = customerSnap.data().points || 0;
+ const earn = appt.willEarnPoints || 0;
+ const redeem = appt.pointsToRedeem || 0;
+ 
+ let newPoints = currentPoints;
+ if (isCompleting) {
+ newPoints = currentPoints + earn - redeem;
+ } else {
+ // Reversing completion
+ newPoints = currentPoints - earn + redeem;
+ }
+ 
+ const finalPoints = Math.max(0, newPoints);
+ await updateDoc(customerRef, { points: finalPoints });
+ await updateDoc(doc(db, 'appointments', appt.id), { pointsProcessed: isCompleting });
+ 
+ // Update user profile points if email is present
+ if (customerSnap.data().email) {
+ const userDocRef = doc(db, 'users', customerSnap.data().email.toLowerCase());
+ const userDocSnap = await getDoc(userDocRef);
+ if (userDocSnap.exists()) {
+ await updateDoc(userDocRef, { points: finalPoints });
+ }
+ }
+ }
+ } catch (error) {
+ console.error("Error processing points:", error);
+ }
+ };
+
+ const handleQuickStatusUpdate = async (apptId: string, newStatus: Appointment['status']) => {
+ try {
+ const appt = appointments.find(a => a.id === apptId);
+ if (!appt) return;
+
+ await updateDoc(doc(db, 'appointments', apptId), { status: newStatus });
+ 
+ if (newStatus === 'completed') {
+ await processAppointmentPoints(appt, true);
+ } else if (appt.status === 'completed') {
+ await processAppointmentPoints(appt, false);
+ }
+
+ setStatusMsg({ type: 'success', text: `Status updated to ${newStatus}` });
+ } catch (error) {
+ handleFirestoreError(error, OperationType.UPDATE, 'appointments');
+ setStatusMsg({ type: 'error', text: 'Failed to update status' });
+ }
+ };
+
+ const filteredAppts = appointments
+ .filter(a => {
+ const matchesDate = showAllDates || a.date === filterDate;
+ const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+ const matchesSearch = !apptSearch || 
+ a.customerName.toLowerCase().includes(apptSearch.toLowerCase()) || 
+ a.customerPhone.includes(apptSearch) ||
+ a.serviceName.toLowerCase().includes(apptSearch.toLowerCase());
+ const matchesUser = profile?.role !== 'customer' || a.creatorEmail === profile?.email;
+ const matchesStaff = selectedStaffFilter === 'all' || a.staffEmail === selectedStaffFilter;
+ return matchesDate && matchesStatus && matchesSearch && matchesUser && matchesStaff;
+ })
+ .sort((a, b) => {
+ if (sortBy === 'date') {
+ const dateA = `${a.date}T${a.time}`;
+ const dateB = `${b.date}T${b.time}`;
+ return sortOrder === 'asc' ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+ } else {
+ // Sort by status priority or alphabetically
+ const statusPriority: Record<string, number> = {
+ 'confirmed': 1,
+ 'pending': 2,
+ 'completed': 3,
+ 'cancelled': 4
+ };
+ const prioA = statusPriority[a.status] || 99;
+ const prioB = statusPriority[b.status] || 99;
+ return sortOrder === 'asc' ? prioA - prioB : prioB - prioA;
+ }
+ });
+
+ const calendarEvents = appointments
+ .filter(a => {
+ const matchesUser = profile?.role !== 'customer' || a.creatorEmail === profile?.email;
+ const matchesStaff = selectedStaffFilter === 'all' || a.staffEmail === selectedStaffFilter;
+ const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+ const matchesSearch = !apptSearch.trim() || 
+ a.customerName.toLowerCase().includes(apptSearch.toLowerCase()) ||
+ a.customerPhone.includes(apptSearch) ||
+ a.serviceName.toLowerCase().includes(apptSearch.toLowerCase());
+ return matchesUser && matchesStaff && matchesStatus && matchesSearch;
+ })
+ .map(appt => {
+ try {
+ if (!appt.date || !appt.time) return null;
+ const dateParts = appt.date.split('-');
+ const timeParts = appt.time.split(':');
+ 
+ if (dateParts.length !== 3 || timeParts.length < 2) return null;
+ 
+ const [year, month, day] = dateParts.map(Number);
+ const [hour, minute] = timeParts.map(Number);
+ 
+ if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute)) return null;
+ 
+ const start = new Date(year, month - 1, day, hour, minute);
+ if (isNaN(start.getTime())) return null;
+ 
+ let end: Date;
+ if (appt.endTime) {
+ const endTimeParts = appt.endTime.split(':');
+ if (endTimeParts.length >= 2) {
+ const [endHour, endMinute] = endTimeParts.map(Number);
+ if (!isNaN(endHour) && !isNaN(endMinute)) {
+ end = new Date(year, month - 1, day, endHour, endMinute);
+ } else {
+ end = new Date(start.getTime() + (appt.duration || 60) * 60000);
+ }
+ } else {
+ end = new Date(start.getTime() + (appt.duration || 60) * 60000);
+ }
+ } else {
+ end = new Date(start.getTime() + (appt.duration || 60) * 60000);
+ }
+ 
+ if (isNaN(end.getTime())) {
+ end = new Date(start.getTime() + 60 * 60 * 1000);
+ }
+
+ return {
+ id: appt.id,
+ title: `${appt.customerName} - ${appt.serviceName}`,
+ start,
+ end,
+ resource: appt,
+ allDay: false
+ };
+ } catch (e) {
+ console.error("Error parsing appointment for calendar:", e, appt);
+ return null;
+ }
+ })
+ .filter((e): e is any => e !== null);
+
+ const handleSelectEvent = (event: any) => {
+ const appt = event.resource;
+ if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
+ startEdit(appt);
+ }
+ };
+
+ const handleSelectSlot = ({ start }: { start: Date }) => {
+ resetForm();
+ setApptDate(format(start, 'yyyy-MM-dd'));
+ setApptTime(format(start, 'HH:mm'));
+ setIsAdding(true);
+ };
+
+ const eventPropGetter = (event: any) => {
+ const appt = event.resource;
+ let backgroundColor = 'rgba(212, 175, 55, 0.15)';
+ let borderColor = '#d4af37';
+ let textColor = '#d4af37';
+
+ if (appt.status === 'pending') {
+ backgroundColor = 'rgba(234, 179, 8, 0.18)';
+ borderColor = '#eab308';
+ textColor = '#ca8a04';
+ } else if (appt.status === 'confirmed') {
+ backgroundColor = 'rgba(37, 99, 235, 0.18)';
+ borderColor = '#2563eb';
+ textColor = '#1d4ed8';
+ } else if (appt.status === 'completed') {
+ backgroundColor = 'rgba(22, 163, 74, 0.18)';
+ borderColor = '#16a34a';
+ textColor = '#15803d';
+ } else if (appt.status === 'cancelled') {
+ backgroundColor = 'rgba(220, 38, 38, 0.18)';
+ borderColor = '#dc2626';
+ textColor = '#b91c1c';
+ }
+
+ return {
+ style: {
+ backgroundColor,
+ borderLeft: `4px solid ${borderColor}`,
+ borderRadius: '10px',
+ color: textColor,
+ borderTop: '1px solid rgba(0,0,0,0.05)',
+ borderRight: '1px solid rgba(0,0,0,0.05)',
+ borderBottom: '1px solid rgba(0,0,0,0.05)',
+ boxShadow: '0 2px 8px -2px rgba(0,0,0,0.08)',
+ display: 'block',
+ overflow: 'hidden'
+ }
+ };
+ };
+
+ const CustomCalendarEvent = ({ event }: { event: any }) => {
+ const appt = event.resource;
+ const isMonthView = calendarView === 'month';
+
+ const statusBg = 
+ appt.status === 'confirmed' ? 'bg-blue-500' :
+ appt.status === 'completed' ? 'bg-emerald-500' :
+ appt.status === 'cancelled' ? 'bg-rose-500' : 'bg-amber-500';
+
+ if (isMonthView) {
+ return (
+ <div className="flex items-center gap-1 px-1 py-0.5 truncate text-[10px] font-bold">
+ <span className={cn("w-2 h-2 rounded-full shrink-0 ", statusBg)} />
+ <span className="font-mono text-[9px] opacity-75 shrink-0">{format(event.start, 'h:mm a')}</span>
+ <span className="truncate">{appt.serviceName || appt.customerName}</span>
+ </div>
+ );
+ }
+
+ return (
+ <div className="p-1.5 h-full flex flex-col justify-between overflow-hidden text-[11px] font-medium leading-tight">
+ <div>
+ <div className="flex items-center justify-between gap-1 mb-0.5">
+ <span className="font-extrabold truncate text-slate-900 dark:text-slate-100/90">{appt.serviceName}</span>
+ <span className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-md text-white shrink-0 ", statusBg)}>
+ {appt.status}
+ </span>
+ </div>
+ <div className="text-[10px] opacity-90 truncate font-bold">
+ {appt.customerName}
+ </div>
+ {appt.staffName && (
+ <div className="text-[9px] opacity-75 truncate italic">
+ Staff: {appt.staffName}
+ </div>
+ )}
+ </div>
+ <div className="text-[9px] font-mono opacity-80 mt-1 font-semibold">
+ {format(event.start, 'h:mm a')} - {format(event.end, 'h:mm a')}
+ </div>
+ </div>
+ );
+ };
+
+ const CustomCalendarToolbar = (toolbar: any) => {
+ const goToBack = () => {
+ const prevDate = new Date(toolbar.date);
+ if (toolbar.view === 'month') prevDate.setMonth(prevDate.getMonth() - 1);
+ else if (toolbar.view === 'week') prevDate.setDate(prevDate.getDate() - 7);
+ else if (toolbar.view === 'day') prevDate.setDate(prevDate.getDate() - 1);
+ 
+ toolbar.onNavigate('PREV');
+ setCalendarDate(prevDate);
+ setFilterDate(format(prevDate, 'yyyy-MM-dd'));
+ };
+
+ const goToNext = () => {
+ const nextDate = new Date(toolbar.date);
+ if (toolbar.view === 'month') nextDate.setMonth(nextDate.getMonth() + 1);
+ else if (toolbar.view === 'week') nextDate.setDate(nextDate.getDate() + 7);
+ else if (toolbar.view === 'day') nextDate.setDate(nextDate.getDate() + 1);
+
+ toolbar.onNavigate('NEXT');
+ setCalendarDate(nextDate);
+ setFilterDate(format(nextDate, 'yyyy-MM-dd'));
+ };
+
+ const goToToday = () => {
+ const today = new Date();
+ toolbar.onNavigate('TODAY');
+ setCalendarDate(today);
+ setFilterDate(format(today, 'yyyy-MM-dd'));
+ };
+
+ return (
+ <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-muted/30 p-2.5 sm:p-3 rounded-2xl shadow-xs shrink-0">
+ <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+ <div className="flex items-center gap-1.5">
+ <button
+ type="button"
+ onClick={goToBack}
+ className="p-2 hover:bg-muted rounded-xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-95 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] shadow-xs"
+ title="Previous"
+ >
+ <ChevronLeft size={18} />
+ </button>
+ <button
+ type="button"
+ onClick={goToToday}
+ className="px-3.5 py-2 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 hover:bg-amber-200/50 dark:bg-amber-900/40 rounded-xl font-black text-xs uppercase tracking-wider transition-all -primary/20 active:scale-95 shadow-xs"
+ >
+ Today
+ </button>
+ <button
+ type="button"
+ onClick={goToNext}
+ className="p-2 hover:bg-muted rounded-xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-95 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] shadow-xs"
+ title="Next"
+ >
+ <ChevronRight size={18} />
+ </button>
+ </div>
+
+ <div className="sm:hidden text-xs font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase">
+ {toolbar.label}
+ </div>
+ </div>
+
+ <div className="hidden sm:block text-sm md:text-base font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase">
+ {toolbar.label}
+ </div>
+
+ <div className="flex bg-muted p-1 rounded-xl w-full sm:w-auto justify-center">
+ {(['month', 'week', 'day'] as const).map((view) => (
+ <button
+ key={view}
+ type="button"
+ onClick={() => {
+ toolbar.onView(view);
+ setCalendarView(view);
+ }}
+ className={cn(
+ "flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
+ toolbar.view === view 
+ ? "bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20 scale-[1.02]" 
+ : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100"
+ )}
+ >
+ {view}
+ </button>
+ ))}
+ </div>
+ </div>
+ );
+ };
+
+ return (
+ <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
+ <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+ <div className="flex flex-col gap-1">
+ <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 leading-none">
+ {isCustomer ? 'My Appointments' : 'Customer Appointments'}
+ </h1>
+ {isCustomer && profile.points !== undefined && (
+ <div className="flex items-center gap-2 mt-1">
+ <span className="text-xs font-bold bg-amber-200/50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 px-3 py-1 rounded-full -primary/30 ">
+ {profile.points.toLocaleString()} Points Available
+ </span>
+ </div>
+ )}
+ </div>
+ 
+ <div className="flex flex-wrap items-center gap-4">
+ <div className="flex bg-muted p-1 rounded-xl ">
+ <button
+ onClick={() => setViewMode('list')}
+ className={cn(
+ "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
+ viewMode === 'list' 
+ ? "bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20" 
+ : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100"
+ )}
+ >
+ List
+ </button>
+ <button
+ onClick={() => setViewMode('calendar')}
+ className={cn(
+ "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
+ viewMode === 'calendar' 
+ ? "bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20" 
+ : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100"
+ )}
+ >
+ <CalendarIcon size={16} />
+ Calendar
+ </button>
+ </div>
+
+ <button
+ onClick={() => { resetForm(); setIsAdding(true); }}
+ className="bg-primary text-white [.midnight_&]:text-slate-200 px-4 md:px-6 py-3 rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-primary/20 font-bold group"
+ >
+ <div className="bg-black/10 p-1 rounded-full group-hover:bg-black/20 transition-colors">
+ <Plus size={20} />
+ </div>
+ <div className="text-left leading-none">
+ <div className="text-[9px] uppercase tracking-widest font-bold opacity-70 mb-0.5">Book</div>
+ <div className="text-sm tracking-tight">Appointment</div>
+ </div>
+ </button>
+ </div>
+ </div>
+
+ {statusMsg && (
+ <motion.div 
+ initial={{ opacity: 0, y: -20 }}
+ animate={{ opacity: 1, y: 0 }}
+ className={cn(
+ "p-4 rounded-2xl flex items-center justify-between ",
+ statusMsg.type === 'success' ? "bg-green-500/10 text-green-600 -green-500/20" : "bg-red-500/10 text-red-600 -red-500/20"
+ )}
+ >
+ <div className="flex items-center gap-3">
+ {statusMsg.type === 'success' ? <Check size={20} /> : <X size={20} />}
+ <span className="font-bold">{statusMsg.text}</span>
+ </div>
+ <button onClick={() => setStatusMsg(null)} className="p-1 hover:bg-black/5 rounded-full"><X size={18} /></button>
+ </motion.div>
+ )}
+
+ {activeTab === 'appointments' ? (
+ <div className="space-y-4">
+ {/* Filter Card */}
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
+ <div className="p-4 relative group">
+ <input
+ type="text"
+ placeholder="Search customer or service..."
+ value={apptSearch}
+ onChange={(e) => setApptSearch(e.target.value)}
+ className="w-full p-2 pl-10 -none outline-none bg-transparent text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm transition-all placeholder:text-slate-700 dark:text-slate-300 [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300/50"
+ />
+ <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" size={16} />
+ </div>
+ <div className="flex flex-col md:flex-row md:items-center">
+ <CustomDatePicker 
+ label="FILTER DATE" 
+ value={filterDate} 
+ onChange={(val) => {
+ setFilterDate(val);
+ setShowAllDates(false);
+ if (val) {
+ const [y, m, d] = val.split('-').map(Number);
+ if (y && m && d) setCalendarDate(new Date(y, m - 1, d));
+ }
+ }}
+ disabled={showAllDates}
+ className={cn(" md:-0 md: flex-1", showAllDates && "opacity-50")}
+ />
+ {profile?.role !== 'customer' && (
+ <div className="flex flex-col p-4 md:-0 md: flex-1">
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <UserIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" /> STAFF
+ </label>
+ <CustomSelect
+ value={selectedStaffFilter} 
+ onChange={setSelectedStaffFilter}
+ placeholder="All Staff"
+ options={[
+ { value: 'all', label: 'All Staff' },
+ ...staff.filter(s => s.role !== 'super_admin').map(s => ({ value: s.email, label: s.name }))
+ ]}
+ />
+ </div>
+ )}
+ <div className="flex flex-col p-4 md:-0 md: flex-1">
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <Activity size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" /> STATUS
+ </label>
+ <CustomSelect
+ value={statusFilter} 
+ onChange={setStatusFilter}
+ placeholder="All Status"
+ options={[
+ { value: 'all', label: 'All Status' },
+ { value: 'pending', label: 'Pending' },
+ { value: 'confirmed', label: 'Confirmed' },
+ { value: 'completed', label: 'Completed' },
+ { value: 'cancelled', label: 'Cancelled' }
+ ]}
+ />
+ </div>
+ <div className="flex flex-col p-4 flex-1">
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
+ <Settings size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" /> OPTIONS
+ </label>
+ <div className="flex items-center gap-2">
+ <button
+ onClick={() => setShowAllDates(!showAllDates)}
+ className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20" : "bg-muted text-slate-700 dark:text-slate-300 hover:bg-muted/80 hover:text-slate-900 dark:text-slate-100")}
+ >
+ {showAllDates ? 'All Dates' : 'Show All'}
+ </button>
+ <button
+ onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
+ className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-slate-700 dark:text-slate-300 hover:bg-muted/80 hover:text-slate-900 dark:text-slate-100"
+ >
+ Sort: {sortBy}
+ </button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div className="p-0">
+ {loadingAppts ? (
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+ {Array.from({ length: 6 }).map((_, i) => (
+ <div key={i} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 transition-all group relative overflow-hidden animate-pulse h-[160px]">
+ <div className="flex justify-between items-start mb-3 md:mb-6">
+ <div className="w-16 h-10 bg-amber-200/50 dark:bg-amber-900/40 rounded-xl"></div>
+ <div className="w-20 h-6 bg-amber-100/50 dark:bg-amber-900/30 rounded-full"></div>
+ </div>
+ <div className="space-y-3">
+ <div className="w-1/2 h-5 bg-amber-200/50 dark:bg-amber-900/40 rounded-md"></div>
+ <div className="w-3/4 h-4 bg-amber-100/50 dark:bg-amber-900/30 rounded-md"></div>
+ </div>
+ </div>
+ ))}
+ </div>
+ ) : viewMode === 'calendar' ? (
+ <div className="h-[750px] md:h-[800px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-3 sm:p-4 flex flex-col overflow-hidden w-full max-w-full">
+ <style>{`
+ .rbc-calendar { font-family: inherit; font-size: 12px; display: flex !important; flex-direction: column !important; height: 100% !important; width: 100% !important; min-height: 0 !important; overflow: hidden !important; }
+ .rbc-month-view, .rbc-time-view { : 1px solid var(--) !important; -radius: 20px; overflow: hidden; background: var(--card); display: flex !important; flex-direction: column !important; flex: 1 1 0% !important; min-height: 0 !important; width: 100% !important; }
+ .rbc-header { padding: 6px 2px !important; font-weight: 800; text-transform: uppercase; font-size: 10px; sm:font-size: 11px; letter-spacing: 0.02em; color: var(--muted-foreground); -bottom: 2px solid var(--) !important; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+ .rbc-header + .rbc-header { -left: 1px solid var(--) !important; }
+ .rbc-today { background-color: rgba(212, 175, 55, 0.08) !important; }
+ .rbc-off-range-bg { background-color: rgba(0, 0, 0, 0.04) !important; }
+ .dark .rbc-off-range-bg { background-color: rgba(255, 255, 255, 0.03) !important; }
+ .rbc-date-cell { padding: 4px 8px !important; font-weight: 800; font-size: 11px; text-align: right; }
+ .rbc-month-row { -top: 1px solid var(--) !important; flex: 1 1 0% !important; min-height: 0 !important; overflow: hidden !important; }
+ .rbc-row-content { height: 100% !important; }
+ .rbc-day-bg + .rbc-day-bg { -left: 1px solid var(--) !important; }
+ .rbc-time-header { -bottom: 1px solid var(--) !important; background: rgba(0,0,0,0.02); }
+ .dark .rbc-time-header { background: rgba(255,255,255,0.02); }
+ .rbc-time-header-content { -left: 1px solid var(--) !important; }
+ .rbc-time-content { -top: 1px solid var(--) !important; flex: 1 1 0% !important; overflow-y: auto !important; min-height: 0 !important; }
+ .rbc-time-content > * + * > * { -left: 1px solid var(--) !important; }
+ .rbc-timeslot-group { -bottom: 1px solid var(--) !important; min-height: 44px; }
+ .rbc-time-gutter .rbc-label { font-size: 10px; font-weight: 700; color: var(--muted-foreground); text-transform: uppercase; padding: 0 6px; }
+ .rbc-allday-cell { display: none !important; }
+ .rbc-current-time-indicator { background-color: var(--primary) !important; height: 2px !important; }
+ .rbc-show-more { color: var(--primary); font-weight: 800; font-size: 10px; text-transform: uppercase; padding: 2px 4px; }
+ .rbc-event { padding: 0 !important; background: transparent !important; }
+ .rbc-event:focus { outline: none !important; }
+ .rbc-day-slot .rbc-time-slot { -top: 1px dashed var(--) !important; }
+ `}</style>
+ <BigCalendar
+ localizer={localizer}
+ events={calendarEvents}
+ startAccessor="start"
+ endAccessor="end"
+ style={{ height: '100%' }}
+ onSelectEvent={handleSelectEvent}
+ onSelectSlot={handleSelectSlot}
+ selectable
+ views={['month', 'week', 'day']}
+ view={calendarView}
+ onView={(v) => setCalendarView(v)}
+ date={calendarDate}
+ onNavigate={(d) => {
+ setCalendarDate(d);
+ setFilterDate(format(d, 'yyyy-MM-dd'));
+ }}
+ min={new Date(1970, 0, 1, 7, 0, 0)}
+ max={new Date(1970, 0, 1, 21, 0, 0)}
+ step={15}
+ timeslots={2}
+ eventPropGetter={eventPropGetter}
+ components={{
+ toolbar: CustomCalendarToolbar,
+ event: CustomCalendarEvent
+ }}
+ />
+ </div>
+ ) : filteredAppts.length === 0 ? (
+ <div className="text-center py-32 bg-muted/5 rounded-[3rem] -2 -dashed ">
+ <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-6">
+ <CalendarIcon className="text-slate-700 dark:text-slate-300/30" size={48} />
+ </div>
+ <p className="text-slate-700 dark:text-slate-300 text-lg font-bold italic">No appointments found matching your criteria.</p>
+ <button 
+ onClick={() => { resetForm(); setIsAdding(true); }}
+ className="mt-6 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
+ >
+ <Plus size={16} />
+ Book New Appointment
+ </button>
+ </div>
+ ) : (
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+ {filteredAppts.map((appt) => {
+ const customer = customers.find(c => c.id === appt.customerId);
+ return (
+ <motion.div 
+ layout
+ key={appt.id} 
+ onClick={() => {
+ if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
+ startEdit(appt);
+ }
+ }}
+ className={cn(
+ "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 transition-all group relative overflow-hidden",
+ (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) ? "hover: hover:-primary/30 cursor-pointer" : "opacity-90"
+ )}
+ >
+ <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/50 dark:bg-amber-900/20 rounded-bl-[3rem] -mr-8 -mt-8 transition-all group-hover:scale-110 group-hover:bg-amber-100/50 dark:bg-amber-900/30"></div>
+ 
+ <div className="flex justify-between items-start relative z-10 mb-3 md:mb-6">
+ <div className="flex flex-col">
+ <div className="bg-amber-50/50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 px-4 py-2 rounded-xl font-black text-xl tracking-tighter -primary/10">
+ {appt.time}
+ </div>
+ <div className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] mt-1.5 ml-1">
+ {formatDisplayDate(appt.date)}
+ </div>
+ </div>
+ <div className={cn(
+ "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all",
+ appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 -yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+ appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 -blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+ appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 -transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
+ appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 -red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+ )}>
+ {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
+ {appt.status === 'confirmed' && <Check size={12} strokeWidth={3} />}
+ {appt.status === 'completed' && <Check size={12} strokeWidth={3} />}
+ {appt.status === 'cancelled' && <X size={12} strokeWidth={3} />}
+ {appt.status}
+ </div>
+ </div>
+
+ <div className="space-y-3 relative z-10">
+ <div className="flex justify-between items-start">
+ <div className="flex-1">
+ <h3 className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-xl group-hover:text-amber-600 dark:text-amber-400 [.midnight_&]:group-hover:text-amber-400 transition-colors truncate tracking-tight leading-tight">{appt.customerName}</h3>
+ <div className="flex flex-wrap items-center gap-3 text-slate-700 dark:text-slate-300 text-xs mt-3 font-bold">
+ <div className="flex items-center gap-1.5 bg-muted/5 px-2.5 py-1 rounded-lg ">
+ <Phone size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <span className="text-xs tracking-tight">{appt.customerPhone}</span>
+ </div>
+ {customer && (
+ <span className="bg-amber-50/50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 px-3 py-1 rounded-full text-[9px] font-black -primary/10 tracking-widest ">
+ {customer.points} PTS
+ </span>
+ )}
+ </div>
+ </div>
+ <div className="flex flex-col gap-2">
+ {appt.isHomeService && (
+ <div className="p-2.5 bg-green-600 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 rounded-xl shadow-green-900/10 transition-transform group-hover:scale-110" title="At Home Service">
+ <Car size={18} strokeWidth={2.5} />
+ </div>
+ )}
+ {profile?.role !== 'customer' && (
+ <a 
+ href={`https://wa.me/${appt.customerPhone.replace(/\\D/g, '')}?text=${encodeURIComponent('Hello ' + appt.customerName + ',\
 \
 Your appointment for ' + appt.serviceName + ' has been ' + appt.status + ' for ' + formatDisplayDate(appt.date) + ' at ' + appt.time + '.\
 \
 Thank you for choosing Nail Pro!')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="p-2.5 bg-green-500/5 text-green-600 hover:bg-green-600 hover:text-foreground [.midnight_&]:hover:text-slate-200 rounded-xl transition-all border border-green-500/10 shadow-sm active:scale-90"
-                                title="WhatsApp"
-                              >
-                                <MessageCircle size={16} strokeWidth={2.5} />
-                              </a>
-                            )}
-                          </div>
-                        </div>
+ target="_blank"
+ rel="noopener noreferrer"
+ onClick={(e) => e.stopPropagation()}
+ className="p-2.5 bg-green-500/5 text-green-600 hover:bg-green-600 hover:text-slate-900 dark:text-slate-100 [.midnight_&]:hover:text-slate-200 rounded-xl transition-all -green-500/10 active:scale-90"
+ title="WhatsApp"
+ >
+ <MessageCircle size={16} strokeWidth={2.5} />
+ </a>
+ )}
+ </div>
+ </div>
 
-                        <div className="bg-muted/5 rounded-2xl p-4 space-y-3 border border-border shadow-inner group-hover:bg-muted/10 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2.5 bg-primary/5 rounded-xl text-primary [.midnight_&]:text-amber-400 shadow-sm border border-primary/5">
-                                <Briefcase size={18} strokeWidth={2.5} />
-                              </div>
-                              <div className="flex flex-col">
-                                <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Service</span>
-                                <span className="text-lg font-black text-foreground [.midnight_&]:text-slate-200 tracking-tight">{appt.serviceName}</span>
-                              </div>
-                            </div>
-                            {appt.willEarnPoints && appt.willEarnPoints > 0 && (
-                              <span className="text-[9px] font-black text-green-600 bg-green-500/5 px-2.5 py-1 rounded-lg border border-green-500/10 shadow-sm">+{appt.willEarnPoints} PTS</span>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center justify-between pt-2 border-t border-border/30">
-                            {appt.staffName ? (
-                              <div className="flex items-center gap-3">
-                                <div className="p-2.5 bg-muted/5 rounded-xl text-muted-foreground shadow-sm border border-border">
-                                  <UserIcon size={18} strokeWidth={2.5} />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Staff</span>
-                                  <span className="text-xs text-foreground [.midnight_&]:text-slate-200 font-bold">{appt.staffName}</span>
-                                </div>
-                              </div>
-                            ) : <div />}
-                            {appt.pointsToRedeem && appt.pointsToRedeem > 0 && (
-                              <span className="text-[9px] font-black text-red-600 bg-red-500/5 px-2.5 py-1 rounded-lg border border-red-500/10 shadow-sm">-{appt.pointsToRedeem} PTS</span>
-                            )}
-                          </div>
-                        </div>
+ <div className="bg-muted/5 rounded-2xl p-4 space-y-3 group-hover:bg-muted/10 transition-colors">
+ <div className="flex items-center justify-between">
+ <div className="flex items-center gap-3">
+ <div className="p-2.5 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 -primary/5">
+ <Briefcase size={18} strokeWidth={2.5} />
+ </div>
+ <div className="flex flex-col">
+ <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Service</span>
+ <span className="text-lg font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 tracking-tight">{appt.serviceName}</span>
+ </div>
+ </div>
+ {appt.willEarnPoints && appt.willEarnPoints > 0 && (
+ <span className="text-[9px] font-black text-green-600 bg-green-500/5 px-2.5 py-1 rounded-lg -green-500/10 ">+{appt.willEarnPoints} PTS</span>
+ )}
+ </div>
+ 
+ <div className="flex items-center justify-between pt-2 ">
+ {appt.staffName ? (
+ <div className="flex items-center gap-3">
+ <div className="p-2.5 bg-muted/5 rounded-xl text-slate-700 dark:text-slate-300 ">
+ <UserIcon size={18} strokeWidth={2.5} />
+ </div>
+ <div className="flex flex-col">
+ <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Staff</span>
+ <span className="text-xs text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold">{appt.staffName}</span>
+ </div>
+ </div>
+ ) : <div />}
+ {appt.pointsToRedeem && appt.pointsToRedeem > 0 && (
+ <span className="text-[9px] font-black text-red-600 bg-red-500/5 px-2.5 py-1 rounded-lg -red-500/10 ">-{appt.pointsToRedeem} PTS</span>
+ )}
+ </div>
+ </div>
 
-                        {appt.notes && (
-                          <div className="text-xs text-muted-foreground italic line-clamp-2 bg-primary/5 p-3 rounded-xl border border-primary/5 font-medium leading-relaxed shadow-inner">
-                            <span className="text-primary [.midnight_&]:text-amber-400 font-black not-italic mr-1.5">Notes:</span>
-                            "{appt.notes}"
-                          </div>
-                        )}
+ {appt.notes && (
+ <div className="text-xs text-slate-700 dark:text-slate-300 italic line-clamp-2 bg-amber-50/50 dark:bg-amber-900/20 p-3 rounded-xl -primary/5 font-medium leading-relaxed ">
+ <span className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black not-italic mr-1.5">Notes:</span>
+ "{appt.notes}"
+ </div>
+ )}
 
-                        <div className="pt-4 flex items-center justify-between border-t border-border">
-                          <div className="flex flex-col">
-                            <span className="text-[8px] text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] font-black">Booked By</span>
-                            <span className="text-[9px] font-bold text-foreground [.midnight_&]:text-slate-200">{appt.creatorName || 'SYSTEM'}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            {profile?.role !== 'customer' && (
-                              <div className="relative">
-                                <CustomSelect
-                                  disabled={!isAdmin && (appt.status === 'completed' || appt.status === 'cancelled')}
-                                  value={appt.status}
-                                  onChange={(val) => handleQuickStatusUpdate(appt.id, val as any)}
-                                  options={[
-                                    { value: 'pending', label: 'Pending' },
-                                    { value: 'confirmed', label: 'Confirmed' },
-                                    { value: 'completed', label: 'Completed' },
-                                    { value: 'cancelled', label: 'Cancelled' }
-                                  ]}
-                                  buttonClassName={cn(
-                                    "text-[9px] font-black uppercase tracking-widest border rounded-xl px-4 py-2 pr-8 ",
-                                    appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600  border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
-                                    appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600  border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
-                                    appt.status === 'completed' && "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600  border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
-                                    appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600  border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
-                                  )}
-                                />
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={12} />
-                              </div>
-                            )}
-                            {(isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) && (
-                              <div className="flex gap-1.5">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); startEdit(appt); }}
-                                  className="p-2.5 bg-muted/5 text-white hover:bg-primary hover:text-white rounded-xl transition-all border border-border shadow-sm active:scale-90"
-                                  title="Edit"
-                                >
-                                  <Pencil size={16} strokeWidth={2.5} />
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setConfirmDeleteAppt(appt); }}
-                                  className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-foreground [.midnight_&]:hover:text-slate-200 rounded-xl transition-all border border-red-500/10 shadow-sm active:scale-90"
-                                  title="Delete"
-                                >
-                                  <Trash2 size={16} strokeWidth={2.5} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-            </div>
-          )}
-        </div>
-      </div>
-    ) : (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-card rounded-3xl border border-border p-8 shadow-sm transition-colors duration-300">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h2 className="text-xl font-bold text-foreground [.midnight_&]:text-slate-200">Points Summary</h2>
-                <p className="text-sm text-muted-foreground">Track your loyalty rewards and redemptions.</p>
-              </div>
-              <div className="text-right">
-                <div className="text-4xl font-black text-primary [.midnight_&]:text-amber-400 tracking-tighter">{profile?.points?.toLocaleString() || 0}</div>
-                <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</div>
-              </div>
-            </div>
+ <div className="pt-4 flex items-center justify-between ">
+ <div className="flex flex-col">
+ <span className="text-[8px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] font-black">Booked By</span>
+ <span className="text-[9px] font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">{appt.creatorName || 'SYSTEM'}</span>
+ </div>
+ <div className="flex gap-2">
+ {profile?.role !== 'customer' && (
+ <div className="relative">
+ <CustomSelect
+ disabled={!isAdmin && (appt.status === 'completed' || appt.status === 'cancelled')}
+ value={appt.status}
+ onChange={(val) => handleQuickStatusUpdate(appt.id, val as any)}
+ options={[
+ { value: 'pending', label: 'Pending' },
+ { value: 'confirmed', label: 'Confirmed' },
+ { value: 'completed', label: 'Completed' },
+ { value: 'cancelled', label: 'Cancelled' }
+ ]}
+ buttonClassName={cn(
+ "text-[9px] font-black uppercase tracking-widest rounded-xl px-4 py-2 pr-8 ",
+ appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 -yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+ appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 -blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+ appt.status === 'completed' && "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600 -green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
+ appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 -red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+ )}
+ />
+ <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 pointer-events-none" size={12} />
+ </div>
+ )}
+ {(isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) && (
+ <div className="flex gap-1.5">
+ <button
+ onClick={(e) => { e.stopPropagation(); startEdit(appt); }}
+ className="p-2.5 bg-muted/5 text-white hover:bg-primary hover:text-white rounded-xl transition-all active:scale-90"
+ title="Edit"
+ >
+ <Pencil size={16} strokeWidth={2.5} />
+ </button>
+ <button
+ onClick={(e) => { e.stopPropagation(); setConfirmDeleteAppt(appt); }}
+ className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-slate-900 dark:text-slate-100 [.midnight_&]:hover:text-slate-200 rounded-xl transition-all -red-500/10 active:scale-90"
+ title="Delete"
+ >
+ <Trash2 size={16} strokeWidth={2.5} />
+ </button>
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ </motion.div>
+ );
+ })}
+ </div>
+ )}
+ </div>
+ </div>
+ ) : (
+ <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 transition-colors duration-300">
+ <div className="flex items-center justify-between mb-4 md:mb-8">
+ <div>
+ <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">Points Summary</h2>
+ <p className="text-sm text-slate-700 dark:text-slate-300">Track your loyalty rewards and redemptions.</p>
+ </div>
+ <div className="text-right">
+ <div className="text-4xl font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 tracking-tighter">{profile?.points?.toLocaleString() || 0}</div>
+ <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</div>
+ </div>
+ </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-              <div className="bg-green-500/10 p-5 rounded-2xl border border-green-500/20">
-                <div className="text-[10px] font-bold text-green-600  uppercase tracking-widest mb-1">Total Earned</div>
-                <div className="text-2xl font-bold text-green-700 ">
-                  +{
-                    sales.filter(s => s.customerPhone === profile?.phone).reduce((sum, s) => sum + (s.pointsEarned || 0), 0) +
-                    appointments.filter(a => a.customerPhone === profile?.phone && a.pointsProcessed).reduce((sum, a) => sum + (a.willEarnPoints || 0), 0)
-                  }
-                </div>
-              </div>
-              <div className="bg-red-500/10 p-5 rounded-2xl border border-red-500/20">
-                <div className="text-[10px] font-bold text-red-600  uppercase tracking-widest mb-1">Total Redeemed</div>
-                <div className="text-2xl font-bold text-red-700 ">
-                  -{
-                    sales.filter(s => s.customerPhone === profile?.phone).reduce((sum, s) => sum + (s.pointsRedeemed || 0), 0) +
-                    appointments.filter(a => a.customerPhone === profile?.phone && a.pointsProcessed).reduce((sum, a) => sum + (a.pointsToRedeem || 0), 0)
-                  }
-                </div>
-              </div>
-              <div className="bg-primary/10 p-5 rounded-2xl border border-border">
-                <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest mb-1">Next Reward</div>
-                <div className="text-2xl font-bold text-primary [.midnight_&]:text-amber-400">500 pts</div>
-              </div>
-            </div>
+ <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 md:mb-8">
+ <div className="bg-green-500/10 p-4 rounded-2xl -green-500/20">
+ <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Total Earned</div>
+ <div className="text-2xl font-bold text-green-700 ">
+ +{
+ sales.filter(s => s.customerPhone === profile?.phone).reduce((sum, s) => sum + (s.pointsEarned || 0), 0) +
+ appointments.filter(a => a.customerPhone === profile?.phone && a.pointsProcessed).reduce((sum, a) => sum + (a.willEarnPoints || 0), 0)
+ }
+ </div>
+ </div>
+ <div className="bg-red-500/10 p-4 rounded-2xl -red-500/20">
+ <div className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Total Redeemed</div>
+ <div className="text-2xl font-bold text-red-700 ">
+ -{
+ sales.filter(s => s.customerPhone === profile?.phone).reduce((sum, s) => sum + (s.pointsRedeemed || 0), 0) +
+ appointments.filter(a => a.customerPhone === profile?.phone && a.pointsProcessed).reduce((sum, a) => sum + (a.pointsToRedeem || 0), 0)
+ }
+ </div>
+ </div>
+ <div className="bg-amber-100/50 dark:bg-amber-900/30 p-4 rounded-2xl ">
+ <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest mb-1">Next Reward</div>
+ <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400">500 pts</div>
+ </div>
+ </div>
 
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold text-foreground [.midnight_&]:text-slate-200 uppercase tracking-widest flex items-center gap-2">
-                <HistoryIcon size={16} className="text-primary [.midnight_&]:text-amber-400" />
-                Recent Activity
-              </h3>
-              <div className="overflow-hidden rounded-2xl border border-border">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-muted/10">
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date</th>
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Activity</th>
-                      <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Points</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {(() => {
-                      const history = [
-                        ...sales.filter(s => s.customerPhone === profile?.phone).flatMap(sale => [
-                          ...(sale.pointsEarned ? [{
-                            id: `${sale.id}-earned`,
-                            date: sale.dateTime,
-                            title: 'Service Visit',
-                            details: sale.items.map(i => i.name).join(', '),
-                            points: sale.pointsEarned,
-                            type: 'earned'
-                          }] : []),
-                          ...(sale.pointsRedeemed ? [{
-                            id: `${sale.id}-redeemed`,
-                            date: sale.dateTime,
-                            title: 'Points Redeemed',
-                            details: 'Discount applied to visit',
-                            points: -sale.pointsRedeemed,
-                            type: 'redeemed'
-                          }] : [])
-                        ]),
-                        ...appointments.filter(a => a.customerPhone === profile?.phone && a.pointsProcessed).flatMap(appt => [
-                          ...(appt.willEarnPoints ? [{
-                            id: `${appt.id}-earned`,
-                            date: appt.date + 'T' + appt.time,
-                            title: 'Appointment Completed',
-                            details: appt.serviceName,
-                            points: appt.willEarnPoints,
-                            type: 'earned'
-                          }] : []),
-                          ...(appt.pointsToRedeem ? [{
-                            id: `${appt.id}-redeemed`,
-                            date: appt.date + 'T' + appt.time,
-                            title: 'Points Redeemed',
-                            details: `Redeemed for ${appt.serviceName}`,
-                            points: -appt.pointsToRedeem,
-                            type: 'redeemed'
-                          }] : [])
-                        ])
-                      ].sort((a, b) => b.date.localeCompare(a.date));
+ <div className="space-y-4">
+ <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+ <HistoryIcon size={16} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Recent Activity
+ </h3>
+ <div className="overflow-hidden rounded-2xl ">
+ <table className="w-full text-left -collapse">
+ <thead>
+ <tr className="bg-muted/10">
+ <th className="px-4 py-3 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Date</th>
+ <th className="px-4 py-3 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Activity</th>
+ <th className="px-4 py-3 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest text-right">Points</th>
+ </tr>
+ </thead>
+ <tbody className="divide-y divide-">
+ {(() => {
+ const history = [
+ ...sales.filter(s => s.customerPhone === profile?.phone).flatMap(sale => [
+ ...(sale.pointsEarned ? [{
+ id: `${sale.id}-earned`,
+ date: sale.dateTime,
+ title: 'Service Visit',
+ details: sale.items.map(i => i.name).join(', '),
+ points: sale.pointsEarned,
+ type: 'earned'
+ }] : []),
+ ...(sale.pointsRedeemed ? [{
+ id: `${sale.id}-redeemed`,
+ date: sale.dateTime,
+ title: 'Points Redeemed',
+ details: 'Discount applied to visit',
+ points: -sale.pointsRedeemed,
+ type: 'redeemed'
+ }] : [])
+ ]),
+ ...appointments.filter(a => a.customerPhone === profile?.phone && a.pointsProcessed).flatMap(appt => [
+ ...(appt.willEarnPoints ? [{
+ id: `${appt.id}-earned`,
+ date: appt.date + 'T' + appt.time,
+ title: 'Appointment Completed',
+ details: appt.serviceName,
+ points: appt.willEarnPoints,
+ type: 'earned'
+ }] : []),
+ ...(appt.pointsToRedeem ? [{
+ id: `${appt.id}-redeemed`,
+ date: appt.date + 'T' + appt.time,
+ title: 'Points Redeemed',
+ details: `Redeemed for ${appt.serviceName}`,
+ points: -appt.pointsToRedeem,
+ type: 'redeemed'
+ }] : [])
+ ])
+ ].sort((a, b) => b.date.localeCompare(a.date));
 
-                      if (history.length === 0) {
-                        return (
-                          <tr>
-                            <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted-foreground italic">No point activity recorded yet.</td>
-                          </tr>
-                        );
-                      }
+ if (history.length === 0) {
+ return (
+ <tr>
+ <td colSpan={3} className="px-4 py-10 text-center text-xs text-slate-700 dark:text-slate-300 italic">No point activity recorded yet.</td>
+ </tr>
+ );
+ }
 
-                      return history.map(item => (
-                        <tr key={item.id} className="hover:bg-muted/5 transition-colors">
-                          <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(item.date), 'MMM d, yyyy')}</td>
-                          <td className="px-4 py-3">
-                            <div className="text-xs font-bold text-foreground [.midnight_&]:text-slate-200">{item.title}</div>
-                            <div className="text-[10px] text-muted-foreground">{item.details}</div>
-                          </td>
-                          <td className={cn(
-                            "px-4 py-3 text-right text-xs font-bold",
-                            item.type === 'earned' ? "text-green-600 " : "text-red-500 "
-                          )}>
-                            {item.points > 0 ? `+${item.points}` : item.points}
-                          </td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+ return history.map(item => (
+ <tr key={item.id} className="hover:bg-muted/5 transition-colors">
+ <td className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300">{format(new Date(item.date), 'MMM d, yyyy')}</td>
+ <td className="px-4 py-3">
+ <div className="text-xs font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">{item.title}</div>
+ <div className="text-[10px] text-slate-700 dark:text-slate-300">{item.details}</div>
+ </td>
+ <td className={cn(
+ "px-4 py-3 text-right text-xs font-bold",
+ item.type === 'earned' ? "text-green-600 " : "text-red-500 "
+ )}>
+ {item.points > 0 ? `+${item.points}` : item.points}
+ </td>
+ </tr>
+ ));
+ })()}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </div>
+ )}
 
-      {viewingCustomerHistory && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] ">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] w-full max-w-4xl max-h-[calc(100dvh-110px)] overflow-hidden shadow-2xl border border-border transition-colors duration-300"
-          >
-            <div className="p-8 border-b border-border bg-muted/5 flex justify-between items-center">
-              <div>
-                <div className="flex items-center gap-4">
-                  <h3 className="text-primary [.midnight_&]:text-amber-400 font-black text-3xl tracking-tighter">{viewingCustomerHistory.name}</h3>
-                  {isAdmin && (
-                    <button 
-                      onClick={() => {
-                        setViewingCustomerHistory(null);
-                        navigate('/manage', { state: { activeTab: 'customers', viewCustomer: viewingCustomerHistory } });
-                      }}
-                      className="flex items-center gap-2 text-[10px] bg-primary text-white px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95"
-                    >
-                      <HistoryIcon size={12} />
-                      Full History
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
-                  <span className="text-[10px] bg-primary/10 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setViewingCustomerHistory(null)}
-                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="p-8 overflow-y-auto max-h-[calc(90vh-140px)] custom-scrollbar">
-              <div className="space-y-10">
-                {/* Points Summary for Admin */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-green-500/5 p-4 rounded-2xl border border-green-500/10">
-                    <div className="text-[10px] font-bold text-green-600  uppercase tracking-widest mb-1">Total Earned</div>
-                    <div className="text-xl font-bold text-green-700 ">
-                      +{
-                        sales.filter(s => s.customerPhone === viewingCustomerHistory.phone).reduce((sum, s) => sum + (s.pointsEarned || 0), 0) +
-                        appointments.filter(a => (a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone) && a.pointsProcessed).reduce((sum, a) => sum + (a.willEarnPoints || 0), 0)
-                      }
-                    </div>
-                  </div>
-                  <div className="bg-red-500/5 p-4 rounded-2xl border border-red-500/10">
-                    <div className="text-[10px] font-bold text-red-600  uppercase tracking-widest mb-1">Total Redeemed</div>
-                    <div className="text-xl font-bold text-red-700 ">
-                      -{
-                        sales.filter(s => s.customerPhone === viewingCustomerHistory.phone).reduce((sum, s) => sum + (s.pointsRedeemed || 0), 0) +
-                        appointments.filter(a => (a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone) && a.pointsProcessed).reduce((sum, a) => sum + (a.pointsToRedeem || 0), 0)
-                      }
-                    </div>
-                  </div>
-                </div>
+ {viewingCustomerHistory && (
+ <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-4 sm:pt-[90px] ">
+ <motion.div 
+ initial={{ opacity: 0, scale: 0.95, y: 20 }}
+ animate={{ opacity: 1, scale: 1, y: 0 }}
+ className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full max-w-4xl max-h-[calc(100dvh-110px)] overflow-hidden transition-colors duration-300"
+ >
+ <div className="p-4 bg-muted/5 flex justify-between items-center">
+ <div>
+ <div className="flex items-center gap-4">
+ <h3 className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black text-3xl tracking-tighter">{viewingCustomerHistory.name}</h3>
+ {isAdmin && (
+ <button 
+ onClick={() => {
+ setViewingCustomerHistory(null);
+ navigate('/manage', { state: { activeTab: 'customers', viewCustomer: viewingCustomerHistory } });
+ }}
+ className="flex items-center gap-2 text-[10px] bg-primary text-white px-3 py-1 rounded-full font-bold uppercase tracking-widest hover:bg-primary/90 transition-all shadow-primary/20 active:scale-95"
+ >
+ <HistoryIcon size={12} />
+ Full History
+ </button>
+ )}
+ </div>
+ <div className="flex items-center gap-3 mt-1">
+ <p className="text-slate-700 dark:text-slate-300 text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
+ <span className="text-[10px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 px-3 py-1 rounded-full font-bold uppercase tracking-widest ">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
+ </div>
+ </div>
+ <button 
+ onClick={() => setViewingCustomerHistory(null)}
+ className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-90"
+ >
+ <X size={24} />
+ </button>
+ </div>
+ <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)] custom-scrollbar">
+ <div className="space-y-10">
+ {/* Points Summary for Admin */}
+ <div className="grid grid-cols-2 gap-4">
+ <div className="bg-green-500/5 p-4 rounded-2xl -green-500/10">
+ <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Total Earned</div>
+ <div className="text-xl font-bold text-green-700 ">
+ +{
+ sales.filter(s => s.customerPhone === viewingCustomerHistory.phone).reduce((sum, s) => sum + (s.pointsEarned || 0), 0) +
+ appointments.filter(a => (a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone) && a.pointsProcessed).reduce((sum, a) => sum + (a.willEarnPoints || 0), 0)
+ }
+ </div>
+ </div>
+ <div className="bg-red-500/5 p-4 rounded-2xl -red-500/10">
+ <div className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Total Redeemed</div>
+ <div className="text-xl font-bold text-red-700 ">
+ -{
+ sales.filter(s => s.customerPhone === viewingCustomerHistory.phone).reduce((sum, s) => sum + (s.pointsRedeemed || 0), 0) +
+ appointments.filter(a => (a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone) && a.pointsProcessed).reduce((sum, a) => sum + (a.pointsToRedeem || 0), 0)
+ }
+ </div>
+ </div>
+ </div>
 
-                <div>
-                  <h4 className="font-bold text-foreground [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
-                    <HistoryIcon className="text-primary [.midnight_&]:text-amber-400" size={16} />
-                    Sales History
-                  </h4>
-                  <div className="space-y-3">
-                    {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
-                      <p className="text-muted-foreground text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No sales history found.</p>
-                    ) : (
-                      sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name)
-                        .sort((a, b) => b.dateTime.localeCompare(a.dateTime))
-                        .map(s => (
-                        <div key={s.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex justify-between items-center hover:border-primary/50 transition-all group">
-                          <div>
-                            <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{s.items.map(i => i.name).join(', ')}</div>
-                            <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-black text-primary [.midnight_&]:text-amber-400 text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
-                            {s.pointsEarned > 0 && <div className="text-[10px] text-green-600  font-bold uppercase tracking-widest">+{s.pointsEarned} pts</div>}
-                            {s.pointsRedeemed > 0 && <div className="text-[10px] text-red-500  font-bold uppercase tracking-widest">-{s.pointsRedeemed} pts</div>}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+ <div>
+ <h4 className="font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
+ <HistoryIcon className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" size={16} />
+ Sales History
+ </h4>
+ <div className="space-y-3">
+ {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
+ <p className="text-slate-700 dark:text-slate-300 text-xs italic bg-muted/5 p-4 rounded-2xl -dashed text-center">No sales history found.</p>
+ ) : (
+ sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name)
+ .sort((a, b) => b.dateTime.localeCompare(a.dateTime))
+ .map(s => (
+ <div key={s.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex justify-between items-center hover:-primary/50 transition-all group">
+ <div>
+ <div className="font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 group-hover:text-amber-600 dark:text-amber-400 [.midnight_&]:group-hover:text-amber-400 transition-colors">{s.items.map(i => i.name).join(', ')}</div>
+ <div className="text-[10px] text-slate-700 dark:text-slate-300 mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
+ </div>
+ <div className="text-right">
+ <div className="font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
+ {s.pointsEarned > 0 && <div className="text-[10px] text-green-600 font-bold uppercase tracking-widest">+{s.pointsEarned} pts</div>}
+ {s.pointsRedeemed > 0 && <div className="text-[10px] text-red-500 font-bold uppercase tracking-widest">-{s.pointsRedeemed} pts</div>}
+ </div>
+ </div>
+ ))
+ )}
+ </div>
+ </div>
 
-                <div>
-                  <h4 className="font-bold text-foreground [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
-                    <Calendar className="text-primary [.midnight_&]:text-amber-400" size={16} />
-                    Appointment History
-                  </h4>
-                  <div className="space-y-3">
-                    {appointments.filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone).length === 0 ? (
-                      <p className="text-muted-foreground text-xs italic bg-muted/5 p-6 rounded-2xl border border-dashed border-border text-center">No appointment history found.</p>
-                    ) : (
-                      appointments
-                        .filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone)
-                        .sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime())
-                        .map(a => (
-                          <div key={a.id} className="bg-card border border-border p-5 rounded-2xl shadow-sm flex justify-between items-center hover:border-primary/50 transition-all group">
-                            <div>
-                              <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{a.serviceName}</div>
-                              <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
-                            </div>
-                            <div className="flex flex-col items-end gap-2">
-                              <div className={cn(
-                                "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
-                                a.status === 'completed' ? "bg-green-500/10 text-green-600  border-green-500/20" : 
-                                a.status === 'cancelled' ? "bg-red-500/10 text-red-600  border-red-500/20" :
-                                "bg-muted/10 text-muted-foreground border-border"
-                              )}>
-                                {a.status}
-                              </div>
-                              {a.pointsProcessed && (
-                                <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">
-                                  {a.willEarnPoints > 0 && `+${a.willEarnPoints} pts`}
-                                  {a.pointsToRedeem > 0 && ` -${a.pointsToRedeem} pts`}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
+ <div>
+ <h4 className="font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
+ <Calendar className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" size={16} />
+ Appointment History
+ </h4>
+ <div className="space-y-3">
+ {appointments.filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone).length === 0 ? (
+ <p className="text-slate-700 dark:text-slate-300 text-xs italic bg-muted/5 p-4 rounded-2xl -dashed text-center">No appointment history found.</p>
+ ) : (
+ appointments
+ .filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone)
+ .sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime())
+ .map(a => (
+ <div key={a.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex justify-between items-center hover:-primary/50 transition-all group">
+ <div>
+ <div className="font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 group-hover:text-amber-600 dark:text-amber-400 [.midnight_&]:group-hover:text-amber-400 transition-colors">{a.serviceName}</div>
+ <div className="text-[10px] text-slate-700 dark:text-slate-300 mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
+ </div>
+ <div className="flex flex-col items-end gap-2">
+ <div className={cn(
+ "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest ",
+ a.status === 'completed' ? "bg-green-500/10 text-green-600 -green-500/20" : 
+ a.status === 'cancelled' ? "bg-red-500/10 text-red-600 -red-500/20" :
+ "bg-muted/10 text-slate-700 dark:text-slate-300 "
+ )}>
+ {a.status}
+ </div>
+ {a.pointsProcessed && (
+ <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">
+ {a.willEarnPoints > 0 && `+${a.willEarnPoints} pts`}
+ {a.pointsToRedeem > 0 && ` -${a.pointsToRedeem} pts`}
+ </div>
+ )}
+ </div>
+ </div>
+ ))
+ )}
+ </div>
+ </div>
+ </div>
+ </div>
+ </motion.div>
+ </div>
+ )}
 
-      {isAdding && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] ">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] w-full max-w-4xl shadow-2xl border border-border flex flex-col max-h-[calc(100dvh-110px)] overflow-hidden"
-          >
-            <div className="p-6 sm:p-8 border-b bg-muted/5 flex justify-between items-center shrink-0">
-              <div>
-                <h3 className="text-foreground [.midnight_&]:text-slate-200 font-black text-2xl sm:text-3xl tracking-tighter">
-                  {editingAppointment ? 'Edit Appointment' : 'Book Appointment'}
-                </h3>
-                <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-1">
-                  {editingAppointment ? 'Update existing booking details' : 'Schedule a new customer visit'}
-                </p>
-              </div>
-              <button 
-                onClick={resetForm}
-                className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
-              >
-                <X size={24} />
-              </button>
-            </div>
+ {isAdding && (
+ <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-4 sm:pt-[90px] ">
+ <motion.div
+ initial={{ opacity: 0, scale: 0.95, y: 20 }}
+ animate={{ opacity: 1, scale: 1, y: 0 }}
+ className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full max-w-4xl flex flex-col max-h-[calc(100dvh-110px)] overflow-hidden"
+ >
+ <div className="p-4 bg-muted/5 flex justify-between items-center shrink-0">
+ <div>
+ <h3 className="text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black text-2xl sm:text-3xl tracking-tighter">
+ {editingAppointment ? 'Edit Appointment' : 'Book Appointment'}
+ </h3>
+ <p className="text-slate-700 dark:text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+ {editingAppointment ? 'Update existing booking details' : 'Schedule a new customer visit'}
+ </p>
+ </div>
+ <button 
+ onClick={resetForm}
+ className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-90"
+ >
+ <X size={24} />
+ </button>
+ </div>
 
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              if (formStep === 1) {
-                setFormStep(2);
-              } else {
-                editingAppointment ? handleUpdateAppointment(e) : handleAddAppointment(e);
-              }
-            }} className="flex flex-col flex-1 min-h-0">
-              <div className="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
-              {formStep === 1 ? (
-                <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-300">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {/* Customer Section */}
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <UserIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
-                    Customer Information
-                  </label>
-                  
-                  {profile?.role !== 'customer' ? (
-                    <div className="space-y-3">
-                      <CustomSelect
-                        value={selectedCustId}
-                        onChange={(val) => {
-                          setSelectedCustId(val);
-                          if (val !== 'manual') {
-                            const c = customers.find(c => c.id === val);
-                            if (c) {
-                              setManualCustName(c.name);
-                              setManualCustPhone(c.phone);
-                            }
-                          }
-                        }}
-                        placeholder="Select Customer..."
-                        options={[
-                          { value: '', label: 'Select Customer...' },
-                          { value: 'manual', label: 'New Customer (Manual Entry)' },
-                          ...customers.map(c => ({ value: c.id, label: `${c.name} (${c.phone})` }))
-                        ]}
-                        icon={<Search size={18} />}
-                        buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold text-sm"
-                      />
+ <form onSubmit={(e) => {
+ e.preventDefault();
+ if (formStep === 1) {
+ setFormStep(2);
+ } else {
+ editingAppointment ? handleUpdateAppointment(e) : handleAddAppointment(e);
+ }
+ }} className="flex flex-col flex-1 min-h-0">
+ <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+ {formStep === 1 ? (
+ <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-300">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+ {/* Customer Section */}
+ <div className="space-y-4">
+ <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <UserIcon size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Customer Information
+ </label>
+ 
+ {profile?.role !== 'customer' ? (
+ <div className="space-y-3">
+ <CustomSelect
+ value={selectedCustId}
+ onChange={(val) => {
+ setSelectedCustId(val);
+ if (val !== 'manual') {
+ const c = customers.find(c => c.id === val);
+ if (c) {
+ setManualCustName(c.name);
+ setManualCustPhone(c.phone);
+ }
+ }
+ }}
+ placeholder="Select Customer..."
+ options={[
+ { value: '', label: 'Select Customer...' },
+ { value: 'manual', label: 'New Customer (Manual Entry)' },
+ ...customers.map(c => ({ value: c.id, label: `${c.name} (${c.phone})` }))
+ ]}
+ icon={<Search size={18} />}
+ buttonClassName="w-full p-3 rounded-xl bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm"
+ />
 
-                      {selectedCustId === 'manual' && (
-                        <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                          <FloatingInput
-                            label="Customer Name"
-                            value={manualCustName}
-                            onChange={(val) => setManualCustName(val)}
-                            required
-                          />
-                          <FloatingInput
-                            label="Phone Number"
-                            type="tel"
-                            value={manualCustPhone}
-                            onChange={(val) => setManualCustPhone(val)}
-                            required
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="bg-primary/5 p-4 rounded-xl border border-primary/10 shadow-inner">
-                      <div className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{profile.name}</div>
-                      <div className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
-                    </div>
-                  )}
-                </div>
+ {selectedCustId === 'manual' && (
+ <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+ <FloatingInput
+ label="Customer Name"
+ value={manualCustName}
+ onChange={(val) => setManualCustName(val)}
+ required
+ />
+ <FloatingInput
+ label="Phone Number"
+ type="tel"
+ value={manualCustPhone}
+ onChange={(val) => setManualCustPhone(val)}
+ required
+ />
+ </div>
+ )}
+ </div>
+ ) : (
+ <div className="bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-xl -primary/10 ">
+ <div className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-lg tracking-tight">{profile.name}</div>
+ <div className="text-xs text-slate-700 dark:text-slate-300 font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
+ </div>
+ )}
+ </div>
 
-                {/* Service & Staff Section */}
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Briefcase size={14} className="text-primary [.midnight_&]:text-amber-400" />
-                    Service & Staff
-                  </label>
-                  
-                  <div className="space-y-3">
-                    <CustomSelect
-                      value={selectedSvcId}
-                      onChange={(val) => {
-                        setSelectedSvcId(val);
-                        if (val !== 'manual') {
-                          const s = services.find(s => s.id === val);
-                          if (s) setManualSvcName(s.name);
-                        }
-                      }}
-                      placeholder="Select Service..."
-                      options={[
-                        { value: '', label: 'Select Service...' },
-                        { value: 'manual', label: 'Other Service (Manual Entry)' },
-                        ...services.map(s => ({ value: s.id, label: s.name }))
-                      ]}
-                      buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold text-sm"
-                    />
+ {/* Service & Staff Section */}
+ <div className="space-y-4">
+ <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <Briefcase size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Service & Staff
+ </label>
+ 
+ <div className="space-y-3">
+ <CustomSelect
+ value={selectedSvcId}
+ onChange={(val) => {
+ setSelectedSvcId(val);
+ if (val !== 'manual') {
+ const s = services.find(s => s.id === val);
+ if (s) setManualSvcName(s.name);
+ }
+ }}
+ placeholder="Select Service..."
+ options={[
+ { value: '', label: 'Select Service...' },
+ { value: 'manual', label: 'Other Service (Manual Entry)' },
+ ...services.map(s => ({ value: s.id, label: s.name }))
+ ]}
+ buttonClassName="w-full p-3 rounded-xl bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm"
+ />
 
-                    {selectedSvcId === 'manual' && (
-                      <FloatingInput
-                        label="Service Name"
-                        value={manualSvcName}
-                        onChange={(val) => setManualSvcName(val)}
-                        required
-                      />
-                    )}
+ {selectedSvcId === 'manual' && (
+ <FloatingInput
+ label="Service Name"
+ value={manualSvcName}
+ onChange={(val) => setManualSvcName(val)}
+ required
+ />
+ )}
 
-                    <CustomSelect
-                      value={selectedStaffEmail}
-                      onChange={setSelectedStaffEmail}
-                      placeholder="Any Staff (Auto-assign)"
-                      options={[
-                        { value: '', label: 'Any Staff (Auto-assign)' },
-                        ...staff.filter(s => {
-                          const [year, month, day] = (apptDate || getLocalISODate()).split('-');
-                          const apptDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-                          const apptDayName = apptDateObj.toLocaleDateString('en-US', { weekday: 'long' });
-                          return (!s.workingDays || s.workingDays.includes(apptDayName)) && s.role !== 'super_admin';
-                        }).map(s => ({ value: s.email, label: s.name }))
-                      ]}
-                      buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold text-sm"
-                    />
-                  </div>
-                </div>
+ <CustomSelect
+ value={selectedStaffEmail}
+ onChange={setSelectedStaffEmail}
+ placeholder="Any Staff (Auto-assign)"
+ options={[
+ { value: '', label: 'Any Staff (Auto-assign)' },
+ ...staff.filter(s => {
+ const [year, month, day] = (apptDate || getLocalISODate()).split('-');
+ const apptDateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+ const apptDayName = apptDateObj.toLocaleDateString('en-US', { weekday: 'long' });
+ return (!s.workingDays || s.workingDays.includes(apptDayName)) && s.role !== 'super_admin';
+ }).map(s => ({ value: s.email, label: s.name }))
+ ]}
+ buttonClassName="w-full p-3 rounded-xl bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm"
+ />
+ </div>
+ </div>
 
-                {/* Date & Time Section */}
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <CalendarIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
-                    Schedule
-                  </label>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <CustomDatePicker 
-                      label="DATE" 
-                      value={apptDate} 
-                      onChange={setApptDate} 
-                      className="rounded-xl border-border shadow-inner"
-                    />
-                    <div className="relative group flex items-center gap-3 px-4 py-2 bg-input border border-border rounded-xl shadow-inner hover:border-primary/30 transition-all">
-                      <Clock size={18} className="text-primary [.midnight_&]:text-amber-400" />
-                      <div className="flex flex-col flex-1">
-                        <label className="text-[8px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest leading-none mb-1">TIME</label>
-                        <span className="text-sm font-bold text-foreground [.midnight_&]:text-slate-200">{apptTime}</span>
-                      </div>
-                      <input
-                        type="time"
-                        value={apptTime}
-                        onChange={(e) => setApptTime(e.target.value)}
-                        required
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-muted/5 rounded-2xl border border-border shadow-inner">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-primary/5 rounded-xl text-primary [.midnight_&]:text-amber-400 shadow-sm">
-                        <HistoryIcon size={18} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Duration</span>
-                        <span className="text-xs text-foreground [.midnight_&]:text-slate-200 font-bold">Ends at {apptEndTime}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        value={apptDuration}
-                        onChange={(e) => setApptDuration(parseInt(e.target.value) || 0)}
-                        className="w-20 p-2 text-sm border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-black text-center"
-                      />
-                      <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Mins</span>
-                    </div>
-                  </div>
-                </div>
+ {/* Date & Time Section */}
+ <div className="space-y-4">
+ <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <CalendarIcon size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Schedule
+ </label>
+ 
+ <div className="grid grid-cols-2 gap-3">
+ <CustomDatePicker 
+ label="DATE" 
+ value={apptDate} 
+ onChange={setApptDate} 
+ className="rounded-xl "
+ />
+ <div className="relative group flex items-center gap-3 px-4 py-2 bg-input rounded-xl hover:-primary/30 transition-all">
+ <Clock size={18} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <div className="flex flex-col flex-1">
+ <label className="text-[8px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black uppercase tracking-widest leading-none mb-1">TIME</label>
+ <span className="text-sm font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">{apptTime}</span>
+ </div>
+ <input
+ type="time"
+ value={apptTime}
+ onChange={(e) => setApptTime(e.target.value)}
+ required
+ className="absolute inset-0 opacity-0 cursor-pointer w-full"
+ />
+ </div>
+ </div>
+ <div className="flex items-center justify-between p-4 bg-muted/5 rounded-2xl ">
+ <div className="flex items-center gap-3">
+ <div className="p-2.5 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 ">
+ <HistoryIcon size={18} />
+ </div>
+ <div className="flex flex-col">
+ <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Duration</span>
+ <span className="text-xs text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold">Ends at {apptEndTime}</span>
+ </div>
+ </div>
+ <div className="flex items-center gap-2">
+ <input
+ type="number"
+ value={apptDuration}
+ onChange={(e) => setApptDuration(parseInt(e.target.value) || 0)}
+ className="w-20 p-2 text-sm rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black text-center"
+ />
+ <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Mins</span>
+ </div>
+ </div>
+ </div>
 
-                {/* Status & Points Section */}
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <Star size={14} className="text-primary [.midnight_&]:text-amber-400" />
-                    Status & Rewards
-                  </label>
-                  
-                  <div className="space-y-3">
-                    {profile?.role !== 'customer' && (
-                      <CustomSelect
-                        value={apptStatus}
-                        onChange={(val) => setApptStatus(val as any)}
-                        options={[
-                          { value: 'pending', label: 'Pending' },
-                          { value: 'confirmed', label: 'Confirmed' },
-                          { value: 'completed', label: 'Completed' },
-                          { value: 'cancelled', label: 'Cancelled' }
-                        ]}
-                        buttonClassName="w-full p-3 border border-border rounded-xl bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold text-sm"
-                      />
-                    )}
+ {/* Status & Points Section */}
+ <div className="space-y-4">
+ <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <Star size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Status & Rewards
+ </label>
+ 
+ <div className="space-y-3">
+ {profile?.role !== 'customer' && (
+ <CustomSelect
+ value={apptStatus}
+ onChange={(val) => setApptStatus(val as any)}
+ options={[
+ { value: 'pending', label: 'Pending' },
+ { value: 'confirmed', label: 'Confirmed' },
+ { value: 'completed', label: 'Completed' },
+ { value: 'cancelled', label: 'Cancelled' }
+ ]}
+ buttonClassName="w-full p-3 rounded-xl bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm"
+ />
+ )}
 
-                    <div className="flex items-center justify-between p-4 bg-green-500/5 rounded-2xl border border-green-500/10 shadow-inner">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2.5 bg-green-500/10 rounded-xl text-green-600 shadow-sm">
-                          <Home size={18} />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Service Type</span>
-                          <span className="text-xs font-bold text-foreground [.midnight_&]:text-slate-200">At Home Service</span>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsHomeService(!isHomeService)}
-                        className={cn(
-                          "w-12 h-6 rounded-full transition-all relative shadow-inner",
-                          isHomeService ? "bg-green-600" : "bg-muted"
-                        )}
-                      >
-                        <div className={cn(
-                          "absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all shadow-md",
-                          isHomeService ? "left-6.5" : "left-0.5"
-                        )} />
-                      </button>
-                    </div>
+ <div className="flex items-center justify-between p-4 bg-green-500/5 rounded-2xl -green-500/10 ">
+ <div className="flex items-center gap-3">
+ <div className="p-2.5 bg-green-500/10 rounded-xl text-green-600 ">
+ <Home size={18} />
+ </div>
+ <div className="flex flex-col">
+ <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Service Type</span>
+ <span className="text-xs font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">At Home Service</span>
+ </div>
+ </div>
+ <button
+ type="button"
+ onClick={() => setIsHomeService(!isHomeService)}
+ className={cn(
+ "w-12 h-6 rounded-full transition-all relative ",
+ isHomeService ? "bg-green-600" : "bg-muted"
+ )}
+ >
+ <div className={cn(
+ "absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ",
+ isHomeService ? "left-6.5" : "left-0.5"
+ )} />
+ </button>
+ </div>
 
-                    <div className="bg-primary/5 p-4 rounded-2xl border border-primary/10 space-y-3 shadow-inner">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Points to Earn</span>
-                        <span className="text-sm font-black text-green-600">+{willEarnPoints} PTS</span>
-                      </div>
-                      
-                      {selectedCustId && selectedCustId !== 'manual' && (
-                        <div className="space-y-2 pt-3 border-t border-primary/10">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</span>
-                            <span className="text-sm font-black text-primary [.midnight_&]:text-amber-400">
-                              {customers.find(c => c.id === selectedCustId)?.points || 0} PTS
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              placeholder="Redeem Points"
-                              value={pointsToRedeem}
-                              onChange={(e) => {
-                                const val = Math.min(Number(e.target.value), (customers.find(c => c.id === selectedCustId)?.points || 0));
-                                setPointsToRedeem(Math.max(0, val));
-                              }}
-                              className="w-full p-2 text-xs border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-bold"
-                            />
-                            <button 
-                              type="button"
-                              onClick={() => setPointsToRedeem(customers.find(c => c.id === selectedCustId)?.points || 0)}
-                              className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 hover:underline whitespace-nowrap uppercase tracking-widest"
-                            >
-                              Redeem All
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+ <div className="bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-2xl -primary/10 space-y-3 ">
+ <div className="flex items-center justify-between">
+ <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Points to Earn</span>
+ <span className="text-sm font-black text-green-600">+{willEarnPoints} PTS</span>
+ </div>
+ 
+ {selectedCustId && selectedCustId !== 'manual' && (
+ <div className="space-y-2 pt-3 -primary/10">
+ <div className="flex items-center justify-between">
+ <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</span>
+ <span className="text-sm font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400">
+ {customers.find(c => c.id === selectedCustId)?.points || 0} PTS
+ </span>
+ </div>
+ <div className="flex items-center gap-2">
+ <input
+ type="number"
+ placeholder="Redeem Points"
+ value={pointsToRedeem}
+ onChange={(e) => {
+ const val = Math.min(Number(e.target.value), (customers.find(c => c.id === selectedCustId)?.points || 0));
+ setPointsToRedeem(Math.max(0, val));
+ }}
+ className="w-full p-2 text-xs rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold"
+ />
+ <button 
+ type="button"
+ onClick={() => setPointsToRedeem(customers.find(c => c.id === selectedCustId)?.points || 0)}
+ className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 hover:underline whitespace-nowrap uppercase tracking-widest"
+ >
+ Redeem All
+ </button>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ </div>
 
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
-                    <FileText size={14} className="text-primary [.midnight_&]:text-amber-400" />
-                    Additional Notes
-                  </label>
-                  <textarea
-                    placeholder="Any special requests or details..."
-                    value={apptNotes}
-                    onChange={(e) => setApptNotes(e.target.value)}
-                    className="w-full p-4 border border-border rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-foreground [.midnight_&]:text-slate-200 shadow-inner font-medium min-h-[100px] text-sm"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 space-y-6 shadow-inner">
-                  <div className="flex items-center gap-4">
-                    <div className="p-4 bg-primary/10 rounded-2xl text-primary [.midnight_&]:text-amber-400 shadow-sm border border-border">
-                      <Check size={32} strokeWidth={3} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 tracking-tighter">
-                        Booking Confirmation
-                      </h3>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Review your appointment details</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
-                        <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
-                        Customer
-                      </div>
-                      <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
-                        <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
-                          <Phone size={12} />
-                          {manualCustPhone || 'N/A'}
-                        </p>
-                      </div>
-                    </div>
+ <div className="space-y-4">
+ <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <FileText size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Additional Notes
+ </label>
+ <textarea
+ placeholder="Any special requests or details..."
+ value={apptNotes}
+ onChange={(e) => setApptNotes(e.target.value)}
+ className="w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-medium min-h-[100px] text-sm"
+ />
+ </div>
+ </div>
+ ) : (
+ <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
+ <div className="bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-2xl -primary/10 space-y-3 ">
+ <div className="flex items-center gap-4">
+ <div className="p-4 bg-amber-100/50 dark:bg-amber-900/30 rounded-2xl text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 ">
+ <Check size={32} strokeWidth={3} />
+ </div>
+ <div>
+ <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 tracking-tighter">
+ Booking Confirmation
+ </h3>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Review your appointment details</p>
+ </div>
+ </div>
+ 
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
+ <div className="space-y-3">
+ <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <UserIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Customer
+ </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
+ <p className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
+ <p className="text-xs text-slate-700 dark:text-slate-300 font-bold mt-1.5 flex items-center gap-1.5">
+ <Phone size={12} />
+ {manualCustPhone || 'N/A'}
+ </p>
+ </div>
+ </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
-                        <Briefcase size={12} className="text-primary [.midnight_&]:text-amber-400" />
-                        Service
-                      </div>
-                      <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
-                        <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
-                        <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
-                          <HistoryIcon size={12} />
-                          {apptDuration} mins ({apptTime} - {apptEndTime})
-                        </p>
-                      </div>
-                    </div>
+ <div className="space-y-3">
+ <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <Briefcase size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Service
+ </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
+ <p className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
+ <p className="text-xs text-slate-700 dark:text-slate-300 font-bold mt-1.5 flex items-center gap-1.5">
+ <HistoryIcon size={12} />
+ {apptDuration} mins ({apptTime} - {apptEndTime})
+ </p>
+ </div>
+ </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
-                        <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
-                        Staff Member
-                      </div>
-                      <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
-                        <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">
-                          {staff.find(s => s.email === selectedStaffEmail)?.name || 'Any Staff (Auto)'}
-                        </p>
-                        <p className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
-                      </div>
-                    </div>
+ <div className="space-y-3">
+ <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <UserIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Staff Member
+ </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
+ <p className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-lg tracking-tight">
+ {staff.find(s => s.email === selectedStaffEmail)?.name || 'Any Staff (Auto)'}
+ </p>
+ <p className="text-[9px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
+ </div>
+ </div>
 
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
-                        <CalendarIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
-                        Scheduled Date
-                      </div>
-                      <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm">
-                        <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
-                        <p className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
-                      </div>
-                    </div>
+ <div className="space-y-3">
+ <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <CalendarIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Scheduled Date
+ </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
+ <p className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
+ <p className="text-[9px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
+ </div>
+ </div>
 
-                    {isHomeService && (
-                      <div className="col-span-full bg-green-500/10 p-4 rounded-2xl border border-green-500/20 flex items-center gap-4 shadow-sm">
-                        <div className="p-3 bg-green-600 text-foreground [.midnight_&]:text-slate-200 rounded-xl shadow-lg">
-                          <Car size={20} strokeWidth={2.5} />
-                        </div>
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Service Location</span>
-                          <span className="text-sm font-black text-foreground [.midnight_&]:text-slate-200">At Home Service Requested</span>
-                        </div>
-                      </div>
-                    )}
+ {isHomeService && (
+ <div className="col-span-full bg-green-500/10 p-4 rounded-2xl -green-500/20 flex items-center gap-4 ">
+ <div className="p-3 bg-green-600 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 rounded-xl ">
+ <Car size={20} strokeWidth={2.5} />
+ </div>
+ <div className="flex flex-col">
+ <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Service Location</span>
+ <span className="text-sm font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">At Home Service Requested</span>
+ </div>
+ </div>
+ )}
 
-                    {apptNotes && (
-                      <div className="col-span-full space-y-3">
-                        <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
-                          <FileText size={12} className="text-primary [.midnight_&]:text-amber-400" />
-                          Additional Notes
-                        </div>
-                        <div className="bg-card/50 p-4 rounded-xl border border-border shadow-sm italic text-muted-foreground font-medium text-xs">
-                          "{apptNotes}"
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-            </div>
+ {apptNotes && (
+ <div className="col-span-full space-y-3">
+ <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <FileText size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ Additional Notes
+ </div>
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl italic text-slate-700 dark:text-slate-300 font-medium text-xs">
+ "{apptNotes}"
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
 
-            <div className="p-6 bg-muted/5 border-t border-border flex justify-end gap-3 rounded-b-3xl shrink-0">
-              {formStep === 1 ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={resetForm}
-                    className="px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
-                  >
-                    Next Step
-                    <ArrowRight size={14} />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setFormStep(1)}
-                    className="px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmittingAppt}
-                    className="px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all shadow-lg hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmittingAppt ? (
-                      <>
-                        Processing...
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      </>
-                    ) : (
-                      <>
-                        {editingAppointment ? 'Update Appointment' : 'Confirm Booking'}
-                        <Check size={14} />
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
-            </div>
-            </form>
-          </motion.div>
-        </div>
-      )}
+ <div className="p-4 bg-muted/5 flex justify-end gap-3 rounded-b-3xl shrink-0">
+ {formStep === 1 ? (
+ <>
+ <button
+ type="button"
+ onClick={resetForm}
+ className="px-4 md:px-6 py-2.5 text-xs font-black text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 transition-colors uppercase tracking-widest"
+ >
+ Cancel
+ </button>
+ <button
+ type="submit"
+ className="px-4 md:px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
+ >
+ Next Step
+ <ArrowRight size={14} />
+ </button>
+ </>
+ ) : (
+ <>
+ <button
+ type="button"
+ onClick={() => setFormStep(1)}
+ className="px-4 md:px-6 py-2.5 text-xs font-black text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 transition-colors uppercase tracking-widest"
+ >
+ Back
+ </button>
+ <button
+ type="submit"
+ disabled={isSubmittingAppt}
+ className="px-4 md:px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
+ >
+ {isSubmittingAppt ? (
+ <>
+ Processing...
+ <div className="w-4 h-4 -2 -white/30 -white rounded-full animate-spin" />
+ </>
+ ) : (
+ <>
+ {editingAppointment ? 'Update Appointment' : 'Confirm Booking'}
+ <Check size={14} />
+ </>
+ )}
+ </button>
+ </>
+ )}
+ </div>
+ </form>
+ </motion.div>
+ </div>
+ )}
 
-      {confirmDeleteAppt && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] ">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
-          >
-            <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-6 mx-auto shadow-inner border border-red-500/20">
-              <Trash2 size={32} strokeWidth={2.5} />
-            </div>
-            <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Confirm Deletion</h3>
-            <p className="text-muted-foreground font-bold mb-8 leading-relaxed text-center">
-              Are you sure you want to delete the appointment for <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setConfirmDeleteAppt(null)}
-                className="flex-1 px-6 py-4 border-2 border-border text-muted-foreground hover:text-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAppointment}
-                className="flex-1 px-6 py-4 bg-red-600 text-foreground [.midnight_&]:text-slate-200 font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-xl shadow-red-600/20 active:scale-95"
-              >
-                Delete
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
+ {confirmDeleteAppt && (
+ <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-4 sm:pt-[90px] ">
+ <motion.div
+ initial={{ opacity: 0, scale: 0.95, y: 20 }}
+ animate={{ opacity: 1, scale: 1, y: 0 }}
+ className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 max-w-md w-full max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
+ >
+ <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-3 md:mb-6 mx-auto -red-500/20">
+ <Trash2 size={32} strokeWidth={2.5} />
+ </div>
+ <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Confirm Deletion</h3>
+ <p className="text-slate-700 dark:text-slate-300 font-bold mb-4 md:mb-8 leading-relaxed text-center">
+ Are you sure you want to delete the appointment for <span className="text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
+ </p>
+ <div className="flex gap-4">
+ <button
+ onClick={() => setConfirmDeleteAppt(null)}
+ className="flex-1 px-4 md:px-6 py-4 -2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
+ >
+ Cancel
+ </button>
+ <button
+ onClick={handleDeleteAppointment}
+ className="flex-1 px-4 md:px-6 py-4 bg-red-600 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-red-600/20 active:scale-95"
+ >
+ Delete
+ </button>
+ </div>
+ </motion.div>
+ </div>
+ )}
 
-      {/* Overlap Alert Popup */}
-      {showOverlapPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-6 sm:pt-[90px] ">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-card rounded-[2.5rem] p-8 max-w-md w-full shadow-2xl border border-border max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
-          >
-            <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-6 mx-auto shadow-inner border border-red-500/20">
-              <AlertCircle size={32} strokeWidth={2.5} />
-            </div>
-            <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Time Slot Overlap</h3>
-            <p className="text-muted-foreground font-bold mb-8 leading-relaxed text-center">
-              The selected time slot overlaps with an existing appointment for this staff member. Please select a different time or staff member.
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowOverlapPopup(false)}
-                className="w-full px-6 py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 active:scale-95"
-              >
-                Okay
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </div>
-  );
+ {/* Overlap Alert Popup */}
+ {showOverlapPopup && (
+ <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-4 sm:pt-[90px] ">
+ <motion.div
+ initial={{ opacity: 0, scale: 0.95, y: 20 }}
+ animate={{ opacity: 1, scale: 1, y: 0 }}
+ className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 max-w-md w-full max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
+ >
+ <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-3 md:mb-6 mx-auto -red-500/20">
+ <AlertCircle size={32} strokeWidth={2.5} />
+ </div>
+ <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Time Slot Overlap</h3>
+ <p className="text-slate-700 dark:text-slate-300 font-bold mb-4 md:mb-8 leading-relaxed text-center">
+ The selected time slot overlaps with an existing appointment for this staff member. Please select a different time or staff member.
+ </p>
+ <div className="flex gap-4">
+ <button
+ onClick={() => setShowOverlapPopup(false)}
+ className="w-full px-4 md:px-6 py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-primary/20 active:scale-95"
+ >
+ Okay
+ </button>
+ </div>
+ </motion.div>
+ </div>
+ )}
+ </div>
+ );
 };
 
 const PrintPreviewModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  text: string;
-  onPrint: () => void;
-  onSkipPrint?: () => void;
-  title?: string;
-  printLabel?: string;
-  skipLabel?: string;
+ isOpen: boolean;
+ onClose: () => void;
+ text: string;
+ onPrint: () => void;
+ onSkipPrint?: () => void;
+ title?: string;
+ printLabel?: string;
+ skipLabel?: string;
 }> = ({ isOpen, onClose, text, onPrint, onSkipPrint, title = "Print Preview", printLabel = "Process & Print", skipLabel = "Complete Without Printing" }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-[30000] flex items-center justify-center p-4 bg-black/60 ">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-card w-full max-w-md rounded-[2rem] shadow-2xl border border-border flex flex-col overflow-hidden max-h-[calc(100dvh-40px)]"
-      >
-        <div className="p-6 border-b border-border flex justify-between items-center bg-muted/10 shrink-0">
-          <h3 className="font-bold text-lg tracking-tight flex items-center gap-2">
-            <Printer size={20} className="text-primary [.midnight_&]:text-amber-400" />
-            {title}
-          </h3>
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></button>
-        </div>
-        
-        <div className="p-6 overflow-y-auto bg-muted/20 flex-1 flex justify-center custom-scrollbar">
-          <div className="bg-white text-black  p-6 shadow-md shadow-black/5" style={{ minWidth: '320px' }}>
-            <div dangerouslySetInnerHTML={{ __html: text }} />
-          </div>
-        </div>
+ if (!isOpen) return null;
+ return (
+ <div className="fixed inset-0 z-[30000] flex items-center justify-center p-4 bg-black/60 ">
+ <motion.div
+ initial={{ opacity: 0, scale: 0.95, y: 20 }}
+ animate={{ opacity: 1, scale: 1, y: 0 }}
+ className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-md rounded-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-40px)]"
+ >
+ <div className="p-4 flex justify-between items-center bg-muted/10 shrink-0">
+ <h3 className="font-bold text-lg tracking-tight flex items-center gap-2">
+ <Printer size={20} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ {title}
+ </h3>
+ <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></button>
+ </div>
+ 
+ <div className="p-4 overflow-y-auto bg-muted/20 flex-1 flex justify-center custom-scrollbar">
+ <div className="bg-white text-black p-4 shadow-black/5" style={{ minWidth: '320px' }}>
+ <div dangerouslySetInnerHTML={{ __html: text }} />
+ </div>
+ </div>
 
-        <div className="p-6 border-t border-border bg-card shrink-0 space-y-3">
-          <button
-            onClick={() => { onPrint(); onClose(); }}
-            className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]:border [.midnight_&]:border-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-primary/20"
-          >
-            <Printer size={20} />
-            {printLabel}
-          </button>
-          
-          {onSkipPrint && (
-            <button
-              onClick={() => { onSkipPrint(); onClose(); }}
-              className="w-full bg-muted text-muted-foreground hover:text-foreground py-4 rounded-2xl font-bold transition-colors"
-            >
-              {skipLabel}
-            </button>
-          )}
-        </div>
-      </motion.div>
-    </div>
-  );
+ <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 shrink-0 space-y-3">
+ <button
+ onClick={() => { onPrint(); onClose(); }}
+ className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-amber-600 dark:text-amber-400 [.midnight_&]: [.midnight_&]:-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-primary/20"
+ >
+ <Printer size={20} />
+ {printLabel}
+ </button>
+ 
+ {onSkipPrint && (
+ <button
+ onClick={() => { onSkipPrint(); onClose(); }}
+ className="w-full bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-2xl font-bold transition-colors"
+ >
+ {skipLabel}
+ </button>
+ )}
+ </div>
+ </motion.div>
+ </div>
+ );
 };
 
 const Modal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-  maxWidth?: string;
+ isOpen: boolean;
+ onClose: () => void;
+ title: string;
+ children: React.ReactNode;
+ maxWidth?: string;
 }> = ({ isOpen, onClose, title, children, maxWidth = "max-w-sm" }) => {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 bg-black/60  z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-6 sm:pt-[90px]">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className={cn("bg-card w-full rounded-[2.5rem] border border-primary/30 flex flex-col shadow-2xl relative max-h-[calc(100dvh-110px)] overflow-hidden", maxWidth)}
-      >
-        <div className="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
-        <div className="flex justify-between items-center shrink-0 p-8 pb-4">
-          <h3 className="text-primary [.midnight_&]:text-amber-400 font-bold text-xl uppercase tracking-widest">{title}</h3>
-          <button onClick={onClose} className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"><X size={24} /></button>
-        </div>
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pt-4 space-y-4">
-          {children}
-        </div>
-      </motion.div>
-    </div>
-  );
+ if (!isOpen) return null;
+ return (
+ <div className="fixed inset-0 bg-black/60 z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-4 sm:pt-[90px]">
+ <motion.div 
+ initial={{ opacity: 0, scale: 0.9, y: 20 }}
+ animate={{ opacity: 1, scale: 1, y: 0 }}
+ className={cn("bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full rounded-2xl -primary/30 flex flex-col relative max-h-[calc(100dvh-110px)] overflow-hidden", maxWidth)}
+ >
+ <div className="absolute top-0 left-0 w-full h-1 bg-amber-200/50 dark:bg-amber-900/40"></div>
+ <div className="flex justify-between items-center shrink-0 p-4 pb-4">
+ <h3 className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-bold text-xl uppercase tracking-widest">{title}</h3>
+ <button onClick={onClose} className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-90"><X size={24} /></button>
+ </div>
+ <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pt-4 space-y-4">
+ {children}
+ </div>
+ </motion.div>
+ </div>
+ );
 };
 
 export const ManagePage: React.FC = () => {
-  const { user, profile, isAdmin, isSuperAdmin, isCashier, loading } = useAuth();
-  const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'shop' | 'categories' | 'services' | 'staff' | 'customers' | 'financials' | 'data'>('shop');
-  const [shopSettings, setShopSettings] = useState<ShopSettings>({ name: '', addr: '', ph: '', receiptHeader: '', receiptFooter: '' });
-  const [services, setServices] = useState<Service[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [staff, setStaff] = useState<UserProfile[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [editingStaff, setEditingStaff] = useState<UserProfile | null>(null);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [quickEditingPoints, setQuickEditingPoints] = useState<Customer | null>(null);
-  const [quickPointsValue, setQuickPointsValue] = useState('');
-  const [viewingCustomerHistory, setViewingCustomerHistory] = useState<Customer | null>(null);
-  const [showConfirm, setShowConfirm] = useState<{ coll: string, id: string } | null>(null);
-  const [showClearConfirm, setShowClearConfirm] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
-  const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-  const [showSvcForm, setShowSvcForm] = useState(false);
-  const [showStfForm, setShowStfForm] = useState(false);
-  const [showCustForm, setShowCustForm] = useState(false);
-  const [showCatForm, setShowCatForm] = useState(false);
-  const [showShopForm, setShowShopForm] = useState(false);
-  
-  // Theme state
-  const { theme: localTheme, setTheme: setLocalTheme } = useTheme();
+ const { user, profile, isAdmin, isSuperAdmin, isCashier, loading } = useAuth();
+ const location = useLocation();
+ const [activeTab, setActiveTab] = useState<'shop' | 'categories' | 'services' | 'staff' | 'customers' | 'financials' | 'data'>('shop');
+ const [shopSettings, setShopSettings] = useState<ShopSettings>({ name: '', addr: '', ph: '', receiptHeader: '', receiptFooter: '' });
+ const [services, setServices] = useState<Service[]>([]);
+ const [categories, setCategories] = useState<Category[]>([]);
+ const [staff, setStaff] = useState<UserProfile[]>([]);
+ const [customers, setCustomers] = useState<Customer[]>([]);
+ const [sales, setSales] = useState<Sale[]>([]);
+ const [editingStaff, setEditingStaff] = useState<UserProfile | null>(null);
+ const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+ const [editingService, setEditingService] = useState<Service | null>(null);
+ const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+ const [quickEditingPoints, setQuickEditingPoints] = useState<Customer | null>(null);
+ const [quickPointsValue, setQuickPointsValue] = useState('');
+ const [viewingCustomerHistory, setViewingCustomerHistory] = useState<Customer | null>(null);
+ const [showConfirm, setShowConfirm] = useState<{ coll: string, id: string } | null>(null);
+ const [showClearConfirm, setShowClearConfirm] = useState(false);
+ const [isClearing, setIsClearing] = useState(false);
+ const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+ const [showSvcForm, setShowSvcForm] = useState(false);
+ const [showStfForm, setShowStfForm] = useState(false);
+ const [showCustForm, setShowCustForm] = useState(false);
+ const [showCatForm, setShowCatForm] = useState(false);
+ const [showShopForm, setShowShopForm] = useState(false);
+ 
+ // Theme state
+ const { theme: localTheme, setTheme: setLocalTheme } = useTheme();
 
-  // Form states
-  const [svcName, setSvcName] = useState('');
-  const [svcPrice, setSvcPrice] = useState('');
-  const [svcDuration, setSvcDuration] = useState('');
-  const [svcCategory, setSvcCategory] = useState('');
-  const [svcAllowCommission, setSvcAllowCommission] = useState(true);
-  const [catName, setCatName] = useState('');
-  const [catIcon, setCatIcon] = useState('LayoutGrid');
-  const [stfName, setStfName] = useState('');
-  const [stfEmail, setStfEmail] = useState('');
-  const [stfComm, setStfComm] = useState('');
-  const [stfRole, setStfRole] = useState<'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer'>('staff');
-  const [stfRoles, setStfRoles] = useState<string[]>(['staff']);
-  const [stfStatus, setStfStatus] = useState<'active' | 'inactive' | 'on_leave' | 'deleted'>('active');
-  const [stfBio, setStfBio] = useState('');
-  const [stfSpecialties, setStfSpecialties] = useState<string[]>([]);
-  const [stfWorkingDays, setStfWorkingDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
-  const [stfPhotoURL, setStfPhotoURL] = useState('');
-  const [custName, setCustName] = useState('');
-  const [custPhone, setCustPhone] = useState('');
-  const [custEmail, setCustEmail] = useState('');
-  const [custAddr, setCustAddr] = useState('');
-  const [custNotes, setCustNotes] = useState('');
-  const [custPoints, setCustPoints] = useState('');
-  const [showAccessMatrix, setShowAccessMatrix] = useState(false);
+ // Form states
+ const [svcName, setSvcName] = useState('');
+ const [svcPrice, setSvcPrice] = useState('');
+ const [svcDuration, setSvcDuration] = useState('');
+ const [svcCategory, setSvcCategory] = useState('');
+ const [svcAllowCommission, setSvcAllowCommission] = useState(true);
+ const [catName, setCatName] = useState('');
+ const [catIcon, setCatIcon] = useState('LayoutGrid');
+ const [stfName, setStfName] = useState('');
+ const [stfEmail, setStfEmail] = useState('');
+ const [stfComm, setStfComm] = useState('');
+ const [stfRole, setStfRole] = useState<'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer'>('staff');
+ const [stfRoles, setStfRoles] = useState<string[]>(['staff']);
+ const [stfStatus, setStfStatus] = useState<'active' | 'inactive' | 'on_leave' | 'deleted'>('active');
+ const [stfBio, setStfBio] = useState('');
+ const [stfSpecialties, setStfSpecialties] = useState<string[]>([]);
+ const [stfWorkingDays, setStfWorkingDays] = useState<string[]>(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+ const [stfPhotoURL, setStfPhotoURL] = useState('');
+ const [custName, setCustName] = useState('');
+ const [custPhone, setCustPhone] = useState('');
+ const [custEmail, setCustEmail] = useState('');
+ const [custAddr, setCustAddr] = useState('');
+ const [custNotes, setCustNotes] = useState('');
+ const [custPoints, setCustPoints] = useState('');
+ const [showAccessMatrix, setShowAccessMatrix] = useState(false);
 
-  useEffect(() => {
-    if (!isAdmin) return;
-    
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'salon'), (docSnap) => {
-      if (docSnap.exists()) setShopSettings(docSnap.data() as ShopSettings);
-    });
+ useEffect(() => {
+ if (!isAdmin) return;
+ 
+ const unsubSettings = onSnapshot(doc(db, 'settings', 'salon'), (docSnap) => {
+ if (docSnap.exists()) setShopSettings(docSnap.data() as ShopSettings);
+ });
 
-    const unsubServices = onSnapshot(query(collection(db, 'services'), orderBy('name')), (snapshot) => {
-      setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'services'));
+ const unsubServices = onSnapshot(query(collection(db, 'services'), orderBy('name')), (snapshot) => {
+ setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'services'));
 
-    const unsubCategories = onSnapshot(query(collection(db, 'categories'), orderBy('name')), (snapshot) => {
-      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
+ const unsubCategories = onSnapshot(query(collection(db, 'categories'), orderBy('name')), (snapshot) => {
+ setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
 
-    const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
-      // Use a Map to ensure unique emails in the UI list
-      const uniqueStaff = new Map<string, UserProfile>();
-      snapshot.docs.forEach(doc => {
-        const data = doc.data() as UserProfile;
-        // Client-side filtering: Hide super_admin and customers from the staff list
-        // EXCLUDE the Super Admin emails from appearing in any UI list
-        const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
-        const isExcluded = data.role === 'super_admin' || 
-                          data.role === 'customer' || 
-                          (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
-        if (data.email && data.status !== 'deleted' && !isExcluded) {
-          const email = data.email.toLowerCase().trim();
-          // Prefer documents that have a UID (already logged in)
-          if (!uniqueStaff.has(email) || data.uid) {
-            uniqueStaff.set(email, { ...data, id: doc.id });
-          }
-        }
-      });
-      const staffList = Array.from(uniqueStaff.values());
-      const roleOrder: Record<string, number> = { owner: 0, cashier: 1, staff: 2 };
-      staffList.sort((a, b) => {
-        const roleA = roleOrder[a.role] ?? 99;
-        const roleB = roleOrder[b.role] ?? 99;
-        if (roleA !== roleB) return roleA - roleB;
-        return (a.name || '').localeCompare(b.name || '');
-      });
-      setStaff(staffList);
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
+ const unsubStaff = onSnapshot(collection(db, 'users'), (snapshot) => {
+ // Use a Map to ensure unique emails in the UI list
+ const uniqueStaff = new Map<string, UserProfile>();
+ snapshot.docs.forEach(doc => {
+ const data = doc.data() as UserProfile;
+ // Client-side filtering: Hide super_admin and customers from the staff list
+ // EXCLUDE the Super Admin emails from appearing in any UI list
+ const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
+ const isExcluded = data.role === 'super_admin' || 
+ data.role === 'customer' || 
+ (data.email && superAdminEmails.includes(data.email.toLowerCase().trim()));
+ if (data.email && data.status !== 'deleted' && !isExcluded) {
+ const email = data.email.toLowerCase().trim();
+ // Prefer documents that have a UID (already logged in)
+ if (!uniqueStaff.has(email) || data.uid) {
+ uniqueStaff.set(email, { ...data, id: doc.id });
+ }
+ }
+ });
+ const staffList = Array.from(uniqueStaff.values());
+ const roleOrder: Record<string, number> = { owner: 0, cashier: 1, staff: 2 };
+ staffList.sort((a, b) => {
+ const roleA = roleOrder[a.role] ?? 99;
+ const roleB = roleOrder[b.role] ?? 99;
+ if (roleA !== roleB) return roleA - roleB;
+ return (a.name || '').localeCompare(b.name || '');
+ });
+ setStaff(staffList);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'users'));
 
-    const unsubCustomers = onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
-      setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
+ const unsubCustomers = onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
+ setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
 
-    const unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('dateTime', 'desc')), (snapshot) => {
-      setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+ const unsubSales = onSnapshot(query(collection(db, 'sales'), orderBy('dateTime', 'desc')), (snapshot) => {
+ setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
-    return () => { 
-      unsubSettings(); 
-      unsubServices(); 
-      unsubCategories(); 
-      unsubStaff(); 
-      unsubCustomers();
-      unsubSales();
-    };
-  }, [profile]);
+ return () => { 
+ unsubSettings(); 
+ unsubServices(); 
+ unsubCategories(); 
+ unsubStaff(); 
+ unsubCustomers();
+ unsubSales();
+ };
+ }, [profile]);
 
-  useEffect(() => {
-    if (location.state?.activeTab) {
-      setActiveTab(location.state.activeTab);
-    }
-    if (location.state?.viewCustomer) {
-      setViewingCustomerHistory(location.state.viewCustomer);
-    }
-  }, [location.state]);
+ useEffect(() => {
+ if (location.state?.activeTab) {
+ setActiveTab(location.state.activeTab);
+ }
+ if (location.state?.viewCustomer) {
+ setViewingCustomerHistory(location.state.viewCustomer);
+ }
+ }, [location.state]);
 
-  const handleUpdateShop = async () => {
-    try {
-      await setDoc(doc(db, 'settings', 'salon'), shopSettings);
-      setShowShopForm(false);
-      setStatusMsg({ type: 'success', text: "Shop settings updated!" });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, 'settings/salon');
-    }
-  };
+ const handleUpdateShop = async () => {
+ try {
+ await setDoc(doc(db, 'settings', 'salon'), shopSettings);
+ setShowShopForm(false);
+ setStatusMsg({ type: 'success', text: "Shop settings updated!" });
+ } catch (error) {
+ handleFirestoreError(error, OperationType.WRITE, 'settings/salon');
+ }
+ };
 
-  const handleAddService = async () => {
-    if (!svcName || !svcPrice) return;
-    try {
-      await addDoc(collection(db, 'services'), { 
-        name: svcName, 
-        price: Number(svcPrice),
-        duration: Number(svcDuration) || 30,
-        category: svcCategory || 'General',
-        allowCommission: svcAllowCommission
-      });
-      setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true);
-      setShowSvcForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'services');
-    }
-  };
+ const handleAddService = async () => {
+ if (!svcName || !svcPrice) return;
+ try {
+ await addDoc(collection(db, 'services'), { 
+ name: svcName, 
+ price: Number(svcPrice),
+ duration: Number(svcDuration) || 30,
+ category: svcCategory || 'General',
+ allowCommission: svcAllowCommission
+ });
+ setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true);
+ setShowSvcForm(false);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.CREATE, 'services');
+ }
+ };
 
-  const handleUpdateService = async () => {
-    if (!editingService || !svcName || !svcPrice) return;
-    try {
-      await updateDoc(doc(db, 'services', editingService.id), {
-        name: svcName,
-        price: Number(svcPrice),
-        duration: Number(svcDuration) || 30,
-        category: svcCategory || 'General',
-        allowCommission: svcAllowCommission
-      });
-      setEditingService(null);
-      setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true);
-      setShowSvcForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `services/${editingService.id}`);
-    }
-  };
+ const handleUpdateService = async () => {
+ if (!editingService || !svcName || !svcPrice) return;
+ try {
+ await updateDoc(doc(db, 'services', editingService.id), {
+ name: svcName,
+ price: Number(svcPrice),
+ duration: Number(svcDuration) || 30,
+ category: svcCategory || 'General',
+ allowCommission: svcAllowCommission
+ });
+ setEditingService(null);
+ setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true);
+ setShowSvcForm(false);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.UPDATE, `services/${editingService.id}`);
+ }
+ };
 
-  const handleAddCategory = async () => {
-    if (!catName) return;
-    try {
-      await addDoc(collection(db, 'categories'), { 
-        name: catName.trim(),
-        icon: catIcon
-      });
-      setCatName('');
-      setCatIcon('LayoutGrid');
-      setShowCatForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'categories');
-    }
-  };
+ const handleAddCategory = async () => {
+ if (!catName) return;
+ try {
+ await addDoc(collection(db, 'categories'), { 
+ name: catName.trim(),
+ icon: catIcon
+ });
+ setCatName('');
+ setCatIcon('LayoutGrid');
+ setShowCatForm(false);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.CREATE, 'categories');
+ }
+ };
 
-  const handleUpdateCategory = async () => {
-    if (!editingCategory || !catName) return;
-    try {
-      await updateDoc(doc(db, 'categories', editingCategory.id), { 
-        name: catName.trim(),
-        icon: catIcon
-      });
-      setEditingCategory(null);
-      setCatName('');
-      setCatIcon('LayoutGrid');
-      setShowCatForm(false);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `categories/${editingCategory.id}`);
-    }
-  };
+ const handleUpdateCategory = async () => {
+ if (!editingCategory || !catName) return;
+ try {
+ await updateDoc(doc(db, 'categories', editingCategory.id), { 
+ name: catName.trim(),
+ icon: catIcon
+ });
+ setEditingCategory(null);
+ setCatName('');
+ setCatIcon('LayoutGrid');
+ setShowCatForm(false);
+ } catch (error) {
+ handleFirestoreError(error, OperationType.UPDATE, `categories/${editingCategory.id}`);
+ }
+ };
 
-  const [isDeleting, setIsDeleting] = useState(false);
+ const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = async (coll: string, id: string) => {
-    if (loading || isDeleting) return;
-    setIsDeleting(true);
-    
-    // Only admins can delete
-    if (!isAdmin) {
-      setStatusMsg({ type: 'error', text: "Unauthorized: You do not have permission to delete." });
-      setIsDeleting(false);
-      setShowConfirm(null);
-      return;
-    }
+ const handleDelete = async (coll: string, id: string) => {
+ if (loading || isDeleting) return;
+ setIsDeleting(true);
+ 
+ // Only admins can delete
+ if (!isAdmin) {
+ setStatusMsg({ type: 'error', text: "Unauthorized: You do not have permission to delete." });
+ setIsDeleting(false);
+ setShowConfirm(null);
+ return;
+ }
 
-    // Special protection for users collection
-    if (coll === 'users') {
-      const targetUser = staff.find(s => (s.id || s.email) === id);
-      const targetEmail = (targetUser?.email || id).toLowerCase();
-      const currentUserEmail = user?.email?.toLowerCase();
+ // Special protection for users collection
+ if (coll === 'users') {
+ const targetUser = staff.find(s => (s.id || s.email) === id);
+ const targetEmail = (targetUser?.email || id).toLowerCase();
+ const currentUserEmail = user?.email?.toLowerCase();
 
-      // 1. Prevent self-deletion
-      if (targetEmail === currentUserEmail) {
-        setStatusMsg({ type: 'error', text: "Unauthorized: You cannot delete your own account." });
-        setIsDeleting(false);
-        setShowConfirm(null);
-        return;
-      }
+ // 1. Prevent self-deletion
+ if (targetEmail === currentUserEmail) {
+ setStatusMsg({ type: 'error', text: "Unauthorized: You cannot delete your own account." });
+ setIsDeleting(false);
+ setShowConfirm(null);
+ return;
+ }
 
-      // 2. Role-based protection
-      // Only master can delete super_admins
-      if (targetUser?.role === 'super_admin' && currentUserEmail !== (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) {
-        setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can delete Super Admin accounts." });
-        setIsDeleting(false);
-        setShowConfirm(null);
-        return;
-      }
+ // 2. Role-based protection
+ // Only master can delete super_admins
+ if (targetUser?.role === 'super_admin' && currentUserEmail !== (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) {
+ setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can delete Super Admin accounts." });
+ setIsDeleting(false);
+ setShowConfirm(null);
+ return;
+ }
 
-      // Owners can be deleted by Super Admins (including master)
-      // But regular Owners cannot delete other Owners
-      if (targetUser?.role === 'owner' && !isSuperAdmin) {
-        setStatusMsg({ type: 'error', text: "Unauthorized: Only Super Admins can delete Owner accounts." });
-        setIsDeleting(false);
-        setShowConfirm(null);
-        return;
-      }
-    }
+ // Owners can be deleted by Super Admins (including master)
+ // But regular Owners cannot delete other Owners
+ if (targetUser?.role === 'owner' && !isSuperAdmin) {
+ setStatusMsg({ type: 'error', text: "Unauthorized: Only Super Admins can delete Owner accounts." });
+ setIsDeleting(false);
+ setShowConfirm(null);
+ return;
+ }
+ }
 
-    try {
-      if (coll === 'users') {
-        try {
-          const functions = getFunctions(app, 'asia-southeast1');
-          const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount');
-          await deleteUserAccount({ targetEmail: id });
-        } catch (err) {
-          console.warn("Cloud function failed, fallback to direct deletion. Auth deletion will require deployed functions.", err);
-          try {
-            await deleteDoc(doc(db, coll, id));
-          } catch(err2) {
-            handleFirestoreError(err2, OperationType.DELETE, `users/${id}`);
-          }
-        }
-      } else {
-        try {
-          await deleteDoc(doc(db, coll, id));
-        } catch (err) {
-          handleFirestoreError(err, OperationType.DELETE, `${coll}/${id}`);
-        }
-      }
-      setShowConfirm(null);
-      setStatusMsg({ type: 'success', text: `Successfully deleted from ${coll}.` });
-    } catch (error: any) {
-      console.error('Delete error:', error);
-      let errorText = "Failed to delete. Please try again.";
-      
-      if (error.code === 'permission-denied') {
-        errorText = "Unauthorized: You do not have permission to delete this item.";
-      } else if (error.message) {
-        // Try to parse JSON error from handleFirestoreError if it was already wrapped
-        try {
-          const parsed = JSON.parse(error.message);
-          if (parsed.error) errorText = `Error: ${parsed.error}`;
-        } catch (e) {
-          errorText = `Error: ${error.message}`;
-        }
-      }
-      
-      setStatusMsg({ type: 'error', text: errorText });
-      setShowConfirm(null); // Close the modal even on error so they can see the message
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+ try {
+ if (coll === 'users') {
+ try {
+ const functions = getFunctions(app, 'asia-southeast1');
+ const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount');
+ await deleteUserAccount({ targetEmail: id });
+ } catch (err) {
+ console.warn("Cloud function failed, fallback to direct deletion. Auth deletion will require deployed functions.", err);
+ try {
+ await deleteDoc(doc(db, coll, id));
+ } catch(err2) {
+ handleFirestoreError(err2, OperationType.DELETE, `users/${id}`);
+ }
+ }
+ } else {
+ try {
+ await deleteDoc(doc(db, coll, id));
+ } catch (err) {
+ handleFirestoreError(err, OperationType.DELETE, `${coll}/${id}`);
+ }
+ }
+ setShowConfirm(null);
+ setStatusMsg({ type: 'success', text: `Successfully deleted from ${coll}.` });
+ } catch (error: any) {
+ console.error('Delete error:', error);
+ let errorText = "Failed to delete. Please try again.";
+ 
+ if (error.code === 'permission-denied') {
+ errorText = "Unauthorized: You do not have permission to delete this item.";
+ } else if (error.message) {
+ // Try to parse JSON error from handleFirestoreError if it was already wrapped
+ try {
+ const parsed = JSON.parse(error.message);
+ if (parsed.error) errorText = `Error: ${parsed.error}`;
+ } catch (e) {
+ errorText = `Error: ${error.message}`;
+ }
+ }
+ 
+ setStatusMsg({ type: 'error', text: errorText });
+ setShowConfirm(null); // Close the modal even on error so they can see the message
+ } finally {
+ setIsDeleting(false);
+ }
+ };
 
-  const handleExportSales = async () => {
-    try {
-      const headers = [
-        'ID', 'Date', 'Time', 'Customer', 'Customer Phone',
-        'Services', 'Total Amount', 'Payment Methods', 'Points Earned'
-      ];
-      
-      const data = sales.map(s => [
-        s.id,
-        s.date,
-        s.dateTime.split('T')[1]?.substring(0,5) || '',
-        s.customerName || '',
-        s.customerPhone || '',
-        s.items.map(i => `${i.name} (x${i.qty})`).join(' | '),
-        s.total.toFixed(2),
-        s.payments ? s.payments.map(p => `${p.method}: ${p.amount}`).join(' | ') : (s.method || ''),
-        s.pointsEarned || 0
-      ]);
-      
-      await exportToCSVAndShare('sales_history_export.csv', headers, data);
-      setStatusMsg({ type: 'success', text: 'Sales data exported successfully' });
-    } catch (err) {
-      setStatusMsg({ type: 'error', text: 'Failed to export sales data' });
-    }
-  };
+ const handleExportSales = async () => {
+ try {
+ const headers = [
+ 'ID', 'Date', 'Time', 'Customer', 'Customer Phone',
+ 'Services', 'Total Amount', 'Payment Methods', 'Points Earned'
+ ];
+ 
+ const data = sales.map(s => [
+ s.id,
+ s.date,
+ s.dateTime.split('T')[1]?.substring(0,5) || '',
+ s.customerName || '',
+ s.customerPhone || '',
+ s.items.map(i => `${i.name} (x${i.qty})`).join(' | '),
+ s.total.toFixed(2),
+ s.payments ? s.payments.map(p => `${p.method}: ${p.amount}`).join(' | ') : (s.method || ''),
+ s.pointsEarned || 0
+ ]);
+ 
+ await exportToCSVAndShare('sales_history_export.csv', headers, data);
+ setStatusMsg({ type: 'success', text: 'Sales data exported successfully' });
+ } catch (err) {
+ setStatusMsg({ type: 'error', text: 'Failed to export sales data' });
+ }
+ };
 
-  const handleExportCustomers = async () => {
-    try {
-      const headers = ['ID', 'Name', 'Phone', 'Email', 'Address', 'Points', 'Joined Date', 'Notes'];
-      
-      const data = customers.map(c => [
-        c.id,
-        c.name,
-        c.phone,
-        c.email || '',
-        c.address || '',
-        c.points || 0,
-        c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '',
-        c.notes || ''
-      ]);
-      
-      await exportToCSVAndShare('customers_export.csv', headers, data);
-      setStatusMsg({ type: 'success', text: 'Customers exported successfully' });
-    } catch (err) {
-      setStatusMsg({ type: 'error', text: 'Failed to export customers' });
-    }
-  };
+ const handleExportCustomers = async () => {
+ try {
+ const headers = ['ID', 'Name', 'Phone', 'Email', 'Address', 'Points', 'Joined Date', 'Notes'];
+ 
+ const data = customers.map(c => [
+ c.id,
+ c.name,
+ c.phone,
+ c.email || '',
+ c.address || '',
+ c.points || 0,
+ c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '',
+ c.notes || ''
+ ]);
+ 
+ await exportToCSVAndShare('customers_export.csv', headers, data);
+ setStatusMsg({ type: 'success', text: 'Customers exported successfully' });
+ } catch (err) {
+ setStatusMsg({ type: 'error', text: 'Failed to export customers' });
+ }
+ };
 
-  const handleSetupSuperAdmin = async () => {
-    if (!user?.email) return;
-    const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
-    if (superAdminEmails.includes(user.email.toLowerCase())) {
-      try {
-        const docRef = doc(db, 'users', user.email.toLowerCase());
-        await setDoc(docRef, { role: 'super_admin', status: 'active' }, { merge: true });
-        setStatusMsg({ type: 'success', text: "Super Admin role assigned successfully!" });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.WRITE, `users/${user.email}`);
-      }
-    }
-  };
+ const handleSetupSuperAdmin = async () => {
+ if (!user?.email) return;
+ const superAdminEmails = [(import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')];
+ if (superAdminEmails.includes(user.email.toLowerCase())) {
+ try {
+ const docRef = doc(db, 'users', user.email.toLowerCase());
+ await setDoc(docRef, { role: 'super_admin', status: 'active' }, { merge: true });
+ setStatusMsg({ type: 'success', text: "Super Admin role assigned successfully!" });
+ } catch (error) {
+ handleFirestoreError(error, OperationType.WRITE, `users/${user.email}`);
+ }
+ }
+ };
 
-  const addAuditLog = async (action: string, resource: string, details: any) => {
-    if (!user) return;
-    try {
-      await addDoc(collection(db, 'audit_logs'), {
-        timestamp: new Date().toISOString(),
-        userId: user.uid,
-        userEmail: user.email,
-        action,
-        resource,
-        details
-      });
-    } catch (err) {
-      console.error("Audit log error:", err);
-    }
-  };
+ const addAuditLog = async (action: string, resource: string, details: any) => {
+ if (!user) return;
+ try {
+ await addDoc(collection(db, 'audit_logs'), {
+ timestamp: new Date().toISOString(),
+ userId: user.uid,
+ userEmail: user.email,
+ action,
+ resource,
+ details
+ });
+ } catch (err) {
+ console.error("Audit log error:", err);
+ }
+ };
 
-  const handleAddStaff = async () => {
-    if (loading) return;
-    if (!stfName || !stfEmail || !stfComm) {
-      setStatusMsg({ type: 'error', text: 'Please fill in all required fields (Name, Email, Commission).' });
-      return;
-    }
-    
-    // Only admins can add staff
-    if (!isAdmin) {
-      setStatusMsg({ type: 'error', text: "Unauthorized: You do not have permission to add staff." });
-      return;
-    }
+ const handleAddStaff = async () => {
+ if (loading) return;
+ if (!stfName || !stfEmail || !stfComm) {
+ setStatusMsg({ type: 'error', text: 'Please fill in all required fields (Name, Email, Commission).' });
+ return;
+ }
+ 
+ // Only admins can add staff
+ if (!isAdmin) {
+ setStatusMsg({ type: 'error', text: "Unauthorized: You do not have permission to add staff." });
+ return;
+ }
 
-    const commissionVal = Number(stfComm);
-    
-    // Only master account can create super_admin or owner
-    if (!isSuperAdmin && (stfRole === 'super_admin' || stfRole === 'owner')) {
-      setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can assign Admin or Owner roles." });
-      return;
-    }
+ const commissionVal = Number(stfComm);
+ 
+ // Only master account can create super_admin or owner
+ if (!isSuperAdmin && (stfRole === 'super_admin' || stfRole === 'owner')) {
+ setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can assign Admin or Owner roles." });
+ return;
+ }
 
-    const now = new Date().toISOString();
-    const userData = {
-      name: stfName,
-      email: stfEmail.toLowerCase().trim(),
-      role: stfRole,
-      roles: stfRoles,
-      commission: isNaN(commissionVal) ? 0 : commissionVal,
-      status: stfStatus,
-      bio: stfBio,
-      photoURL: stfPhotoURL,
-      specialties: stfSpecialties,
-      workingDays: stfWorkingDays,
-      createdAt: now,
-      updatedAt: now
-    };
-
-
-    try {
-      const email = userData.email;
-      await setDoc(doc(db, 'users', email), userData, { merge: true });
-      
-      await addAuditLog('CREATE_STAFF', `users/${email}`, { role: stfRole, name: stfName });
-      
-      setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
-      setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
-      setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
-      setShowStfForm(false);
-      setStatusMsg({ type: 'success', text: "Staff registered successfully!" });
-    } catch (error) {
-      console.error('Error details:', error);
-      handleFirestoreError(error, OperationType.CREATE, `users/${stfEmail.toLowerCase().trim()}`);
-    }
-  };
-
-  const handleUpdateStaff = async () => {
-    if (loading) return;
-    if (!editingStaff) return;
-    if (!stfName || !stfEmail || !stfComm) {
-      setStatusMsg({ type: 'error', text: 'Please fill in all required fields (Name, Email, Commission).' });
-      return;
-    }
-    
-    // Only admins can update staff
-    if (!isAdmin) {
-      setStatusMsg({ type: 'error', text: "Unauthorized: You do not have permission to update staff." });
-      return;
-    }
-
-    // Only master account can update super_admin or owner accounts
-    if (!isSuperAdmin && ((editingStaff.email !== user?.email && (editingStaff.role === 'super_admin' || editingStaff.role === 'owner')) || stfRole === 'super_admin')) {
-      setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can modify Admin or Owner accounts." });
-      return;
-    }
-
-    const now = new Date().toISOString();
-    const newEmail = stfEmail.toLowerCase().trim();
-    const commissionVal = Number(stfComm);
-    const userData = {
-      ...editingStaff,
-      name: stfName,
-      email: newEmail,
-      role: stfRole,
-      roles: stfRoles,
-      commission: isNaN(commissionVal) ? 0 : commissionVal,
-      status: stfStatus,
-      bio: stfBio,
-      photoURL: stfPhotoURL,
-      specialties: stfSpecialties,
-      workingDays: stfWorkingDays,
-      updatedAt: now
-    };
+ const now = new Date().toISOString();
+ const userData = {
+ name: stfName,
+ email: stfEmail.toLowerCase().trim(),
+ role: stfRole,
+ roles: stfRoles,
+ commission: isNaN(commissionVal) ? 0 : commissionVal,
+ status: stfStatus,
+ bio: stfBio,
+ photoURL: stfPhotoURL,
+ specialties: stfSpecialties,
+ workingDays: stfWorkingDays,
+ createdAt: now,
+ updatedAt: now
+ };
 
 
-    try {
-      if (newEmail !== editingStaff.email) {
-        // If email changed, we must move the document because email is the ID
-        await deleteDoc(doc(db, 'users', editingStaff.email));
-      }
-      await setDoc(doc(db, 'users', newEmail), userData, { merge: true });
-      
-      await addAuditLog('UPDATE_STAFF', `users/${newEmail}`, { 
-        oldRole: editingStaff.role, 
-        newRole: stfRole,
-        oldName: editingStaff.name,
-        newName: stfName,
-        emailChanged: newEmail !== editingStaff.email
-      });
-      
-      setEditingStaff(null);
-      setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
-      setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
-      setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
-      setShowStfForm(false);
-      setStatusMsg({ type: 'success', text: "Staff updated successfully!" });
-    } catch (error) {
-      console.error('Error details:', error);
-      handleFirestoreError(error, OperationType.UPDATE, `users/${editingStaff.email}`);
-    }
-  };
+ try {
+ const email = userData.email;
+ await setDoc(doc(db, 'users', email), userData, { merge: true });
+ 
+ await addAuditLog('CREATE_STAFF', `users/${email}`, { role: stfRole, name: stfName });
+ 
+ setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
+ setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
+ setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+ setShowStfForm(false);
+ setStatusMsg({ type: 'success', text: "Staff registered successfully!" });
+ } catch (error) {
+ console.error('Error details:', error);
+ handleFirestoreError(error, OperationType.CREATE, `users/${stfEmail.toLowerCase().trim()}`);
+ }
+ };
 
-  const handleAddCustomer = async () => {
-    if (!custName || !custPhone) {
-      setStatusMsg({ type: 'error', text: 'Name and Phone are required.' });
-      return;
-    }
+ const handleUpdateStaff = async () => {
+ if (loading) return;
+ if (!editingStaff) return;
+ if (!stfName || !stfEmail || !stfComm) {
+ setStatusMsg({ type: 'error', text: 'Please fill in all required fields (Name, Email, Commission).' });
+ return;
+ }
+ 
+ // Only admins can update staff
+ if (!isAdmin) {
+ setStatusMsg({ type: 'error', text: "Unauthorized: You do not have permission to update staff." });
+ return;
+ }
 
-    // Basic phone validation: digits, spaces, plus, hyphens, parentheses, 7-20 chars
-    const phoneRegex = /^[0-9+() -]{7,20}$/;
-    if (!phoneRegex.test(custPhone.trim())) {
-      setStatusMsg({ type: 'error', text: 'Please enter a valid phone number.' });
-      return;
-    }
+ // Only master account can update super_admin or owner accounts
+ if (!isSuperAdmin && ((editingStaff.email !== user?.email && (editingStaff.role === 'super_admin' || editingStaff.role === 'owner')) || stfRole === 'super_admin')) {
+ setStatusMsg({ type: 'error', text: "Unauthorized: Only the master account can modify Admin or Owner accounts." });
+ return;
+ }
 
-    // Basic email validation if provided
-    if (custEmail && custEmail.trim()) {
-      const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-      if (!emailRegex.test(custEmail.trim())) {
-        setStatusMsg({ type: 'error', text: 'Please enter a valid email address.' });
-        return;
-      }
-    }
+ const now = new Date().toISOString();
+ const newEmail = stfEmail.toLowerCase().trim();
+ const commissionVal = Number(stfComm);
+ const userData = {
+ ...editingStaff,
+ name: stfName,
+ email: newEmail,
+ role: stfRole,
+ roles: stfRoles,
+ commission: isNaN(commissionVal) ? 0 : commissionVal,
+ status: stfStatus,
+ bio: stfBio,
+ photoURL: stfPhotoURL,
+ specialties: stfSpecialties,
+ workingDays: stfWorkingDays,
+ updatedAt: now
+ };
 
-    try {
-      await addDoc(collection(db, 'customers'), {
-        name: custName.trim(),
-        phone: custPhone.trim(),
-        email: custEmail.trim().toLowerCase(),
-        address: custAddr.trim(),
-        notes: custNotes.trim(),
-        points: 0,
-        createdAt: new Date().toISOString()
-      });
-      setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes('');
-      setShowCustForm(false);
-      setStatusMsg({ type: 'success', text: 'Customer added successfully!' });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.CREATE, 'customers');
-    }
-  };
 
-  const handleUpdateCustomer = async () => {
-    if (!editingCustomer || !custName || !custPhone) {
-      setStatusMsg({ type: 'error', text: 'Name and Phone are required.' });
-      return;
-    }
+ try {
+ if (newEmail !== editingStaff.email) {
+ // If email changed, we must move the document because email is the ID
+ await deleteDoc(doc(db, 'users', editingStaff.email));
+ }
+ await setDoc(doc(db, 'users', newEmail), userData, { merge: true });
+ 
+ await addAuditLog('UPDATE_STAFF', `users/${newEmail}`, { 
+ oldRole: editingStaff.role, 
+ newRole: stfRole,
+ oldName: editingStaff.name,
+ newName: stfName,
+ emailChanged: newEmail !== editingStaff.email
+ });
+ 
+ setEditingStaff(null);
+ setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
+ setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
+ setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+ setShowStfForm(false);
+ setStatusMsg({ type: 'success', text: "Staff updated successfully!" });
+ } catch (error) {
+ console.error('Error details:', error);
+ handleFirestoreError(error, OperationType.UPDATE, `users/${editingStaff.email}`);
+ }
+ };
 
-    // Basic phone validation
-    const phoneRegex = /^[0-9+() -]{7,20}$/;
-    if (!phoneRegex.test(custPhone.trim())) {
-      setStatusMsg({ type: 'error', text: 'Please enter a valid phone number.' });
-      return;
-    }
+ const handleAddCustomer = async () => {
+ if (!custName || !custPhone) {
+ setStatusMsg({ type: 'error', text: 'Name and Phone are required.' });
+ return;
+ }
 
-    // Basic email validation if provided
-    if (custEmail && custEmail.trim()) {
-      const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-      if (!emailRegex.test(custEmail.trim())) {
-        setStatusMsg({ type: 'error', text: 'Please enter a valid email address.' });
-        return;
-      }
-    }
+ // Basic phone validation: digits, spaces, plus, hyphens, parentheses, 7-20 chars
+ const phoneRegex = /^[0-9+() -]{7,20}$/;
+ if (!phoneRegex.test(custPhone.trim())) {
+ setStatusMsg({ type: 'error', text: 'Please enter a valid phone number.' });
+ return;
+ }
 
-    const pts = Number(custPoints);
-    if (isNaN(pts) || pts < 0 || !Number.isInteger(pts)) {
-      setStatusMsg({ type: 'error', text: 'Points must be a non-negative integer.' });
-      return;
-    }
+ // Basic email validation if provided
+ if (custEmail && custEmail.trim()) {
+ const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+ if (!emailRegex.test(custEmail.trim())) {
+ setStatusMsg({ type: 'error', text: 'Please enter a valid email address.' });
+ return;
+ }
+ }
 
-    try {
-      await updateDoc(doc(db, 'customers', editingCustomer.id), {
-        name: custName.trim(),
-        phone: custPhone.trim(),
-        email: custEmail.trim().toLowerCase(),
-        address: custAddr.trim(),
-        notes: custNotes.trim(),
-        points: pts
-      });
-      
-      // Update user profile points if email is present
-      const targetEmail = custEmail.trim() ? custEmail.trim().toLowerCase() : editingCustomer.email;
-      if (targetEmail) {
-        const userDocRef = doc(db, 'users', targetEmail.toLowerCase());
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-           await updateDoc(userDocRef, { points: pts });
-        }
-      }
+ try {
+ await addDoc(collection(db, 'customers'), {
+ name: custName.trim(),
+ phone: custPhone.trim(),
+ email: custEmail.trim().toLowerCase(),
+ address: custAddr.trim(),
+ notes: custNotes.trim(),
+ points: 0,
+ createdAt: new Date().toISOString()
+ });
+ setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes('');
+ setShowCustForm(false);
+ setStatusMsg({ type: 'success', text: 'Customer added successfully!' });
+ } catch (error) {
+ handleFirestoreError(error, OperationType.CREATE, 'customers');
+ }
+ };
 
-      setEditingCustomer(null);
-      setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); setCustPoints('');
-      setStatusMsg({ type: 'success', text: 'Customer updated successfully!' });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `customers/${editingCustomer.id}`);
-    }
-  };
+ const handleUpdateCustomer = async () => {
+ if (!editingCustomer || !custName || !custPhone) {
+ setStatusMsg({ type: 'error', text: 'Name and Phone are required.' });
+ return;
+ }
 
-  const handleQuickUpdatePoints = async () => {
-    if (!quickEditingPoints) return;
-    const pts = Number(quickPointsValue);
-    if (isNaN(pts) || pts < 0 || !Number.isInteger(pts)) {
-      setStatusMsg({ type: 'error', text: 'Points must be a non-negative integer.' });
-      return;
-    }
-    try {
-      await updateDoc(doc(db, 'customers', quickEditingPoints.id), {
-        points: pts
-      });
-      
-      // Update user profile points if email is present
-      if (quickEditingPoints.email) {
-        const userDocRef = doc(db, 'users', quickEditingPoints.email.toLowerCase());
-        const userDocSnap = await getDoc(userDocRef);
-        if (userDocSnap.exists()) {
-           await updateDoc(userDocRef, { points: pts });
-        }
-      }
+ // Basic phone validation
+ const phoneRegex = /^[0-9+() -]{7,20}$/;
+ if (!phoneRegex.test(custPhone.trim())) {
+ setStatusMsg({ type: 'error', text: 'Please enter a valid phone number.' });
+ return;
+ }
 
-      setQuickEditingPoints(null);
-      setQuickPointsValue('');
-      setStatusMsg({ type: 'success', text: 'Points updated successfully!' });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `customers/${quickEditingPoints.id}`);
-    }
-  };
+ // Basic email validation if provided
+ if (custEmail && custEmail.trim()) {
+ const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
+ if (!emailRegex.test(custEmail.trim())) {
+ setStatusMsg({ type: 'error', text: 'Please enter a valid email address.' });
+ return;
+ }
+ }
 
-  const handleClearHistory = async () => {
-    setIsClearing(true);
-    try {
-      const snapshot = await getDocs(collection(db, 'sales'));
-      const deletePromises = snapshot.docs.map(d => deleteDoc(d.ref));
-      await Promise.all(deletePromises);
-      setShowClearConfirm(false);
-      setStatusMsg({ type: 'success', text: "All sales history has been cleared." });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'sales/*');
-    } finally {
-      setIsClearing(false);
-    }
-  };
+ const pts = Number(custPoints);
+ if (isNaN(pts) || pts < 0 || !Number.isInteger(pts)) {
+ setStatusMsg({ type: 'error', text: 'Points must be a non-negative integer.' });
+ return;
+ }
 
-  if (!isAdmin && !isCashier) return <Navigate to="/" />;
+ try {
+ await updateDoc(doc(db, 'customers', editingCustomer.id), {
+ name: custName.trim(),
+ phone: custPhone.trim(),
+ email: custEmail.trim().toLowerCase(),
+ address: custAddr.trim(),
+ notes: custNotes.trim(),
+ points: pts
+ });
+ 
+ // Update user profile points if email is present
+ const targetEmail = custEmail.trim() ? custEmail.trim().toLowerCase() : editingCustomer.email;
+ if (targetEmail) {
+ const userDocRef = doc(db, 'users', targetEmail.toLowerCase());
+ const userDocSnap = await getDoc(userDocRef);
+ if (userDocSnap.exists()) {
+ await updateDoc(userDocRef, { points: pts });
+ }
+ }
 
-  return (
-    <div className="p-4 space-y-6">
-      <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
-        {[
-          { id: 'shop', label: 'Shop', icon: <Store size={16} /> },
-          { id: 'financials', label: 'Tax & Finance', icon: <DollarSign size={16} /> },
-          { id: 'data', label: 'Data & Export', icon: <Database size={16} /> },
-          { id: 'categories', label: 'Categories', icon: <Menu size={16} /> },
-          { id: 'services', label: 'Services', icon: <Briefcase size={16} /> },
-          { id: 'staff', label: 'Staff', icon: <UserIcon size={16} /> },
-          { id: 'customers', label: 'Customers', icon: <UsersIcon size={16} /> },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={cn(
-              "flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all border",
-              activeTab === tab.id 
-                ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20" 
-                : "bg-card text-muted-foreground border-border hover:border-primary/50"
-            )}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
-      </div>
+ setEditingCustomer(null);
+ setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); setCustPoints('');
+ setStatusMsg({ type: 'success', text: 'Customer updated successfully!' });
+ } catch (error) {
+ handleFirestoreError(error, OperationType.UPDATE, `customers/${editingCustomer.id}`);
+ }
+ };
 
-      <div className="bg-card border border-border rounded-3xl p-6 space-y-8 shadow-xl transition-all duration-300">
+ const handleQuickUpdatePoints = async () => {
+ if (!quickEditingPoints) return;
+ const pts = Number(quickPointsValue);
+ if (isNaN(pts) || pts < 0 || !Number.isInteger(pts)) {
+ setStatusMsg({ type: 'error', text: 'Points must be a non-negative integer.' });
+ return;
+ }
+ try {
+ await updateDoc(doc(db, 'customers', quickEditingPoints.id), {
+ points: pts
+ });
+ 
+ // Update user profile points if email is present
+ if (quickEditingPoints.email) {
+ const userDocRef = doc(db, 'users', quickEditingPoints.email.toLowerCase());
+ const userDocSnap = await getDoc(userDocRef);
+ if (userDocSnap.exists()) {
+ await updateDoc(userDocRef, { points: pts });
+ }
+ }
+
+ setQuickEditingPoints(null);
+ setQuickPointsValue('');
+ setStatusMsg({ type: 'success', text: 'Points updated successfully!' });
+ } catch (error) {
+ handleFirestoreError(error, OperationType.UPDATE, `customers/${quickEditingPoints.id}`);
+ }
+ };
+
+ const handleClearHistory = async () => {
+ setIsClearing(true);
+ try {
+ const snapshot = await getDocs(collection(db, 'sales'));
+ const deletePromises = snapshot.docs.map(d => deleteDoc(d.ref));
+ await Promise.all(deletePromises);
+ setShowClearConfirm(false);
+ setStatusMsg({ type: 'success', text: "All sales history has been cleared." });
+ } catch (error) {
+ handleFirestoreError(error, OperationType.DELETE, 'sales/*');
+ } finally {
+ setIsClearing(false);
+ }
+ };
+
+ if (!isAdmin && !isCashier) return <Navigate to="/" />;
+
+ return (
+ <div className="w-full px-3 py-4 md:p-6 space-y-3">
+ <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide">
+ {[
+ { id: 'shop', label: 'Shop', icon: <Store size={16} /> },
+ { id: 'financials', label: 'Tax & Finance', icon: <DollarSign size={16} /> },
+ { id: 'data', label: 'Data & Export', icon: <Database size={16} /> },
+ { id: 'categories', label: 'Categories', icon: <Menu size={16} /> },
+ { id: 'services', label: 'Services', icon: <Briefcase size={16} /> },
+ { id: 'staff', label: 'Staff', icon: <UserIcon size={16} /> },
+ { id: 'customers', label: 'Customers', icon: <UsersIcon size={16} /> },
+ ].map(tab => (
+ <button
+ key={tab.id}
+ onClick={() => setActiveTab(tab.id as any)}
+ className={cn(
+ "flex items-center gap-2 px-3 md:px-5 py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all ",
+ activeTab === tab.id 
+ ? "bg-primary text-amber-600 dark:text-amber-400-foreground -primary shadow-primary/20" 
+ : "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 text-slate-700 dark:text-slate-300 hover:-primary/50"
+ )}
+ >
+ {tab.icon}
+ {tab.label}
+ </button>
+ ))}
+ </div>
+
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-3 transition-all duration-300">
 {activeTab === 'shop' && (
-          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
-            {isSuperAdmin && profile?.role !== 'super_admin' && (
-              <div className="bg-primary/10 p-6 rounded-[2rem] border border-border flex items-center justify-between gap-4">
-                <div>
-                  <h4 className="text-primary font-black text-sm uppercase tracking-widest">First Time Setup</h4>
-                  <p className="text-[10px] text-muted-foreground font-bold mt-1">Assign your account the Super Admin role in Firestore.</p>
-                </div>
-                <button 
-                  onClick={handleSetupSuperAdmin}
-                  className="btn-primary px-6 py-3 text-[10px] rounded-xl font-black tracking-widest"
-                >
-                  SETUP ROLE
-                </button>
-              </div>
-            )}
-            <div className="flex items-center justify-between px-1">
-              <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                Business Profile / Store Details
-              </h4>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <FloatingInput 
-                   label="Shop Name"
-                   value={shopSettings.name}
-                   onChange={(val) => setShopSettings({ ...shopSettings, name: val })}
-                   onFocusClear
-                 />
-                 <FloatingInput 
-                   label="Business Registration No."
-                   value={shopSettings.businessRegNo || ''}
-                   onChange={(val) => setShopSettings({ ...shopSettings, businessRegNo: val })}
-                   onFocusClear
-                 />
-                 <FloatingInput 
-                   label="Phone"
-                   value={shopSettings.ph}
-                   onChange={(val) => setShopSettings({ ...shopSettings, ph: val })}
-                   onFocusClear
-                 />
-                 <FloatingInput 
-                   label="Email Address"
-                   value={shopSettings.email || ''}
-                   onChange={(val) => setShopSettings({ ...shopSettings, email: val })}
-                   onFocusClear
-                 />
-                 <div className="md:col-span-2">
-                    <FloatingInput 
-                      label="Address"
-                      value={shopSettings.addr}
-                      onChange={(val) => setShopSettings({ ...shopSettings, addr: val })}
-                      onFocusClear
-                    />
-                 </div>
-                 <div className="md:col-span-2">
-                    <FloatingInput 
-                      label="Website"
-                      value={shopSettings.website || ''}
-                      onChange={(val) => setShopSettings({ ...shopSettings, website: val })}
-                      onFocusClear
-                    />
-                 </div>
-              </div>
+ <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+ {isSuperAdmin && profile?.role !== 'super_admin' && (
+ <div className="bg-amber-100/50 dark:bg-amber-900/30 p-4 rounded-2xl flex items-center justify-between gap-4">
+ <div>
+ <h4 className="text-amber-600 dark:text-amber-400 font-black text-sm uppercase tracking-widest">First Time Setup</h4>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold mt-1">Assign your account the Super Admin role in Firestore.</p>
+ </div>
+ <button 
+ onClick={handleSetupSuperAdmin}
+ className="btn-primary px-4 md:px-6 py-3 text-[10px] rounded-xl font-black tracking-widest"
+ >
+ SETUP ROLE
+ </button>
+ </div>
+ )}
+ <div className="flex items-center justify-between px-1">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Business Profile / Store Details
+ </h4>
+ </div>
+ 
+ <div className="space-y-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <FloatingInput 
+ label="Shop Name"
+ value={shopSettings.name}
+ onChange={(val) => setShopSettings({ ...shopSettings, name: val })}
+ onFocusClear
+ />
+ <FloatingInput 
+ label="Business Registration No."
+ value={shopSettings.businessRegNo || ''}
+ onChange={(val) => setShopSettings({ ...shopSettings, businessRegNo: val })}
+ onFocusClear
+ />
+ <FloatingInput 
+ label="Phone"
+ value={shopSettings.ph}
+ onChange={(val) => setShopSettings({ ...shopSettings, ph: val })}
+ onFocusClear
+ />
+ <FloatingInput 
+ label="Email Address"
+ value={shopSettings.email || ''}
+ onChange={(val) => setShopSettings({ ...shopSettings, email: val })}
+ onFocusClear
+ />
+ <div className="md:col-span-2">
+ <FloatingInput 
+ label="Address"
+ value={shopSettings.addr}
+ onChange={(val) => setShopSettings({ ...shopSettings, addr: val })}
+ onFocusClear
+ />
+ </div>
+ <div className="md:col-span-2">
+ <FloatingInput 
+ label="Website"
+ value={shopSettings.website || ''}
+ onChange={(val) => setShopSettings({ ...shopSettings, website: val })}
+ onFocusClear
+ />
+ </div>
+ </div>
 
-              <div className="space-y-4 pt-6 border-t border-border">
-                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                  <Printer size={14} className="text-primary" /> Receipt Customization
-                </h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <FloatingInput 
-                     label="Receipt Header"
-                     value={shopSettings.receiptHeader || ''}
-                     onChange={(val) => setShopSettings({ ...shopSettings, receiptHeader: val })}
-                     onFocusClear
-                   />
-                   <FloatingInput 
-                     label="Receipt Footer / Thank You Message"
-                     value={shopSettings.receiptFooter || ''}
-                     onChange={(val) => setShopSettings({ ...shopSettings, receiptFooter: val })}
-                     onFocusClear
-                   />
-                   <div className="md:col-span-2">
-                      <FloatingInput 
-                        label="Return Policy"
-                        value={shopSettings.returnPolicy || ''}
-                        onChange={(val) => setShopSettings({ ...shopSettings, returnPolicy: val })}
-                        onFocusClear
-                      />
-                   </div>
-                </div>
+ <div className="space-y-4 pt-6 ">
+ <h4 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 flex items-center gap-2">
+ <Printer size={14} className="text-amber-600 dark:text-amber-400" /> Receipt Customization
+ </h4>
+ 
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <FloatingInput 
+ label="Receipt Header"
+ value={shopSettings.receiptHeader || ''}
+ onChange={(val) => setShopSettings({ ...shopSettings, receiptHeader: val })}
+ onFocusClear
+ />
+ <FloatingInput 
+ label="Receipt Footer / Thank You Message"
+ value={shopSettings.receiptFooter || ''}
+ onChange={(val) => setShopSettings({ ...shopSettings, receiptFooter: val })}
+ onFocusClear
+ />
+ <div className="md:col-span-2">
+ <FloatingInput 
+ label="Return Policy"
+ value={shopSettings.returnPolicy || ''}
+ onChange={(val) => setShopSettings({ ...shopSettings, returnPolicy: val })}
+ onFocusClear
+ />
+ </div>
+ </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
-                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
-                    <div>
-                      <span className="block text-sm font-bold text-foreground">Hide Shop Name</span>
-                    </div>
-                    <button 
-                      type="button"
-                      onClick={() => setShopSettings({ ...shopSettings, hideShopNameOnReceipt: !shopSettings.hideShopNameOnReceipt })}
-                      className={cn(
-                        "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                        shopSettings.hideShopNameOnReceipt ? "bg-primary" : "bg-muted/30"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
-                        shopSettings.hideShopNameOnReceipt ? "translate-x-6" : "translate-x-0"
-                      )} />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
-                    <div>
-                      <span className="block text-sm font-bold text-foreground">Hide Date & Time</span>
-                    </div>
-                    <button 
-                      type="button"
-                      onClick={() => setShopSettings({ ...shopSettings, hideDateTimeOnReceipt: !shopSettings.hideDateTimeOnReceipt })}
-                      className={cn(
-                        "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                        shopSettings.hideDateTimeOnReceipt ? "bg-primary" : "bg-muted/30"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
-                        shopSettings.hideDateTimeOnReceipt ? "translate-x-6" : "translate-x-0"
-                      )} />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
-                    <div>
-                      <span className="block text-sm font-bold text-foreground">Hide Staff Name</span>
-                    </div>
-                    <button 
-                      type="button"
-                      onClick={() => setShopSettings({ ...shopSettings, hideStaffNameOnReceipt: !shopSettings.hideStaffNameOnReceipt })}
-                      className={cn(
-                        "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                        shopSettings.hideStaffNameOnReceipt ? "bg-primary" : "bg-muted/30"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
-                        shopSettings.hideStaffNameOnReceipt ? "translate-x-6" : "translate-x-0"
-                      )} />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border border-border">
-                    <div>
-                      <span className="block text-sm font-bold text-foreground">Hide Loyalty Points</span>
-                    </div>
-                    <button 
-                      type="button"
-                      onClick={() => setShopSettings({ ...shopSettings, hideLoyaltyPointsOnReceipt: !shopSettings.hideLoyaltyPointsOnReceipt })}
-                      className={cn(
-                        "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
-                        shopSettings.hideLoyaltyPointsOnReceipt ? "bg-primary" : "bg-muted/30"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-4 h-4 bg-white rounded-full shadow-md transition-transform duration-300",
-                        shopSettings.hideLoyaltyPointsOnReceipt ? "translate-x-6" : "translate-x-0"
-                      )} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Settings</button>
-            </div>
-          </div>
-        )}
-        
-        {activeTab === 'financials' && (
-          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
-             <div className="flex items-center justify-between px-1">
-                <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                   <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                   Tax & Financial Configuration
-                </h4>
-             </div>
-             <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Tax Name (e.g., VAT, GST)</label>
-                     <input 
-                       type="text" 
-                       value={shopSettings.taxName || ''} 
-                       onChange={(e) => setShopSettings({ ...shopSettings, taxName: e.target.value })} 
-                       className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
-                       placeholder="VAT" 
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Default Tax Rate (%)</label>
-                     <input 
-                       type="number" 
-                       value={shopSettings.taxRate || ''} 
-                       onChange={(e) => setShopSettings({ ...shopSettings, taxRate: parseFloat(e.target.value) || 0 })} 
-                       className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
-                       placeholder="0.00" 
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Currency Symbol</label>
-                     <input 
-                       type="text" 
-                       value={shopSettings.currencySymbol || '$'} 
-                       onChange={(e) => setShopSettings({ ...shopSettings, currencySymbol: e.target.value })} 
-                       className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
-                       placeholder="$" 
-                     />
-                   </div>
-                </div>
-                <div className="p-4 bg-muted/20 border border-border rounded-2xl mt-4">
-                   <h3 className="text-sm font-bold mb-1">Financial Year</h3>
-                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mb-3">Define the start of your fiscal year for reporting purposes.</p>
-                   <select className="w-full md:w-1/2 p-3 rounded-xl bg-card border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" defaultValue="jan">
-                      <option value="jan">January - December</option>
-                      <option value="apr">April - March</option>
-                      <option value="jul">July - June</option>
-                      <option value="oct">October - September</option>
-                   </select>
-                </div>
-                <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Financial Settings</button>
-             </div>
-          </div>
-        )}
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+ <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl ">
+ <div>
+ <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">Hide Shop Name</span>
+ </div>
+ <button 
+ type="button"
+ onClick={() => setShopSettings({ ...shopSettings, hideShopNameOnReceipt: !shopSettings.hideShopNameOnReceipt })}
+ className={cn(
+ "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+ shopSettings.hideShopNameOnReceipt ? "bg-primary" : "bg-muted/30"
+ )}
+ >
+ <div className={cn(
+ "w-4 h-4 bg-white rounded-full transition-transform duration-300",
+ shopSettings.hideShopNameOnReceipt ? "translate-x-6" : "translate-x-0"
+ )} />
+ </button>
+ </div>
+ <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl ">
+ <div>
+ <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">Hide Date & Time</span>
+ </div>
+ <button 
+ type="button"
+ onClick={() => setShopSettings({ ...shopSettings, hideDateTimeOnReceipt: !shopSettings.hideDateTimeOnReceipt })}
+ className={cn(
+ "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+ shopSettings.hideDateTimeOnReceipt ? "bg-primary" : "bg-muted/30"
+ )}
+ >
+ <div className={cn(
+ "w-4 h-4 bg-white rounded-full transition-transform duration-300",
+ shopSettings.hideDateTimeOnReceipt ? "translate-x-6" : "translate-x-0"
+ )} />
+ </button>
+ </div>
+ <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl ">
+ <div>
+ <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">Hide Staff Name</span>
+ </div>
+ <button 
+ type="button"
+ onClick={() => setShopSettings({ ...shopSettings, hideStaffNameOnReceipt: !shopSettings.hideStaffNameOnReceipt })}
+ className={cn(
+ "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+ shopSettings.hideStaffNameOnReceipt ? "bg-primary" : "bg-muted/30"
+ )}
+ >
+ <div className={cn(
+ "w-4 h-4 bg-white rounded-full transition-transform duration-300",
+ shopSettings.hideStaffNameOnReceipt ? "translate-x-6" : "translate-x-0"
+ )} />
+ </button>
+ </div>
+ <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl ">
+ <div>
+ <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">Hide Loyalty Points</span>
+ </div>
+ <button 
+ type="button"
+ onClick={() => setShopSettings({ ...shopSettings, hideLoyaltyPointsOnReceipt: !shopSettings.hideLoyaltyPointsOnReceipt })}
+ className={cn(
+ "w-12 h-6 rounded-full p-1 transition-all duration-300 relative",
+ shopSettings.hideLoyaltyPointsOnReceipt ? "bg-primary" : "bg-muted/30"
+ )}
+ >
+ <div className={cn(
+ "w-4 h-4 bg-white rounded-full transition-transform duration-300",
+ shopSettings.hideLoyaltyPointsOnReceipt ? "translate-x-6" : "translate-x-0"
+ )} />
+ </button>
+ </div>
+ </div>
+ </div>
+ <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Settings</button>
+ </div>
+ </div>
+ )}
+ 
+ {activeTab === 'financials' && (
+ <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+ <div className="flex items-center justify-between px-1">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Tax & Financial Configuration
+ </h4>
+ </div>
+ <div className="space-y-4">
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ <div className="space-y-2">
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Tax Name (e.g., VAT, GST)</label>
+ <input 
+ type="text" 
+ value={shopSettings.taxName || ''} 
+ onChange={(e) => setShopSettings({ ...shopSettings, taxName: e.target.value })} 
+ className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+ placeholder="VAT" 
+ />
+ </div>
+ <div className="space-y-2">
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Default Tax Rate (%)</label>
+ <input 
+ type="number" 
+ value={shopSettings.taxRate || ''} 
+ onChange={(e) => setShopSettings({ ...shopSettings, taxRate: parseFloat(e.target.value) || 0 })} 
+ className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+ placeholder="0.00" 
+ />
+ </div>
+ <div className="space-y-2">
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Currency Symbol</label>
+ <input 
+ type="text" 
+ value={shopSettings.currencySymbol || '$'} 
+ onChange={(e) => setShopSettings({ ...shopSettings, currencySymbol: e.target.value })} 
+ className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+ placeholder="$" 
+ />
+ </div>
+ </div>
+ <div className="p-4 bg-muted/20 rounded-2xl mt-4">
+ <h3 className="text-sm font-bold mb-1">Financial Year</h3>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 uppercase tracking-widest font-medium mb-3">Define the start of your fiscal year for reporting purposes.</p>
+ <select className="w-full md:w-1/2 p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" defaultValue="jan">
+ <option value="jan">January - December</option>
+ <option value="apr">April - March</option>
+ <option value="jul">July - June</option>
+ <option value="oct">October - September</option>
+ </select>
+ </div>
+ <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Financial Settings</button>
+ </div>
+ </div>
+ )}
 
-        {activeTab === 'data' && (
-          <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
-             <div className="flex items-center justify-between px-1">
-                <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                   <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                   Data Management & Export
-                </h4>
-             </div>
-             
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 bg-card border border-border rounded-2xl flex flex-col items-start gap-4 hover:border-primary/50 transition-all group">
-                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                      <Database className="w-6 h-6" />
-                   </div>
-                   <div>
-                     <h3 className="text-base font-black">Export All Sales Data</h3>
-                     <p className="text-xs text-muted-foreground font-medium mt-1">Download a complete backup of all transaction history in CSV format.</p>
-                   </div>
-                   <button onClick={handleExportSales} className="py-2 px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
-                </div>
-                <div className="p-6 bg-card border border-border rounded-2xl flex flex-col items-start gap-4 hover:border-primary/50 transition-all group">
-                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                      <UsersIcon className="w-6 h-6" />
-                   </div>
-                   <div>
-                     <h3 className="text-base font-black">Export Customer List</h3>
-                     <p className="text-xs text-muted-foreground font-medium mt-1">Download your complete customer database for marketing.</p>
-                   </div>
-                   <button onClick={handleExportCustomers} className="py-2 px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
-                </div>
-             </div>
+ {activeTab === 'data' && (
+ <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+ <div className="flex items-center justify-between px-1">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Data Management & Export
+ </h4>
+ </div>
+ 
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+ <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col items-start gap-4 hover:-primary/50 transition-all group">
+ <div className="w-12 h-12 rounded-full bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+ <Database className="w-6 h-6" />
+ </div>
+ <div>
+ <h3 className="text-base font-black">Export All Sales Data</h3>
+ <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mt-1">Download a complete backup of all transaction history in CSV format.</p>
+ </div>
+ <button onClick={handleExportSales} className="py-2 px-4 md:px-6 bg-primary text-amber-600 dark:text-amber-400-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
+ </div>
+ <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col items-start gap-4 hover:-primary/50 transition-all group">
+ <div className="w-12 h-12 rounded-full bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+ <UsersIcon className="w-6 h-6" />
+ </div>
+ <div>
+ <h3 className="text-base font-black">Export Customer List</h3>
+ <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mt-1">Download your complete customer database for marketing.</p>
+ </div>
+ <button onClick={handleExportCustomers} className="py-2 px-4 md:px-6 bg-primary text-amber-600 dark:text-amber-400-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
+ </div>
+ </div>
 
-             {isSuperAdmin && (
-              <div className="pt-8 border-t border-border space-y-4">
-                <h4 className="text-red-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-red-500 rounded-full"></div>
-                  Danger Zone
-                </h4>
-                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
-                <button 
-                  onClick={() => setShowClearConfirm(true)}
-                  className="w-full bg-red-500/10 text-red-500 border border-red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-foreground transition-all active:scale-95"
-                >
-                  CLEAR ALL SALES HISTORY
-                </button>
-                <div className="pt-6 border-t border-border space-y-4">
-                  <h4 className="text-blue-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
-                    <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
-                    Debug & Diagnostics
-                  </h4>
-                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
-                  <button
-                    onClick={async () => {
-                      try {
-                        const functions = getFunctions(app, 'asia-southeast1');
-                        const pingFunctions = httpsCallable(functions, 'pingFunctions');
-                        const result = await pingFunctions();
-                        setStatusMsg({ type: 'success', text: `Functions Online: ${JSON.stringify(result.data)}` });
-                      } catch (err) {
-                        setStatusMsg({ type: 'error', text: `Functions Offline: ${err instanceof Error ? err.message : String(err)}` });
-                      }
-                    }}
-                    className="w-full bg-blue-500/10 text-blue-500 border border-blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-foreground transition-all active:scale-95 uppercase tracking-widest"
-                  >
-                    Test Cloud Functions
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+ {isSuperAdmin && (
+ <div className="pt-8 space-y-4">
+ <h4 className="text-red-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-red-500 rounded-full"></div>
+ Danger Zone
+ </h4>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
+ <button 
+ onClick={() => setShowClearConfirm(true)}
+ className="w-full bg-red-500/10 text-red-500 -red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-slate-900 dark:text-slate-100 transition-all active:scale-95"
+ >
+ CLEAR ALL SALES HISTORY
+ </button>
+ <div className="pt-6 space-y-4">
+ <h4 className="text-blue-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
+ Debug & Diagnostics
+ </h4>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
+ <button
+ onClick={async () => {
+ try {
+ const functions = getFunctions(app, 'asia-southeast1');
+ const pingFunctions = httpsCallable(functions, 'pingFunctions');
+ const result = await pingFunctions();
+ setStatusMsg({ type: 'success', text: `Functions Online: ${JSON.stringify(result.data)}` });
+ } catch (err) {
+ setStatusMsg({ type: 'error', text: `Functions Offline: ${err instanceof Error ? err.message : String(err)}` });
+ }
+ }}
+ className="w-full bg-blue-500/10 text-blue-500 -blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-slate-900 dark:text-slate-100 transition-all active:scale-95 uppercase tracking-widest"
+ >
+ Test Cloud Functions
+ </button>
+ </div>
+ </div>
+ )}
+ </div>
+ )}
 {activeTab === 'categories' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                Category Management
-              </h4>
-              <button 
-                onClick={() => setShowCatForm(!showCatForm)}
-                className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
-              >
-                {showCatForm ? <X size={14} /> : <Plus size={14} />}
-                {showCatForm ? 'CANCEL' : 'ADD NEW'}
-              </button>
-            </div>
+ <div className="space-y-3">
+ <div className="flex items-center justify-between">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Category Management
+ </h4>
+ <button 
+ onClick={() => setShowCatForm(!showCatForm)}
+ className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
+ >
+ {showCatForm ? <X size={14} /> : <Plus size={14} />}
+ {showCatForm ? 'CANCEL' : 'ADD NEW'}
+ </button>
+ </div>
 
-            <Modal 
-              isOpen={showCatForm} 
-              onClose={() => { setShowCatForm(false); setEditingCategory(null); setCatName(''); setCatIcon('LayoutGrid'); }} 
-              title={editingCategory ? "Edit Category" : "Add New Category"}
-            >
-              <FloatingInput 
-                label="Category Name"
-                value={catName}
-                onChange={setCatName}
-                onFocusClear
-              />
-              
-              <div className="space-y-3">
-                <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-1">Select Icon</label>
-                <div className="grid grid-cols-6 gap-2">
-                  {CATEGORY_ICONS.map((item) => {
-                    const IconComp = item.icon;
-                    return (
-                      <button
-                        key={item.name}
-                        type="button"
-                        onClick={() => setCatIcon(item.name)}
-                        className={cn(
-                          "p-3 rounded-xl border transition-all flex items-center justify-center",
-                          catIcon === item.name 
-                            ? "bg-primary border-primary text-foreground shadow-lg shadow-primary/20 scale-105" 
-                            : "bg-background border-border text-muted-foreground hover:border-primary/50"
-                        )}
-                      >
-                        <IconComp size={20} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+ <Modal 
+ isOpen={showCatForm} 
+ onClose={() => { setShowCatForm(false); setEditingCategory(null); setCatName(''); setCatIcon('LayoutGrid'); }} 
+ title={editingCategory ? "Edit Category" : "Add New Category"}
+ >
+ <FloatingInput 
+ label="Category Name"
+ value={catName}
+ onChange={setCatName}
+ onFocusClear
+ />
+ 
+ <div className="space-y-3">
+ <label className="text-[10px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Select Icon</label>
+ <div className="grid grid-cols-6 gap-2">
+ {CATEGORY_ICONS.map((item) => {
+ const IconComp = item.icon;
+ return (
+ <button
+ key={item.name}
+ type="button"
+ onClick={() => setCatIcon(item.name)}
+ className={cn(
+ "p-3 rounded-xl transition-all flex items-center justify-center",
+ catIcon === item.name 
+ ? "bg-primary -primary text-slate-900 dark:text-slate-100 shadow-primary/20 scale-105" 
+ : "bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] text-slate-700 dark:text-slate-300 hover:-primary/50"
+ )}
+ >
+ <IconComp size={20} />
+ </button>
+ );
+ })}
+ </div>
+ </div>
 
-              <div className="pt-2 flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => { setShowCatForm(false); setEditingCategory(null); setCatName(''); setCatIcon('LayoutGrid'); }} 
-                  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
-                >
-                  Cancel
-                </button>
-                {editingCategory ? (
-                  <button onClick={handleUpdateCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Update</button>
-                ) : (
-                  <button onClick={handleAddCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Add Category</button>
-                )}
-              </div>
-            </Modal>
-            <div className="space-y-3 pt-4">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">Existing Categories</p>
-              {categories.length === 0 ? (
-                <div className="text-center py-8 bg-background/50 rounded-2xl border border-dashed border-border">
-                  <p className="text-muted-foreground text-xs italic">No categories added yet.</p>
-                </div>
-              ) : (
-                categories.map(c => {
-                  const IconComp = CATEGORY_ICONS.find(i => i.name === c.icon)?.icon || LayoutGrid;
-                  return (
-                    <div key={c.id} className="flex justify-between items-center p-4 bg-background rounded-2xl border border-border group hover:border-primary/50 transition-all shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
-                          <IconComp size={16} />
-                        </div>
-                        <span className="font-bold text-foreground group-hover:text-primary transition-colors">{c.name}</span>
-                      </div>
-                      <div className="flex gap-2">
-                        {isAdmin && (
-                          <button 
-                            onClick={() => { setEditingCategory(c); setCatName(c.name); setCatIcon(c.icon || 'LayoutGrid'); setShowCatForm(true); }} 
-                            className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                            title="Edit Category"
-                          >
-                            <Settings size={16} />
-                          </button>
-                        )}
-                        {isAdmin && (
-                          <button 
-                            onClick={() => setShowConfirm({ coll: 'categories', id: c.id })} 
-                            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                            title="Delete Category"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
+ <div className="pt-2 flex gap-3">
+ <button 
+ type="button" 
+ onClick={() => { setShowCatForm(false); setEditingCategory(null); setCatName(''); setCatIcon('LayoutGrid'); }} 
+ className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ >
+ Cancel
+ </button>
+ {editingCategory ? (
+ <button onClick={handleUpdateCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update</button>
+ ) : (
+ <button onClick={handleAddCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Add Category</button>
+ )}
+ </div>
+ </Modal>
+ <div className="space-y-3 pt-4">
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest px-1">Existing Categories</p>
+ {categories.length === 0 ? (
+ <div className="text-center py-4 md:py-8 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 rounded-2xl -dashed ">
+ <p className="text-slate-700 dark:text-slate-300 text-xs italic">No categories added yet.</p>
+ </div>
+ ) : (
+ categories.map(c => {
+ const IconComp = CATEGORY_ICONS.find(i => i.name === c.icon)?.icon || LayoutGrid;
+ return (
+ <div key={c.id} className="flex justify-between items-center p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl group hover:-primary/50 transition-all ">
+ <div className="flex items-center gap-3">
+ <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400 group-hover:bg-primary group-hover:text-slate-900 dark:text-slate-100 transition-all">
+ <IconComp size={16} />
+ </div>
+ <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:text-amber-400 transition-colors">{c.name}</span>
+ </div>
+ <div className="flex gap-2">
+ {isAdmin && (
+ <button 
+ onClick={() => { setEditingCategory(c); setCatName(c.name); setCatIcon(c.icon || 'LayoutGrid'); setShowCatForm(true); }} 
+ className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-100/50 dark:bg-amber-900/30 rounded-lg transition-colors"
+ title="Edit Category"
+ >
+ <Settings size={16} />
+ </button>
+ )}
+ {isAdmin && (
+ <button 
+ onClick={() => setShowConfirm({ coll: 'categories', id: c.id })} 
+ className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+ title="Delete Category"
+ >
+ <Trash2 size={16} />
+ </button>
+ )}
+ </div>
+ </div>
+ );
+ })
+ )}
+ </div>
+ </div>
+ )}
 
-        {activeTab === 'services' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                Services Management
-              </h4>
-              <button 
-                onClick={() => setShowSvcForm(!showSvcForm)}
-                className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
-              >
-                {showSvcForm ? <X size={14} /> : <Plus size={14} />}
-                {showSvcForm ? 'CANCEL' : 'ADD NEW'}
-              </button>
-            </div>
+ {activeTab === 'services' && (
+ <div className="space-y-3">
+ <div className="flex items-center justify-between">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Services Management
+ </h4>
+ <button 
+ onClick={() => setShowSvcForm(!showSvcForm)}
+ className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
+ >
+ {showSvcForm ? <X size={14} /> : <Plus size={14} />}
+ {showSvcForm ? 'CANCEL' : 'ADD NEW'}
+ </button>
+ </div>
 
-            <Modal 
-              isOpen={showSvcForm} 
-              onClose={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true); }} 
-              title={editingService ? "Edit Service" : "Add New Service"}
-            >
-              <FloatingInput 
-                label="Service Name"
-                value={svcName}
-                onChange={setSvcName}
-                onFocusClear
-              />
-              <FloatingInput 
-                label="Price (Ks)"
-                type="number"
-                value={svcPrice}
-                onChange={setSvcPrice}
-                onFocusClear
-              />
-              <FloatingInput 
-                label="Duration (Minutes)"
-                type="number"
-                value={svcDuration}
-                onChange={setSvcDuration}
-                onFocusClear
-              />
-              <div className="space-y-1.5">
-                <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
-                <CustomSelect
-                  value={svcCategory}
-                  onChange={setSvcCategory}
-                  placeholder="Select Category"
-                  options={[
-                    { value: '', label: 'Select Category' },
-                    ...categories.map(c => ({ value: c.name, label: c.name }))
-                  ]}
-                  buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary"
-                />
-              </div>
-              <div className="flex items-center justify-between p-4 bg-background border border-border rounded-xl mt-4">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-foreground">Enable Staff Commission</span>
-                  <span className="text-[10px] text-muted-foreground">Calculate commission for this service</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSvcAllowCommission(!svcAllowCommission)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    svcAllowCommission ? 'bg-primary' : 'bg-muted'
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      svcAllowCommission ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-              <div className="pt-2 flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true); }} 
-                  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
-                >
-                  Cancel
-                </button>
-                {editingService ? (
-                  <button onClick={handleUpdateService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Update</button>
-                ) : (
-                  <button onClick={handleAddService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Add Service</button>
-                )}
-              </div>
-            </Modal>
-            <div className="space-y-3 pt-6">
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">Service List</p>
-              {services.length === 0 ? (
-                <div className="text-center py-8 bg-background/50 rounded-2xl border border-dashed border-border">
-                  <p className="text-muted-foreground text-xs italic">No services added yet.</p>
-                </div>
-              ) : (
-                services.map(s => (
-                  <div key={s.id} className="flex justify-between items-center p-4 bg-background rounded-2xl border border-border group hover:border-primary/50 transition-all shadow-sm">
-                    <div>
-                      <span className="font-bold text-foreground block group-hover:text-primary transition-colors">{s.name}</span>
-                      <div className="flex gap-2 items-center mt-1">
-                        <span className="text-xs text-muted-foreground font-medium">{s.price.toLocaleString()} Ks</span>
-                        <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">•</span>
-                        <span className="text-xs text-muted-foreground font-medium">{s.duration || 30} mins</span>
-                        <span className="bg-primary/10 text-primary text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{s.category || 'General'}</span>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      {isAdmin && (
-                        <button 
-                          onClick={() => { 
-                            setEditingService(s); 
-                            setSvcName(s.name); 
-                            setSvcPrice(s.price.toString()); 
-                            setSvcDuration(s.duration?.toString() || '30');
-                            setSvcCategory(s.category || '');
-                            setSvcAllowCommission(s.allowCommission !== false);
-                            setShowSvcForm(true);
-                          }} 
-                          className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="Edit Service"
-                        >
-                          <Settings size={16} />
-                        </button>
-                      )}
-                      {isAdmin && (
-                        <button 
-                          onClick={() => setShowConfirm({ coll: 'services', id: s.id })} 
-                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Delete Service"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
+ <Modal 
+ isOpen={showSvcForm} 
+ onClose={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true); }} 
+ title={editingService ? "Edit Service" : "Add New Service"}
+ >
+ <FloatingInput 
+ label="Service Name"
+ value={svcName}
+ onChange={setSvcName}
+ onFocusClear
+ />
+ <FloatingInput 
+ label="Price (Ks)"
+ type="number"
+ value={svcPrice}
+ onChange={setSvcPrice}
+ onFocusClear
+ />
+ <FloatingInput 
+ label="Duration (Minutes)"
+ type="number"
+ value={svcDuration}
+ onChange={setSvcDuration}
+ onFocusClear
+ />
+ <div className="space-y-1.5">
+ <label className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest ml-1">Category</label>
+ <CustomSelect
+ value={svcCategory}
+ onChange={setSvcCategory}
+ placeholder="Select Category"
+ options={[
+ { value: '', label: 'Select Category' },
+ ...categories.map(c => ({ value: c.name, label: c.name }))
+ ]}
+ buttonClassName="w-full bg-input rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 text-sm focus:-primary"
+ />
+ </div>
+ <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-xl mt-4">
+ <div className="flex flex-col">
+ <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Enable Staff Commission</span>
+ <span className="text-[10px] text-slate-700 dark:text-slate-300">Calculate commission for this service</span>
+ </div>
+ <button
+ type="button"
+ onClick={() => setSvcAllowCommission(!svcAllowCommission)}
+ className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+ svcAllowCommission ? 'bg-primary' : 'bg-muted'
+ }`}
+ >
+ <span
+ className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+ svcAllowCommission ? 'translate-x-6' : 'translate-x-1'
+ }`}
+ />
+ </button>
+ </div>
+ <div className="pt-2 flex gap-3">
+ <button 
+ type="button" 
+ onClick={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true); }} 
+ className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ >
+ Cancel
+ </button>
+ {editingService ? (
+ <button onClick={handleUpdateService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update</button>
+ ) : (
+ <button onClick={handleAddService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Add Service</button>
+ )}
+ </div>
+ </Modal>
+ <div className="space-y-3 pt-6">
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest px-1">Service List</p>
+ {services.length === 0 ? (
+ <div className="text-center py-4 md:py-8 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 rounded-2xl -dashed ">
+ <p className="text-slate-700 dark:text-slate-300 text-xs italic">No services added yet.</p>
+ </div>
+ ) : (
+ services.map(s => (
+ <div key={s.id} className="flex justify-between items-center p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl group hover:-primary/50 transition-all ">
+ <div>
+ <span className="font-bold text-slate-900 dark:text-slate-100 block group-hover:text-amber-600 dark:text-amber-400 transition-colors">{s.name}</span>
+ <div className="flex gap-2 items-center mt-1">
+ <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{s.price.toLocaleString()} Ks</span>
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">•</span>
+ <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{s.duration || 30} mins</span>
+ <span className="bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{s.category || 'General'}</span>
+ </div>
+ </div>
+ <div className="flex gap-2">
+ {isAdmin && (
+ <button 
+ onClick={() => { 
+ setEditingService(s); 
+ setSvcName(s.name); 
+ setSvcPrice(s.price.toString()); 
+ setSvcDuration(s.duration?.toString() || '30');
+ setSvcCategory(s.category || '');
+ setSvcAllowCommission(s.allowCommission !== false);
+ setShowSvcForm(true);
+ }} 
+ className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-100/50 dark:bg-amber-900/30 rounded-lg transition-colors"
+ title="Edit Service"
+ >
+ <Settings size={16} />
+ </button>
+ )}
+ {isAdmin && (
+ <button 
+ onClick={() => setShowConfirm({ coll: 'services', id: s.id })} 
+ className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+ title="Delete Service"
+ >
+ <Trash2 size={16} />
+ </button>
+ )}
+ </div>
+ </div>
+ ))
+ )}
+ </div>
+ </div>
+ )}
 
-        {activeTab === 'staff' && (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
-              <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                Staff Management
-              </h4>
-              {isAdmin && (
-                <button 
-                  onClick={() => setShowStfForm(!showStfForm)}
-                  className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
-                >
-                  {showStfForm ? <X size={14} /> : <Plus size={14} />}
-                  {showStfForm ? 'CANCEL' : 'ADD NEW'}
-                </button>
-              )}
-            </div>
+ {activeTab === 'staff' && (
+ <div className="space-y-3">
+ <div className="flex items-center justify-between">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Staff Management
+ </h4>
+ {isAdmin && (
+ <button 
+ onClick={() => setShowStfForm(!showStfForm)}
+ className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
+ >
+ {showStfForm ? <X size={14} /> : <Plus size={14} />}
+ {showStfForm ? 'CANCEL' : 'ADD NEW'}
+ </button>
+ )}
+ </div>
 
-            <Modal 
-              isOpen={showStfForm} 
-              onClose={() => { 
-                setShowStfForm(false); 
-                setEditingStaff(null); 
-                setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
-                setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
-                setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
-              }} 
-              title={editingStaff ? "Edit Staff" : "Register New Staff"}
-              maxWidth="max-w-md"
-            >
-              <div className="space-y-6">
-                {/* Profile Photo Section */}
-                <div className="flex flex-col items-center gap-3 pb-6 border-b border-border/50">
-                  <div className="relative group">
-                    <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 border-background shadow-xl group-hover:border-border transition-all">
-                      {stfPhotoURL ? (
-                        <img src={stfPhotoURL} alt="Staff" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                      ) : (
-                        <UserIcon size={40} className="text-muted-foreground/30" />
-                      )}
-                    </div>
-                    <button 
-                      onClick={() => {
-                        const url = prompt("Enter photo URL:", stfPhotoURL);
-                        if (url !== null) setStfPhotoURL(url);
-                      }}
-                      className="absolute bottom-0 right-0 p-2.5 bg-primary text-white rounded-full shadow-lg hover:scale-110 transition-transform"
-                      title="Update Photo"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Profile Photo</span>
-                </div>
+ <Modal 
+ isOpen={showStfForm} 
+ onClose={() => { 
+ setShowStfForm(false); 
+ setEditingStaff(null); 
+ setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
+ setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
+ setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+ }} 
+ title={editingStaff ? "Edit Staff" : "Register New Staff"}
+ maxWidth="max-w-md"
+ >
+ <div className="space-y-3">
+ {/* Profile Photo Section */}
+ <div className="flex flex-col items-center gap-3 pb-6 ">
+ <div className="relative group">
+ <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden -4 -background group-hover: transition-all">
+ {stfPhotoURL ? (
+ <img src={stfPhotoURL} alt="Staff" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+ ) : (
+ <UserIcon size={40} className="text-slate-700 dark:text-slate-300/30" />
+ )}
+ </div>
+ <button 
+ onClick={() => {
+ const url = prompt("Enter photo URL:", stfPhotoURL);
+ if (url !== null) setStfPhotoURL(url);
+ }}
+ className="absolute bottom-0 right-0 p-2.5 bg-primary text-white rounded-full hover:scale-110 transition-transform"
+ title="Update Photo"
+ >
+ <Edit2 size={14} />
+ </button>
+ </div>
+ <span className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">Profile Photo</span>
+ </div>
 
-                {/* Basic Information */}
-                <div className="space-y-4">
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
-                    <UserIcon size={12} />
-                    Basic Information
-                  </h5>
-                  <FloatingInput 
-                    label="Staff Name"
-                    value={stfName}
-                    onChange={setStfName}
-                    placeholder="e.g. John Doe"
-                  />
-                  <FloatingInput 
-                    label="Email Address"
-                    value={stfEmail}
-                    onChange={setStfEmail}
-                    type="email"
-                    placeholder="e.g. john@example.com"
-                  />
-                </div>
+ {/* Basic Information */}
+ <div className="space-y-4">
+ <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-2">
+ <UserIcon size={12} />
+ Basic Information
+ </h5>
+ <FloatingInput 
+ label="Staff Name"
+ value={stfName}
+ onChange={setStfName}
+ placeholder="e.g. John Doe"
+ />
+ <FloatingInput 
+ label="Email Address"
+ value={stfEmail}
+ onChange={setStfEmail}
+ type="email"
+ placeholder="e.g. john@example.com"
+ />
+ </div>
 
-                {/* Employment Details */}
-                <div className="space-y-4 pt-4 border-t border-border/50">
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
-                    <Briefcase size={12} />
-                    Employment Details
-                  </h5>
-                  <div className="grid grid-cols-2 gap-4">
-                    <FloatingInput 
-                      label="Commission %"
-                      value={stfComm}
-                      onChange={setStfComm}
-                      type="number"
-                      placeholder="e.g. 50"
-                    />
-                  <div className="space-y-3">
-                    <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-1">Assigned Roles</label>
-                    <div className="flex flex-wrap gap-2 pb-4">
-                       {['staff', 'cashier', 'owner', 'super_admin'].filter(role => role !== 'super_admin' || isSuperAdmin).map(roleOption => (
-                         <button 
-                           key={roleOption}
-                           type="button"
-                           onClick={() => {
-                              let newRoles;
-                              if (stfRoles.includes(roleOption)) {
-                                 newRoles = stfRoles.filter(r => r !== roleOption);
-                                 if (newRoles.length === 0) newRoles = ['staff']; // ensure at least one role
-                              } else {
-                                 newRoles = [...stfRoles, roleOption];
-                              }
-                              setStfRoles(newRoles);
-                              
-                              const calculatedRole = newRoles.includes('super_admin') ? 'super_admin' :
-                                                     newRoles.includes('owner') ? 'owner' :
-                                                     newRoles.includes('cashier') ? 'cashier' : 'staff';
-                              setStfRole(calculatedRole as any);
-                           }}
-                           className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-widest transition-all ${
-                             stfRoles.includes(roleOption) ? "bg-primary text-white border-primary" : "bg-transparent border-border text-foreground hover:border-primary/50"
-                           }`}
-                         >
-                           {roleOption.replace('_', ' ')}
-                         </button>
-                       ))}
-                    </div>
-                  </div>
-                  </div>
+ {/* Employment Details */}
+ <div className="space-y-4 pt-4 ">
+ <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-2">
+ <Briefcase size={12} />
+ Employment Details
+ </h5>
+ <div className="grid grid-cols-2 gap-4">
+ <FloatingInput 
+ label="Commission %"
+ value={stfComm}
+ onChange={setStfComm}
+ type="number"
+ placeholder="e.g. 50"
+ />
+ <div className="space-y-3">
+ <label className="text-[10px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Assigned Roles</label>
+ <div className="flex flex-wrap gap-2 pb-4">
+ {['staff', 'cashier', 'owner', 'super_admin'].filter(role => role !== 'super_admin' || isSuperAdmin).map(roleOption => (
+ <button 
+ key={roleOption}
+ type="button"
+ onClick={() => {
+ let newRoles;
+ if (stfRoles.includes(roleOption)) {
+ newRoles = stfRoles.filter(r => r !== roleOption);
+ if (newRoles.length === 0) newRoles = ['staff']; // ensure at least one role
+ } else {
+ newRoles = [...stfRoles, roleOption];
+ }
+ setStfRoles(newRoles);
+ 
+ const calculatedRole = newRoles.includes('super_admin') ? 'super_admin' :
+ newRoles.includes('owner') ? 'owner' :
+ newRoles.includes('cashier') ? 'cashier' : 'staff';
+ setStfRole(calculatedRole as any);
+ }}
+ className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
+ stfRoles.includes(roleOption) ? "bg-primary text-white -primary" : "bg-transparent text-slate-900 dark:text-slate-100 hover:-primary/50"
+ }`}
+ >
+ {roleOption.replace('_', ' ')}
+ </button>
+ ))}
+ </div>
+ </div>
+ </div>
 
-                  <div className="relative group">
-                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
-                      <Activity size={18} />
-                    </div>
-                    <CustomSelect
-                      value={stfStatus}
-                      onChange={(val) => setStfStatus(val as any)}
-                      options={[
-                        { value: 'active', label: '🟢 Active' },
-                        { value: 'inactive', label: '🔴 Inactive' },
-                        { value: 'on_leave', label: '🟡 On Leave' }
-                      ]}
-                      buttonClassName={cn(
-                        "w-full bg-background border rounded-2xl py-4 pl-12 pr-4 text-xs font-bold uppercase tracking-widest",
-                        stfStatus === 'active' ? "border-green-500/30 text-green-500" :
-                        stfStatus === 'on_leave' ? "border-yellow-500/30 text-yellow-500" :
-                        "border-red-500/30 text-red-500"
-                      )}
-                    />
-                  </div>
-                </div>
+ <div className="relative group">
+ <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 group-focus-within:text-amber-600 dark:text-amber-400 transition-colors">
+ <Activity size={18} />
+ </div>
+ <CustomSelect
+ value={stfStatus}
+ onChange={(val) => setStfStatus(val as any)}
+ options={[
+ { value: 'active', label: '🟢 Active' },
+ { value: 'inactive', label: '🔴 Inactive' },
+ { value: 'on_leave', label: '🟡 On Leave' }
+ ]}
+ buttonClassName={cn(
+ "w-full bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl py-4 pl-12 pr-4 text-xs font-bold uppercase tracking-widest",
+ stfStatus === 'active' ? "-green-500/30 text-green-500" :
+ stfStatus === 'on_leave' ? "-yellow-500/30 text-yellow-500" :
+ "-red-500/30 text-red-500"
+ )}
+ />
+ </div>
+ </div>
 
-                {/* Schedule & Capabilities */}
-                <div className="space-y-5 pt-4 border-t border-border/50">
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
-                    <CalendarHeart size={12} />
-                    Schedule & Expertise
-                  </h5>
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Working Days</label>
-                    <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl border border-border/50">
-                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                        <button
-                          key={day}
-                          onClick={() => {
-                            if (stfWorkingDays.includes(day)) {
-                              setStfWorkingDays(stfWorkingDays.filter(d => d !== day));
-                            } else {
-                              setStfWorkingDays([...stfWorkingDays, day]);
-                            }
-                          }}
-                          className={cn(
-                            "px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border flex-1 text-center min-w-[80px]",
-                            stfWorkingDays.includes(day) 
-                              ? "bg-primary/10 border-primary text-primary shadow-sm" 
-                              : "bg-background border-border text-muted-foreground hover:border-primary/30"
-                          )}
-                        >
-                          {day.substring(0, 3)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+ {/* Schedule & Capabilities */}
+ <div className="space-y-3 md:space-y-5 pt-4 ">
+ <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-2">
+ <CalendarHeart size={12} />
+ Schedule & Expertise
+ </h5>
+ <div className="space-y-3">
+ <label className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 px-1">Working Days</label>
+ <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl ">
+ {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+ <button
+ key={day}
+ onClick={() => {
+ if (stfWorkingDays.includes(day)) {
+ setStfWorkingDays(stfWorkingDays.filter(d => d !== day));
+ } else {
+ setStfWorkingDays([...stfWorkingDays, day]);
+ }
+ }}
+ className={cn(
+ "px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex-1 text-center min-w-[80px]",
+ stfWorkingDays.includes(day) 
+ ? "bg-amber-100/50 dark:bg-amber-900/30 -primary text-amber-600 dark:text-amber-400 " 
+ : "bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] text-slate-700 dark:text-slate-300 hover:-primary/30"
+ )}
+ >
+ {day.substring(0, 3)}
+ </button>
+ ))}
+ </div>
+ </div>
 
-                  <div className="space-y-3">
-                    <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Specialties</label>
-                    <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl border border-border/50 min-h-[60px]">
-                      {categories.map(cat => (
-                        <button
-                          key={cat.id}
-                          onClick={() => {
-                            if (stfSpecialties.includes(cat.name)) {
-                              setStfSpecialties(stfSpecialties.filter(s => s !== cat.name));
-                            } else {
-                              setStfSpecialties([...stfSpecialties, cat.name]);
-                            }
-                          }}
-                          className={cn(
-                            "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border",
-                            stfSpecialties.includes(cat.name) 
-                              ? "bg-secondary text-secondary-foreground border-secondary shadow-sm" 
-                              : "bg-background border-border text-muted-foreground hover:border-secondary/30"
-                          )}
-                        >
-                          {cat.name}
-                        </button>
-                      ))}
-                      {categories.length === 0 && (
-                        <p className="text-xs text-muted-foreground italic m-auto">No categories found. Please add categories first.</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+ <div className="space-y-3">
+ <label className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 px-1">Specialties</label>
+ <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl min-h-[60px]">
+ {categories.map(cat => (
+ <button
+ key={cat.id}
+ onClick={() => {
+ if (stfSpecialties.includes(cat.name)) {
+ setStfSpecialties(stfSpecialties.filter(s => s !== cat.name));
+ } else {
+ setStfSpecialties([...stfSpecialties, cat.name]);
+ }
+ }}
+ className={cn(
+ "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ",
+ stfSpecialties.includes(cat.name) 
+ ? "bg-secondary text-secondary-foreground -secondary " 
+ : "bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] text-slate-700 dark:text-slate-300 hover:-secondary/30"
+ )}
+ >
+ {cat.name}
+ </button>
+ ))}
+ {categories.length === 0 && (
+ <p className="text-xs text-slate-700 dark:text-slate-300 italic m-auto">No categories found. Please add categories first.</p>
+ )}
+ </div>
+ </div>
+ </div>
 
-                <div className="space-y-3 pt-4 border-t border-border/50">
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
-                    <FileText size={12} />
-                    Additional Notes
-                  </h5>
-                  <textarea 
-                    value={stfBio}
-                    onChange={(e) => setStfBio(e.target.value)}
-                    placeholder="Brief staff bio, performance notes, or internal remarks..."
-                    className="w-full bg-background border border-border rounded-2xl p-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[100px] text-sm resize-none"
-                  />
-                </div>
+ <div className="space-y-3 pt-4 ">
+ <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-2">
+ <FileText size={12} />
+ Additional Notes
+ </h5>
+ <textarea 
+ value={stfBio}
+ onChange={(e) => setStfBio(e.target.value)}
+ placeholder="Brief staff bio, performance notes, or internal remarks..."
+ className="w-full bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl p-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:-primary transition-all min-h-[100px] text-sm resize-none"
+ />
+ </div>
 
-              </div>
-              <div className="pt-4 border-t border-border mt-4 flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => { 
-                    setShowStfForm(false); 
-                    setEditingStaff(null); 
-                    setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
-                    setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
-                    setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
-                  }} 
-                  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
-                >
-                  Cancel
-                </button>
-                {editingStaff ? (
-                  <button onClick={handleUpdateStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Update Profile</button>
-                ) : (
-                  <button onClick={handleAddStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg">Register</button>
-                )}
-              </div>
-            </Modal>
-            
-            <div className="space-y-4 pt-2">
-              <h4 className="text-primary font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
-                <span>Registered Staff ({staff.filter(s => s.role !== 'super_admin').length})</span>
-                <UsersIcon size={14} />
-              </h4>
-              {staff.filter(s => s.role !== 'super_admin').map(s => (
-                <div key={s.email} className="bg-background p-5 rounded-2xl border border-border space-y-4 shadow-sm hover:border-primary/30 transition-all">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-muted overflow-hidden border border-border">
-                        {s.photoURL ? (
-                          <img src={s.photoURL} alt={s.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-bold text-lg">
-                            {s.name.charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <span className="block font-bold text-primary text-lg leading-tight">{s.name}</span>
-                        <span className="text-xs text-muted-foreground font-medium">{s.email}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {/* Edit Button Logic: Owners are uneditable except by master account */}
-                      {(isAdmin && s.role !== 'owner' && s.role !== 'super_admin') || isSuperAdmin || user?.email === s.email ? (
-                        <button 
-                          onClick={() => {
-                            setEditingStaff(s);
-                            setStfName(s.name);
-                            setStfEmail(s.email);
-                            setStfComm(s.commission.toString());
-                            setStfRole(s.role);
-                            setStfRoles(s.roles || [s.role]);
-                            setStfStatus(s.status || 'active');
-                            setStfBio(s.bio || '');
-                            setStfPhotoURL(s.photoURL || '');
-                            setStfSpecialties(s.specialties || []);
-                            setStfWorkingDays(s.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
-                            setShowStfForm(true);
-                          }}
-                          className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                          title="Edit Staff"
-                        >
-                          <Settings size={18} />
-                        </button>
-                      ) : null}
-                      
-                      {/* Delete Button Logic: Owners are undeletable easily */}
-                      {((isSuperAdmin && s.email !== user?.email) || (isAdmin && s.email !== user?.email && s.role !== 'owner' && s.role !== 'super_admin')) && (
-                        <button 
-                          onClick={() => setShowConfirm({ coll: 'users', id: s.id || s.email })} 
-                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                          title="Delete Staff"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+ </div>
+ <div className="pt-4 mt-4 flex gap-3">
+ <button 
+ type="button" 
+ onClick={() => { 
+ setShowStfForm(false); 
+ setEditingStaff(null); 
+ setStfName(''); setStfEmail(''); setStfComm(''); setStfRole('staff'); setStfRoles(['staff']);
+ setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
+ setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+ }} 
+ className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ >
+ Cancel
+ </button>
+ {editingStaff ? (
+ <button onClick={handleUpdateStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update Profile</button>
+ ) : (
+ <button onClick={handleAddStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Register</button>
+ )}
+ </div>
+ </Modal>
+ 
+ <div className="space-y-4 pt-2">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
+ <span>Registered Staff ({staff.filter(s => s.role !== 'super_admin').length})</span>
+ <UsersIcon size={14} />
+ </h4>
+ {staff.filter(s => s.role !== 'super_admin').map(s => (
+ <div key={s.email} className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] p-4 rounded-2xl space-y-4 hover:-primary/30 transition-all">
+ <div className="flex justify-between items-start">
+ <div className="flex items-center gap-4">
+ <div className="w-12 h-12 rounded-full bg-muted overflow-hidden ">
+ {s.photoURL ? (
+ <img src={s.photoURL} alt={s.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+ ) : (
+ <div className="w-full h-full flex items-center justify-center bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-lg">
+ {s.name.charAt(0)}
+ </div>
+ )}
+ </div>
+ <div>
+ <span className="block font-bold text-amber-600 dark:text-amber-400 text-lg leading-tight">{s.name}</span>
+ <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{s.email}</span>
+ </div>
+ </div>
+ <div className="flex items-center gap-2">
+ {/* Edit Button Logic: Owners are uneditable except by master account */}
+ {(isAdmin && s.role !== 'owner' && s.role !== 'super_admin') || isSuperAdmin || user?.email === s.email ? (
+ <button 
+ onClick={() => {
+ setEditingStaff(s);
+ setStfName(s.name);
+ setStfEmail(s.email);
+ setStfComm(s.commission.toString());
+ setStfRole(s.role);
+ setStfRoles(s.roles || [s.role]);
+ setStfStatus(s.status || 'active');
+ setStfBio(s.bio || '');
+ setStfPhotoURL(s.photoURL || '');
+ setStfSpecialties(s.specialties || []);
+ setStfWorkingDays(s.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+ setShowStfForm(true);
+ }}
+ className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-100/50 dark:bg-amber-900/30 rounded-lg transition-colors"
+ title="Edit Staff"
+ >
+ <Settings size={18} />
+ </button>
+ ) : null}
+ 
+ {/* Delete Button Logic: Owners are undeletable easily */}
+ {((isSuperAdmin && s.email !== user?.email) || (isAdmin && s.email !== user?.email && s.role !== 'owner' && s.role !== 'super_admin')) && (
+ <button 
+ onClick={() => setShowConfirm({ coll: 'users', id: s.id || s.email })} 
+ className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+ title="Delete Staff"
+ >
+ <Trash2 size={18} />
+ </button>
+ )}
+ </div>
+ </div>
 
-                  {s.bio && (
-                    <p className="text-xs text-muted-foreground line-clamp-2 italic px-1">
-                      "{s.bio}"
-                    </p>
-                  )}
+ {s.bio && (
+ <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 italic px-1">
+ "{s.bio}"
+ </p>
+ )}
 
-                  <div className="flex flex-wrap gap-2">
-                    <div className={cn(
-                      "px-3 py-1.5 rounded-xl border flex items-center gap-2",
-                      s.status === 'active' ? "bg-green-500/10 border-green-500/30" :
-                      s.status === 'on_leave' ? "bg-yellow-500/10 border-yellow-500/30" :
-                      "bg-red-500/10 border-red-500/30"
-                    )}>
-                      <div className={cn(
-                        "w-1.5 h-1.5 rounded-full",
-                        s.status === 'active' ? "bg-green-500 animate-pulse" :
-                        s.status === 'on_leave' ? "bg-yellow-500" :
-                        "bg-red-500"
-                      )}></div>
-                      <b className={cn(
-                        "text-[10px] uppercase tracking-widest",
-                        s.status === 'active' ? "text-green-500" :
-                        s.status === 'on_leave' ? "text-yellow-500" :
-                        "text-red-500"
-                      )}>
-                        {s.status || 'active'}
-                      </b>
-                    </div>
+ <div className="flex flex-wrap gap-2">
+ <div className={cn(
+ "px-3 py-1.5 rounded-xl flex items-center gap-2",
+ s.status === 'active' ? "bg-green-500/10 -green-500/30" :
+ s.status === 'on_leave' ? "bg-yellow-500/10 -yellow-500/30" :
+ "bg-red-500/10 -red-500/30"
+ )}>
+ <div className={cn(
+ "w-1.5 h-1.5 rounded-full",
+ s.status === 'active' ? "bg-green-500 animate-pulse" :
+ s.status === 'on_leave' ? "bg-yellow-500" :
+ "bg-red-500"
+ )}></div>
+ <b className={cn(
+ "text-[10px] uppercase tracking-widest",
+ s.status === 'active' ? "text-green-500" :
+ s.status === 'on_leave' ? "text-yellow-500" :
+ "text-red-500"
+ )}>
+ {s.status || 'active'}
+ </b>
+ </div>
 
-                    <div className="bg-muted/10 px-3 py-1.5 rounded-xl border border-border flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Comm:</span> 
-                      <b className="text-green-500 text-xs">{s.commission}%</b>
-                    </div>
-                    <div className="bg-muted/10 px-3 py-1.5 rounded-xl border border-border flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Role:</span> 
-                      <b className="text-primary text-xs uppercase">
-                        {s.roles && s.roles.length > 0 ? s.roles.map(r => r === 'super_admin' ? 'Admin' : r).join(', ') : (s.role === 'super_admin' ? 'Admin' : s.role)}
-                      </b>
-                    </div>
-                  </div>
+ <div className="bg-muted/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Comm:</span> 
+ <b className="text-green-500 text-xs">{s.commission}%</b>
+ </div>
+ <div className="bg-muted/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Role:</span> 
+ <b className="text-amber-600 dark:text-amber-400 text-xs uppercase">
+ {s.roles && s.roles.length > 0 ? s.roles.map(r => r === 'super_admin' ? 'Admin' : r).join(', ') : (s.role === 'super_admin' ? 'Admin' : s.role)}
+ </b>
+ </div>
+ </div>
 
-                  {s.specialties && s.specialties.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {s.specialties.map(spec => (
-                        <span key={spec} className="text-[9px] font-bold bg-primary/10 text-primary border border-border px-2 py-0.5 rounded-full uppercase tracking-wider">
-                          {spec}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+ {s.specialties && s.specialties.length > 0 && (
+ <div className="flex flex-wrap gap-1.5 pt-1">
+ {s.specialties.map(spec => (
+ <span key={spec} className="text-[9px] font-bold bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
+ {spec}
+ </span>
+ ))}
+ </div>
+ )}
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
 
 
 
-        {activeTab === 'customers' && (
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
-              <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-                Customer Management
-              </h4>
-              <button 
-                onClick={() => setShowCustForm(!showCustForm)}
-                className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
-              >
-                {showCustForm ? <X size={14} /> : <Plus size={14} />}
-                {showCustForm ? 'CANCEL' : 'ADD NEW'}
-              </button>
-            </div>
+ {activeTab === 'customers' && (
+ <div className="space-y-3">
+ <div className="flex items-center justify-between">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Customer Management
+ </h4>
+ <button 
+ onClick={() => setShowCustForm(!showCustForm)}
+ className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
+ >
+ {showCustForm ? <X size={14} /> : <Plus size={14} />}
+ {showCustForm ? 'CANCEL' : 'ADD NEW'}
+ </button>
+ </div>
 
-            <Modal 
-              isOpen={showCustForm} 
-              onClose={() => { setShowCustForm(false); setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); }} 
-              title="Add New Customer"
-            >
-              <div className="space-y-4">
-                <FloatingInput label="Full Name" value={custName} onChange={setCustName} />
-                <FloatingInput label="Phone Number" value={custPhone} onChange={setCustPhone} />
-                <FloatingInput label="Email (Optional)" value={custEmail} onChange={setCustEmail} />
-                <FloatingInput label="Address" value={custAddr} onChange={setCustAddr} />
-                <FloatingInput label="Notes" value={custNotes} onChange={setCustNotes} />
-                <div className="pt-2 flex gap-3">
-                  <button 
-                    type="button" 
-                    onClick={() => { setShowCustForm(false); setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); }}
-                    className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    onClick={handleAddCustomer}
-                    className="flex-1 btn-primary py-4 uppercase tracking-widest font-black shadow-lg"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </Modal>
+ <Modal 
+ isOpen={showCustForm} 
+ onClose={() => { setShowCustForm(false); setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); }} 
+ title="Add New Customer"
+ >
+ <div className="space-y-4">
+ <FloatingInput label="Full Name" value={custName} onChange={setCustName} />
+ <FloatingInput label="Phone Number" value={custPhone} onChange={setCustPhone} />
+ <FloatingInput label="Email (Optional)" value={custEmail} onChange={setCustEmail} />
+ <FloatingInput label="Address" value={custAddr} onChange={setCustAddr} />
+ <FloatingInput label="Notes" value={custNotes} onChange={setCustNotes} />
+ <div className="pt-2 flex gap-3">
+ <button 
+ type="button" 
+ onClick={() => { setShowCustForm(false); setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); }}
+ className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ >
+ Cancel
+ </button>
+ <button 
+ onClick={handleAddCustomer}
+ className="flex-1 btn-primary py-4 uppercase tracking-widest font-black "
+ >
+ Save
+ </button>
+ </div>
+ </div>
+ </Modal>
 
-            <div className="space-y-4">
-              <h4 className="text-primary font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
-                <span>Customer List ({customers.length})</span>
-                <UsersIcon size={14} />
-              </h4>
-              {customers.length === 0 ? (
-                <div className="text-center py-12 bg-background/50 rounded-3xl border border-dashed border-border">
-                  <p className="text-muted-foreground text-sm italic">No customers registered yet.</p>
-                </div>
-              ) : (
-                customers.map(c => (
-                  <div key={c.id} className="bg-background p-5 rounded-2xl border border-border space-y-4 shadow-sm hover:border-primary/30 transition-all group">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h5 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">{c.name}</h5>
-                        <div className="flex items-center gap-3 mt-1">
-                          <p className="text-primary text-sm font-bold">{c.phone}</p>
-                          <div className="flex items-center gap-1">
-                            <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(c.points || 0).toLocaleString()} pts</span>
-                            <button 
-                              onClick={() => {
-                                setQuickEditingPoints(c);
-                                setQuickPointsValue(String(c.points || 0));
-                              }}
-                              className="p-1 bg-primary/5 text-primary rounded-md border border-primary/10 hover:bg-primary hover:text-white transition-all"
-                              title="Quick Edit Points"
-                            >
-                              <Coins size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => {
-                            setEditingCustomer(c);
-                            setCustName(c.name);
-                            setCustPhone(c.phone);
-                            setCustEmail(c.email || '');
-                            setCustAddr(c.address || '');
-                            setCustNotes(c.notes || '');
-                            setCustPoints(String(c.points || 0));
-                          }}
-                          className="p-2.5 bg-primary/10 text-primary rounded-xl border border-border hover:bg-primary hover:text-white transition-all"
-                          title="Edit Customer"
-                        >
-                          <Settings size={18} />
-                        </button>
-                        <button 
-                          onClick={() => setShowConfirm({ coll: 'customers', id: c.id })}
-                          className="p-2.5 bg-red-500/10 text-red-500 rounded-xl border border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all"
-                          title="Delete Customer"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <button 
-                      onClick={() => setViewingCustomerHistory(c)}
-                      className="w-full bg-muted/5 border border-border text-muted-foreground py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:border-primary hover:text-primary hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-                    >
-                      <FileText size={14} />
-                      VIEW HISTORY
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+ <div className="space-y-4">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
+ <span>Customer List ({customers.length})</span>
+ <UsersIcon size={14} />
+ </h4>
+ {customers.length === 0 ? (
+ <div className="text-center py-12 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 rounded-2xl -dashed ">
+ <p className="text-slate-700 dark:text-slate-300 text-sm italic">No customers registered yet.</p>
+ </div>
+ ) : (
+ customers.map(c => (
+ <div key={c.id} className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] p-4 rounded-2xl space-y-4 hover:-primary/30 transition-all group">
+ <div className="flex justify-between items-start">
+ <div>
+ <h5 className="font-bold text-slate-900 dark:text-slate-100 text-lg group-hover:text-amber-600 dark:text-amber-400 transition-colors">{c.name}</h5>
+ <div className="flex items-center gap-3 mt-1">
+ <p className="text-amber-600 dark:text-amber-400 text-sm font-bold">{c.phone}</p>
+ <div className="flex items-center gap-1">
+ <span className="text-[10px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest ">{(c.points || 0).toLocaleString()} pts</span>
+ <button 
+ onClick={() => {
+ setQuickEditingPoints(c);
+ setQuickPointsValue(String(c.points || 0));
+ }}
+ className="p-1 bg-amber-50/50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-md -primary/10 hover:bg-primary hover:text-white transition-all"
+ title="Quick Edit Points"
+ >
+ <Coins size={12} />
+ </button>
+ </div>
+ </div>
+ </div>
+ <div className="flex gap-2">
+ <button 
+ onClick={() => {
+ setEditingCustomer(c);
+ setCustName(c.name);
+ setCustPhone(c.phone);
+ setCustEmail(c.email || '');
+ setCustAddr(c.address || '');
+ setCustNotes(c.notes || '');
+ setCustPoints(String(c.points || 0));
+ }}
+ className="p-2.5 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl hover:bg-primary hover:text-white transition-all"
+ title="Edit Customer"
+ >
+ <Settings size={18} />
+ </button>
+ <button 
+ onClick={() => setShowConfirm({ coll: 'customers', id: c.id })}
+ className="p-2.5 bg-red-500/10 text-red-500 rounded-xl -red-500/20 hover:bg-red-500 hover:text-slate-900 dark:text-slate-100 transition-all"
+ title="Delete Customer"
+ >
+ <Trash2 size={18} />
+ </button>
+ </div>
+ </div>
+ 
+ <button 
+ onClick={() => setViewingCustomerHistory(c)}
+ className="w-full bg-muted/5 text-slate-700 dark:text-slate-300 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:-primary hover:text-amber-600 dark:text-amber-400 hover:bg-amber-50/50 dark:bg-amber-900/20 transition-all flex items-center justify-center gap-2"
+ >
+ <FileText size={14} />
+ VIEW HISTORY
+ </button>
+ </div>
+ ))
+ )}
+ </div>
+ </div>
+ )}
+ </div>
 
-      {/* Edit Customer Modal */}
-      <Modal 
-        isOpen={!!editingCustomer} 
-        onClose={() => setEditingCustomer(null)} 
-        title="Edit Customer"
-      >
-        <div className="space-y-4">
-          <FloatingInput label="Full Name" value={custName} onChange={setCustName} />
-          <FloatingInput label="Phone Number" value={custPhone} onChange={setCustPhone} />
-          <FloatingInput label="Email" value={custEmail} onChange={setCustEmail} />
-          <FloatingInput label="Address" value={custAddr} onChange={setCustAddr} />
-          <FloatingInput label="Notes" value={custNotes} onChange={setCustNotes} />
-          <FloatingInput label="Loyalty Points" type="number" value={custPoints} onChange={setCustPoints} />
-          <div className="pt-2 flex gap-3">
-            <button 
-              type="button" 
-              onClick={() => setEditingCustomer(null)}
-              className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleUpdateCustomer}
-              className="flex-1 btn-primary py-4 shadow-xl shadow-primary/20 uppercase tracking-widest font-black"
-            >
-              Update
-            </button>
-          </div>
-        </div>
-      </Modal>
+ {/* Edit Customer Modal */}
+ <Modal 
+ isOpen={!!editingCustomer} 
+ onClose={() => setEditingCustomer(null)} 
+ title="Edit Customer"
+ >
+ <div className="space-y-4">
+ <FloatingInput label="Full Name" value={custName} onChange={setCustName} />
+ <FloatingInput label="Phone Number" value={custPhone} onChange={setCustPhone} />
+ <FloatingInput label="Email" value={custEmail} onChange={setCustEmail} />
+ <FloatingInput label="Address" value={custAddr} onChange={setCustAddr} />
+ <FloatingInput label="Notes" value={custNotes} onChange={setCustNotes} />
+ <FloatingInput label="Loyalty Points" type="number" value={custPoints} onChange={setCustPoints} />
+ <div className="pt-2 flex gap-3">
+ <button 
+ type="button" 
+ onClick={() => setEditingCustomer(null)}
+ className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ >
+ Cancel
+ </button>
+ <button 
+ onClick={handleUpdateCustomer}
+ className="flex-1 btn-primary py-4 shadow-primary/20 uppercase tracking-widest font-black"
+ >
+ Update
+ </button>
+ </div>
+ </div>
+ </Modal>
 
-      {/* Quick Edit Points Modal */}
-      <Modal 
-        isOpen={!!quickEditingPoints} 
-        onClose={() => setQuickEditingPoints(null)} 
-        title="Points"
-        maxWidth="max-w-xs"
-      >
-        <div className="space-y-4">
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Customer</p>
-            <p className="font-bold text-foreground">{quickEditingPoints?.name}</p>
-          </div>
-          <FloatingInput 
-            label="Loyalty Points" 
-            type="number" 
-            value={quickPointsValue} 
-            onChange={setQuickPointsValue} 
-            onFocusClear
-          />
-          <div className="pt-2 flex gap-3">
-            <button 
-              type="button" 
-              onClick={() => setQuickEditingPoints(null)}
-              className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-3 rounded-xl uppercase tracking-widest font-black transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
-              onClick={handleQuickUpdatePoints}
-              className="flex-1 btn-primary py-3 shadow-lg shadow-primary/20 uppercase tracking-widest font-black"
-            >
-              Save Points
-            </button>
-          </div>
-        </div>
-      </Modal>
+ {/* Quick Edit Points Modal */}
+ <Modal 
+ isOpen={!!quickEditingPoints} 
+ onClose={() => setQuickEditingPoints(null)} 
+ title="Points"
+ maxWidth="max-w-xs"
+ >
+ <div className="space-y-4">
+ <div className="text-center">
+ <p className="text-xs text-slate-700 dark:text-slate-300 font-medium uppercase tracking-wider mb-1">Customer</p>
+ <p className="font-bold text-slate-900 dark:text-slate-100">{quickEditingPoints?.name}</p>
+ </div>
+ <FloatingInput 
+ label="Loyalty Points" 
+ type="number" 
+ value={quickPointsValue} 
+ onChange={setQuickPointsValue} 
+ onFocusClear
+ />
+ <div className="pt-2 flex gap-3">
+ <button 
+ type="button" 
+ onClick={() => setQuickEditingPoints(null)}
+ className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-3 rounded-xl uppercase tracking-widest font-black transition-colors"
+ >
+ Cancel
+ </button>
+ <button 
+ onClick={handleQuickUpdatePoints}
+ className="flex-1 btn-primary py-3 shadow-primary/20 uppercase tracking-widest font-black"
+ >
+ Save Points
+ </button>
+ </div>
+ </div>
+ </Modal>
 
-      {/* Customer History Modal */}
-      {viewingCustomerHistory && (
-        <div className="fixed inset-0 bg-background/95  z-[25000] flex flex-col p-4">
-          <div className="flex justify-between items-center mb-8 max-w-4xl mx-auto w-full">
-            <div>
-              <h3 className="text-primary font-bold text-2xl tracking-tight">{viewingCustomerHistory.name}</h3>
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
-                <span className="text-[10px] bg-primary/10 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest border border-border">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
-              </div>
-            </div>
-            <button onClick={() => setViewingCustomerHistory(null)} className="p-3 bg-card rounded-2xl text-foreground border border-border hover:border-primary transition-all"><X size={24} /></button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto space-y-4 pb-10 max-w-4xl mx-auto w-full">
-            <h4 className="text-primary font-bold uppercase text-xs tracking-widest border-b border-border pb-3 flex items-center gap-2">
-              <div className="w-1.5 h-4 bg-primary rounded-full"></div>
-              Service History
-            </h4>
-            {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
-              <div className="text-center py-24 bg-card/50 rounded-[2rem] border border-dashed border-border">
-                <p className="text-muted-foreground text-sm italic">No service history found for this customer.</p>
-              </div>
-            ) : (
-              sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).map(s => (
-                <div key={s.id} className="bg-card p-6 rounded-3xl border border-border space-y-4 shadow-sm hover:border-primary/30 transition-all group">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground text-xs font-bold uppercase tracking-widest">{new Date(s.dateTime).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
-                    <span className="text-primary font-bold text-lg">{s.total.toLocaleString()} Ks</span>
-                  </div>
-                  <div className="space-y-2">
-                    {s.items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between text-sm items-center">
-                        <span className="text-foreground font-medium">{item.name} <span className="text-muted-foreground text-xs ml-1">x{item.qty}</span></span>
-                        {item.disP > 0 && <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold">-{item.disP}%</span>}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="pt-4 border-t border-border flex justify-between items-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                    <span className="flex items-center gap-1.5">
-                      <UserIcon size={10} className="text-primary" />
-                      Staff: {s.staff}
-                    </span>
-                    <span className="bg-muted/10 px-2 py-0.5 rounded-md">
-                      {s.payments && s.payments.length > 1 
-                        ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
-                        : (s.method || 'Cash')}
-                    </span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
+ {/* Customer History Modal */}
+ {viewingCustomerHistory && (
+ <div className="fixed inset-0 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/95 z-[25000] flex flex-col p-4">
+ <div className="flex justify-between items-center mb-4 md:mb-8 max-w-4xl mx-auto w-full">
+ <div>
+ <h3 className="text-amber-600 dark:text-amber-400 font-bold text-2xl tracking-tight">{viewingCustomerHistory.name}</h3>
+ <div className="flex items-center gap-3 mt-1">
+ <p className="text-slate-700 dark:text-slate-300 text-sm font-medium uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
+ <span className="text-[10px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest ">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
+ </div>
+ </div>
+ <button onClick={() => setViewingCustomerHistory(null)} className="p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl text-slate-900 dark:text-slate-100 hover:-primary transition-all"><X size={24} /></button>
+ </div>
+ 
+ <div className="flex-1 overflow-y-auto space-y-4 pb-10 max-w-4xl mx-auto w-full">
+ <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase text-xs tracking-widest pb-3 flex items-center gap-2">
+ <div className="w-1.5 h-4 bg-primary rounded-full"></div>
+ Service History
+ </h4>
+ {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
+ <div className="text-center py-24 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed ">
+ <p className="text-slate-700 dark:text-slate-300 text-sm italic">No service history found for this customer.</p>
+ </div>
+ ) : (
+ sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).map(s => (
+ <div key={s.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-4 hover:-primary/30 transition-all group">
+ <div className="flex justify-between items-center">
+ <span className="text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest">{new Date(s.dateTime).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+ <span className="text-amber-600 dark:text-amber-400 font-bold text-lg">{s.total.toLocaleString()} Ks</span>
+ </div>
+ <div className="space-y-2">
+ {s.items.map((item, idx) => (
+ <div key={idx} className="flex justify-between text-sm items-center">
+ <span className="text-slate-900 dark:text-slate-100 font-medium">{item.name} <span className="text-slate-700 dark:text-slate-300 text-xs ml-1">x{item.qty}</span></span>
+ {item.disP > 0 && <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold">-{item.disP}%</span>}
+ </div>
+ ))}
+ </div>
+ <div className="pt-4 flex justify-between items-center text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">
+ <span className="flex items-center gap-1.5">
+ <UserIcon size={10} className="text-amber-600 dark:text-amber-400" />
+ Staff: {s.staff}
+ </span>
+ <span className="bg-muted/10 px-2 py-0.5 rounded-md">
+ {s.payments && s.payments.length > 1 
+ ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+ : (s.method || 'Cash')}
+ </span>
+ </div>
+ </div>
+ ))
+ )}
+ </div>
+ </div>
+ )}
 
-      {/* Status Message Toast */}
-      {statusMsg && (
-        <div className="fixed bottom-20 left-4 right-4 z-[30000] flex justify-center pointer-events-none">
-          <motion.div 
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            className={cn(
-              "px-6 py-4 rounded-2xl shadow-2xl border flex items-center gap-3 pointer-events-auto",
-              statusMsg.type === 'success' 
-                ? "bg-green-500 border-green-600 text-foreground" 
-                : "bg-red-500 border-red-600 text-foreground"
-            )}
-          >
-            {statusMsg.type === 'success' ? <div className="p-1 bg-white/20 rounded-full"><Check size={16} /></div> : <div className="p-1 bg-white/20 rounded-full"><X size={16} /></div>}
-            <span className="font-bold text-sm tracking-tight">{statusMsg.text}</span>
-            <button onClick={() => setStatusMsg(null)} className="ml-2 p-1 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
-          </motion.div>
-        </div>
-      )}
+ {/* Status Message Toast */}
+ {statusMsg && (
+ <div className="fixed bottom-20 left-4 right-4 z-[30000] flex justify-center pointer-events-none">
+ <motion.div 
+ initial={{ opacity: 0, y: 50, scale: 0.9 }}
+ animate={{ opacity: 1, y: 0, scale: 1 }}
+ className={cn(
+ "px-4 md:px-6 py-4 rounded-2xl flex items-center gap-3 pointer-events-auto",
+ statusMsg.type === 'success' 
+ ? "bg-green-500 -green-600 text-slate-900 dark:text-slate-100" 
+ : "bg-red-500 -red-600 text-slate-900 dark:text-slate-100"
+ )}
+ >
+ {statusMsg.type === 'success' ? <div className="p-1 bg-white/20 rounded-full"><Check size={16} /></div> : <div className="p-1 bg-white/20 rounded-full"><X size={16} /></div>}
+ <span className="font-bold text-sm tracking-tight">{statusMsg.text}</span>
+ <button onClick={() => setStatusMsg(null)} className="ml-2 p-1 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
+ </motion.div>
+ </div>
+ )}
 
-      {/* Clear History Confirmation Modal */}
-      <Modal 
-        isOpen={showClearConfirm} 
-        onClose={() => setShowClearConfirm(false)} 
-        title="Clear All History?"
-        maxWidth="max-w-xs"
-      >
-        <div className="text-center space-y-6">
-          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 mx-auto animate-pulse">
-            <Trash2 size={40} />
-          </div>
-          <p className="text-muted-foreground text-sm font-bold leading-relaxed">This will permanently delete every single sale record. This cannot be undone.</p>
-          <div className="flex flex-col gap-3">
-            <button 
-              disabled={isClearing}
-              onClick={handleClearHistory}
-              className="w-full bg-red-500 text-foreground font-black py-4 rounded-2xl shadow-lg shadow-red-500/20 disabled:opacity-50 uppercase tracking-widest"
-            >
-              {isClearing ? "CLEARING..." : "YES, DELETE EVERYTHING"}
-            </button>
-            <button 
-              disabled={isClearing}
-              onClick={() => setShowClearConfirm(false)}
-              className="w-full bg-muted/20 text-foreground font-black py-4 rounded-2xl border border-border hover:bg-muted/30 transition-all uppercase tracking-widest"
-            >
-              CANCEL
-            </button>
-          </div>
-        </div>
-      </Modal>
+ {/* Clear History Confirmation Modal */}
+ <Modal 
+ isOpen={showClearConfirm} 
+ onClose={() => setShowClearConfirm(false)} 
+ title="Clear All History?"
+ maxWidth="max-w-xs"
+ >
+ <div className="text-center space-y-3">
+ <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 mx-auto animate-pulse">
+ <Trash2 size={40} />
+ </div>
+ <p className="text-slate-700 dark:text-slate-300 text-sm font-bold leading-relaxed">This will permanently delete every single sale record. This cannot be undone.</p>
+ <div className="flex flex-col gap-3">
+ <button 
+ disabled={isClearing}
+ onClick={handleClearHistory}
+ className="w-full bg-red-500 text-slate-900 dark:text-slate-100 font-black py-4 rounded-2xl shadow-red-500/20 disabled:opacity-50 uppercase tracking-widest"
+ >
+ {isClearing ? "CLEARING..." : "YES, DELETE EVERYTHING"}
+ </button>
+ <button 
+ disabled={isClearing}
+ onClick={() => setShowClearConfirm(false)}
+ className="w-full bg-muted/20 text-slate-900 dark:text-slate-100 font-black py-4 rounded-2xl hover:bg-muted/30 transition-all uppercase tracking-widest"
+ >
+ CANCEL
+ </button>
+ </div>
+ </div>
+ </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal 
-        isOpen={!!showConfirm} 
-        onClose={() => setShowConfirm(null)} 
-        title="Are you sure?"
-        maxWidth="max-w-xs"
-      >
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto">
-            <Trash2 size={32} />
-          </div>
-          <p className="text-muted-foreground text-sm font-bold">This action cannot be undone.</p>
-          <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={() => setShowConfirm(null)}
-              className="bg-muted/20 text-foreground font-black py-3 rounded-xl border border-border hover:bg-muted/30 transition-all uppercase tracking-widest text-xs"
-            >
-              CANCEL
-            </button>
-            <button 
-              disabled={isDeleting}
-              onClick={() => handleDelete(showConfirm!.coll, showConfirm!.id)}
-              className="bg-red-500 text-foreground font-black py-3 rounded-xl shadow-lg shadow-red-500/20 uppercase tracking-widest text-xs disabled:opacity-50"
-            >
-              {isDeleting ? "DELETING..." : "DELETE"}
-            </button>
-          </div>
-        </div>
-      </Modal>
-    </div>
-  );
+ {/* Delete Confirmation Modal */}
+ <Modal 
+ isOpen={!!showConfirm} 
+ onClose={() => setShowConfirm(null)} 
+ title="Are you sure?"
+ maxWidth="max-w-xs"
+ >
+ <div className="text-center space-y-3">
+ <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto">
+ <Trash2 size={32} />
+ </div>
+ <p className="text-slate-700 dark:text-slate-300 text-sm font-bold">This action cannot be undone.</p>
+ <div className="grid grid-cols-2 gap-3">
+ <button 
+ onClick={() => setShowConfirm(null)}
+ className="bg-muted/20 text-slate-900 dark:text-slate-100 font-black py-3 rounded-xl hover:bg-muted/30 transition-all uppercase tracking-widest text-xs"
+ >
+ CANCEL
+ </button>
+ <button 
+ disabled={isDeleting}
+ onClick={() => handleDelete(showConfirm!.coll, showConfirm!.id)}
+ className="bg-red-500 text-slate-900 dark:text-slate-100 font-black py-3 rounded-xl shadow-red-500/20 uppercase tracking-widest text-xs disabled:opacity-50"
+ >
+ {isDeleting ? "DELETING..." : "DELETE"}
+ </button>
+ </div>
+ </div>
+ </Modal>
+ </div>
+ );
 };
 
 const ForcePasswordChangePage: React.FC = () => {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const { forceChangePassword, error, setError, logout } = useAuth();
-  const navigate = useNavigate();
+ const [newPassword, setNewPassword] = useState('');
+ const [confirmPassword, setConfirmPassword] = useState('');
+ const [loading, setLoading] = useState(false);
+ const [success, setSuccess] = useState(false);
+ const { forceChangePassword, error, setError, logout } = useAuth();
+ const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(false);
+ const handleSubmit = async (e: React.FormEvent) => {
+ e.preventDefault();
+ setError(null);
+ setSuccess(false);
 
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+ if (newPassword !== confirmPassword) {
+ setError("Passwords do not match.");
+ return;
+ }
 
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
+ if (newPassword.length < 6) {
+ setError("Password must be at least 6 characters.");
+ return;
+ }
 
-    setLoading(true);
-    try {
-      await forceChangePassword(newPassword);
-      setSuccess(true);
-      setTimeout(() => navigate('/'), 2000);
-    } catch (err) {
-      // Error handled in useAuth
-    } finally {
-      setLoading(false);
-    }
-  };
+ setLoading(true);
+ try {
+ await forceChangePassword(newPassword);
+ setSuccess(true);
+ setTimeout(() => navigate('/'), 2000);
+ } catch (err) {
+ // Error handled in useAuth
+ } finally {
+ setLoading(false);
+ }
+ };
 
-  return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-background p-4 sm:p-6 overflow-y-auto select-none">
-      <div className="max-w-md w-full p-8 bg-card rounded-3xl shadow-2xl border border-border/50 relative overflow-hidden my-auto shrink-0">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-        
-        <div className="relative z-10">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="p-3 bg-primary/10 rounded-2xl border border-border">
-              <AlertTriangle className="w-6 h-6 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black tracking-tighter">Security Update</h2>
-              <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
-            </div>
-          </div>
+ return (
+ <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] p-4 overflow-y-auto select-none">
+ <div className="max-w-md w-full p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl relative overflow-hidden my-auto shrink-0">
+ <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/50 dark:bg-amber-900/20 rounded-full -mr-16 -mt-16 blur-3xl" />
+ 
+ <div className="relative z-10">
+ <div className="flex items-center gap-4 mb-4 md:mb-8">
+ <div className="p-3 bg-amber-100/50 dark:bg-amber-900/30 rounded-2xl ">
+ <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+ </div>
+ <div>
+ <h2 className="text-2xl font-black tracking-tighter">Security Update</h2>
+ <p className="text-xs text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
+ </div>
+ </div>
 
-          <p className="text-sm text-muted-foreground mb-6 font-medium leading-relaxed">
-            An administrator has reset your password. For your security, you must set a new password before continuing.
-          </p>
+ <p className="text-sm text-slate-700 dark:text-slate-300 mb-3 md:mb-6 font-medium leading-relaxed">
+ An administrator has reset your password. For your security, you must set a new password before continuing.
+ </p>
 
-          {error && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
-            >
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              {error}
-            </motion.div>
-          )}
+ {error && (
+ <motion.div 
+ initial={{ opacity: 0, y: -10 }}
+ animate={{ opacity: 1, y: 0 }}
+ className="mb-3 md:mb-6 p-4 bg-red-500/10 -red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
+ >
+ <AlertCircle className="w-5 h-5 flex-shrink-0" />
+ {error}
+ </motion.div>
+ )}
 
-          {success && (
-            <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-green-500/10 border border-green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
-            >
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-              Password updated! Redirecting...
-            </motion.div>
-          )}
+ {success && (
+ <motion.div 
+ initial={{ opacity: 0, y: -10 }}
+ animate={{ opacity: 1, y: 0 }}
+ className="mb-3 md:mb-6 p-4 bg-green-500/10 -green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
+ >
+ <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+ Password updated! Redirecting...
+ </motion.div>
+ )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-bold text-sm"
-                placeholder="••••••••"
-                required
-              />
-            </div>
+ <form onSubmit={handleSubmit} className="space-y-3">
+ <div className="space-y-2">
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">New Password</label>
+ <input
+ type="password"
+ value={newPassword}
+ onChange={(e) => setNewPassword(e.target.value)}
+ className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary focus:-transparent outline-none transition-all font-bold text-sm"
+ placeholder="••••••••"
+ required
+ />
+ </div>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm New Password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full p-4 rounded-2xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all font-bold text-sm"
-                placeholder="••••••••"
-                required
-              />
-            </div>
+ <div className="space-y-2">
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Confirm New Password</label>
+ <input
+ type="password"
+ value={confirmPassword}
+ onChange={(e) => setConfirmPassword(e.target.value)}
+ className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary focus:-transparent outline-none transition-all font-bold text-sm"
+ placeholder="••••••••"
+ required
+ />
+ </div>
 
-            <div className="flex flex-col gap-3 pt-4">
-              <button
-                type="submit"
-                disabled={loading || success}
-                className="w-full py-4 px-6 rounded-2xl bg-primary text-white hover:opacity-90 transition-all font-black text-xs tracking-widest uppercase shadow-xl shadow-primary/20 disabled:opacity-50 active:scale-95"
-              >
-                {loading ? 'Updating...' : 'Update Password'}
-              </button>
-              <button
-                type="button"
-                onClick={logout}
-                className="w-full py-4 px-6 rounded-2xl border border-border/50 hover:bg-muted transition-all font-black text-xs tracking-widest uppercase active:scale-95"
-              >
-                Logout
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
+ <div className="flex flex-col gap-3 pt-4">
+ <button
+ type="submit"
+ disabled={loading || success}
+ className="w-full py-4 px-4 md:px-6 rounded-2xl bg-primary text-white hover:opacity-90 transition-all font-black text-xs tracking-widest uppercase shadow-primary/20 disabled:opacity-50 active:scale-95"
+ >
+ {loading ? 'Updating...' : 'Update Password'}
+ </button>
+ <button
+ type="button"
+ onClick={logout}
+ className="w-full py-4 px-4 md:px-6 rounded-2xl hover:bg-muted transition-all font-black text-xs tracking-widest uppercase active:scale-95"
+ >
+ Logout
+ </button>
+ </div>
+ </form>
+ </div>
+ </div>
+ </div>
+ );
 };
 
 const SettingsPage: React.FC = () => {
-  const { theme, setTheme } = useTheme();
+ const { theme, setTheme } = useTheme();
 
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [pwdLoading, setPwdLoading] = useState(false);
-  const [pwdSuccess, setPwdSuccess] = useState(false);
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetSuccess, setResetSuccess] = useState(false);
+ const [currentPassword, setCurrentPassword] = useState('');
+ const [newPassword, setNewPassword] = useState('');
+ const [confirmPassword, setConfirmPassword] = useState('');
+ const [pwdLoading, setPwdLoading] = useState(false);
+ const [pwdSuccess, setPwdSuccess] = useState(false);
+ const [resetLoading, setResetLoading] = useState(false);
+ const [resetSuccess, setResetSuccess] = useState(false);
 
-  const handleResetPassword = async () => {
-    if (!profile?.email) return;
-    setResetLoading(true);
-    setError(null);
-    setResetSuccess(false);
-    try {
-      await resetPassword(profile.email);
-      setResetSuccess(true);
-      setTimeout(() => setResetSuccess(false), 5000);
-    } catch (err: any) {
-      // Error handled in useAuth
-    } finally {
-      setResetLoading(false);
-    }
-  };
-  const { changePassword, resetPassword, error, setError, profile } = useAuth();
-  
-  const [preferences, setPreferences] = useState(profile?.preferences || {
-    dateFormat: 'MM/DD/YYYY',
-    timeFormat: '12h',
-    pushNotifications: false,
-    emailAlerts: false
-  });
+ const handleResetPassword = async () => {
+ if (!profile?.email) return;
+ setResetLoading(true);
+ setError(null);
+ setResetSuccess(false);
+ try {
+ await resetPassword(profile.email);
+ setResetSuccess(true);
+ setTimeout(() => setResetSuccess(false), 5000);
+ } catch (err: any) {
+ // Error handled in useAuth
+ } finally {
+ setResetLoading(false);
+ }
+ };
+ const { changePassword, resetPassword, error, setError, profile } = useAuth();
+ 
+ const [preferences, setPreferences] = useState(profile?.preferences || {
+ dateFormat: 'MM/DD/YYYY',
+ timeFormat: '12h',
+ pushNotifications: false,
+ emailAlerts: false
+ });
 
-  const handleUpdatePreferences = async (newPrefs: any) => {
-    const updated = { ...preferences, ...newPrefs };
-    setPreferences(updated);
-    if (profile?.id) {
-      try {
-        await updateDoc(doc(db, 'users', profile.id), { preferences: updated });
-      } catch (err) {
-        console.error("Failed to update preferences", err);
-      }
-    }
-  };
+ const handleUpdatePreferences = async (newPrefs: any) => {
+ const updated = { ...preferences, ...newPrefs };
+ setPreferences(updated);
+ if (profile?.id) {
+ try {
+ await updateDoc(doc(db, 'users', profile.id), { preferences: updated });
+ } catch (err) {
+ console.error("Failed to update preferences", err);
+ }
+ }
+ };
 
-  
-  const [updateChecking, setUpdateChecking] = useState(false);
-  const [updateMsg, setUpdateMsg] = useState<{type: 'success'|'info'|'error', text: string} | null>(null);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+ 
+ const [updateChecking, setUpdateChecking] = useState(false);
+ const [updateMsg, setUpdateMsg] = useState<{type: 'success'|'info'|'error', text: string} | null>(null);
+ const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+ const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setPwdSuccess(false);
+ const handlePasswordSubmit = async (e: React.FormEvent) => {
+ e.preventDefault();
+ setError(null);
+ setPwdSuccess(false);
 
-    if (newPassword !== confirmPassword) {
-      setError("New passwords do not match.");
-      return;
-    }
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters.");
-      return;
-    }
+ if (newPassword !== confirmPassword) {
+ setError("New passwords do not match.");
+ return;
+ }
+ if (newPassword.length < 6) {
+ setError("New password must be at least 6 characters.");
+ return;
+ }
 
-    setPwdLoading(true);
-    try {
-      await changePassword(currentPassword, newPassword);
-      setPwdSuccess(true);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setTimeout(() => setPwdSuccess(false), 3000);
-    } catch (err) {
-      // Error handled in useAuth
-    } finally {
-      setPwdLoading(false);
-    }
-  };
+ setPwdLoading(true);
+ try {
+ await changePassword(currentPassword, newPassword);
+ setPwdSuccess(true);
+ setCurrentPassword('');
+ setNewPassword('');
+ setConfirmPassword('');
+ setTimeout(() => setPwdSuccess(false), 3000);
+ } catch (err) {
+ // Error handled in useAuth
+ } finally {
+ setPwdLoading(false);
+ }
+ };
 
-  const checkForUpdates = async () => {
-    setUpdateChecking(true);
-    setUpdateMsg(null);
-    try {
-      const remoteSnap = await getDoc(doc(db, 'app_config', 'version_control'));
-      const data = remoteSnap.data();
-      if (data && data.latestVersion) {
-        if (isOlderVersion(CURRENT_VERSION, data.latestVersion)) {
-          setUpdateMsg({ type: 'info', text: `Version ${data.latestVersion} is ready to download.` });
-          setIsUpdateModalOpen(true);
-          if (data.updateUrl) setUpdateUrl(data.updateUrl);
-        } else {
-          setUpdateMsg({ type: 'success', text: "You are on the latest version." });
-        }
-      } else {
-         setUpdateMsg({ type: 'success', text: "You are on the latest version." });
-      }
-    } catch (err) {
-      console.error("Error checking for updates:", err);
-      setUpdateMsg({ type: 'error', text: "Failed to check for updates." });
-    } finally {
-      setUpdateChecking(false);
-    }
-  };
+ const checkForUpdates = async () => {
+ setUpdateChecking(true);
+ setUpdateMsg(null);
+ try {
+ const remoteSnap = await getDoc(doc(db, 'app_config', 'version_control'));
+ const data = remoteSnap.data();
+ if (data && data.latestVersion) {
+ if (isOlderVersion(CURRENT_VERSION, data.latestVersion)) {
+ setUpdateMsg({ type: 'info', text: `Version ${data.latestVersion} is ready to download.` });
+ setIsUpdateModalOpen(true);
+ if (data.updateUrl) setUpdateUrl(data.updateUrl);
+ } else {
+ setUpdateMsg({ type: 'success', text: "You are on the latest version." });
+ }
+ } else {
+ setUpdateMsg({ type: 'success', text: "You are on the latest version." });
+ }
+ } catch (err) {
+ console.error("Error checking for updates:", err);
+ setUpdateMsg({ type: 'error', text: "Failed to check for updates." });
+ } finally {
+ setUpdateChecking(false);
+ }
+ };
 
-  const [updateUrl, setUpdateUrl] = useState<string | null>(null);
+ const [updateUrl, setUpdateUrl] = useState<string | null>(null);
 
-  const forceUpdate = () => {
-    if (updateUrl) {
-      window.open(updateUrl, '_blank');
-    } else {
-      window.location.reload();
-    }
-  };
+ const forceUpdate = () => {
+ if (updateUrl) {
+ window.open(updateUrl, '_blank');
+ } else {
+ window.location.reload();
+ }
+ };
 
-  return (
-    <div className="max-w-4xl mx-auto space-y-3 pb-20">
-       <div className="flex items-center gap-3 p-4 bg-card rounded-2xl shadow-sm border border-border/50 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 blur-2xl" />
-          <div className="p-2 bg-primary/10 rounded-xl border border-border text-primary relative z-10">
-            <Settings className="w-5 h-5" />
-          </div>
-          <div className="relative z-10">
-            <h1 className="text-xl font-black tracking-tighter">Settings</h1>
-            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
-          </div>
-       </div>
+ return (
+ <div className="max-w-4xl mx-auto space-y-3 pb-20">
+ <div className="flex items-center gap-3 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl relative overflow-hidden">
+ <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/50 dark:bg-amber-900/20 rounded-full -mr-12 -mt-12 blur-2xl" />
+ <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400 relative z-10">
+ <Settings className="w-5 h-5" />
+ </div>
+ <div className="relative z-10">
+ <h1 className="text-xl font-black tracking-tighter">Settings</h1>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
+ </div>
+ </div>
 
-       <div className="p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Moon className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-black tracking-tighter uppercase">App Theme</h2>
-          </div>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-            {(['gold', 'rose', 'midnight'] as const).map(t => (
-              <button
-                key={t}
-                onClick={() => setTheme(t)}
-                className={cn(
-                  "py-2 px-3 rounded-xl border transition-all font-black text-[10px] tracking-widest uppercase flex items-center gap-2 shrink-0",
-                  theme === t 
-                    ? "border-primary bg-primary/10 text-primary shadow-sm" 
-                    : "border-border/50 text-muted-foreground hover:bg-muted"
-                )}
-              >
-                <div className={cn(
-                  "w-3 h-3 rounded-full shadow-inner",
-                  t === 'gold' ? "bg-gradient-to-br from-amber-200 to-yellow-600" :
-                  t === 'rose' ? "bg-gradient-to-br from-rose-300 to-pink-600" :
-                  "bg-gradient-to-br from-slate-700 to-slate-900"
-                )} />
-                {t}
-              </button>
-            ))}
-          </div>
-       </div>
+ <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+ <div className="flex items-center gap-2">
+ <Moon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+ <h2 className="text-sm font-black tracking-tighter uppercase">App Theme</h2>
+ </div>
+ <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+ {(['gold', 'rose', 'midnight'] as const).map(t => (
+ <button
+ key={t}
+ onClick={() => setTheme(t)}
+ className={cn(
+ "py-2 px-3 rounded-xl transition-all font-black text-[10px] tracking-widest uppercase flex items-center gap-2 shrink-0",
+ theme === t 
+ ? "-primary bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 " 
+ : " text-slate-700 dark:text-slate-300 hover:bg-muted"
+ )}
+ >
+ <div className={cn(
+ "w-3 h-3 rounded-full ",
+ t === 'gold' ? "bg-gradient-to-br from-amber-200 to-yellow-600" :
+ t === 'rose' ? "bg-gradient-to-br from-rose-300 to-pink-600" :
+ "bg-gradient-to-br from-slate-700 to-slate-900"
+ )} />
+ {t}
+ </button>
+ ))}
+ </div>
+ </div>
 
-       
-       <div className="p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col space-y-4">
-          <div className="flex items-center gap-2">
-            <Globe className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-black tracking-tighter uppercase">Localization</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Date Format</label>
-                <select className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.dateFormat || 'MM/DD/YYYY'} onChange={(e) => handleUpdatePreferences({ dateFormat: e.target.value })}>
-                   <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                   <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                   <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                </select>
-             </div>
-             <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Time Format</label>
-                <select className="w-full p-3 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.timeFormat || '12h'} onChange={(e) => handleUpdatePreferences({ timeFormat: e.target.value })}>
-                   <option value="12h">12-Hour (AM/PM)</option>
-                   <option value="24h">24-Hour</option>
-                </select>
-             </div>
-          </div>
-       </div>
+ 
+ <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col space-y-4">
+ <div className="flex items-center gap-2">
+ <Globe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+ <h2 className="text-sm font-black tracking-tighter uppercase">Localization</h2>
+ </div>
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ <div className="space-y-1">
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Date Format</label>
+ <select className="w-full p-3 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.dateFormat || 'MM/DD/YYYY'} onChange={(e) => handleUpdatePreferences({ dateFormat: e.target.value })}>
+ <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+ <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+ <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+ </select>
+ </div>
+ <div className="space-y-1">
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Time Format</label>
+ <select className="w-full p-3 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.timeFormat || '12h'} onChange={(e) => handleUpdatePreferences({ timeFormat: e.target.value })}>
+ <option value="12h">12-Hour (AM/PM)</option>
+ <option value="24h">24-Hour</option>
+ </select>
+ </div>
+ </div>
+ </div>
 
-       <div className="p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col space-y-4">
-          <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-black tracking-tighter uppercase">Notification Preferences</h2>
-          </div>
-          <div className="space-y-3 pt-2">
-             <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl border border-border/50">
-                <div>
-                   <h3 className="text-xs font-bold">Push Notifications</h3>
-                   <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Receive alerts on your device.</p>
-                </div>
-                <button onClick={() => handleUpdatePreferences({ pushNotifications: !preferences.pushNotifications })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.pushNotifications ? "bg-primary/20" : "bg-muted/50")}>
-                   <div className={cn("pointer-events-none inline-block h-4 w-4 transform rounded-full shadow-sm ring-0 transition duration-200 ease-in-out", preferences.pushNotifications ? "translate-x-2 bg-primary" : "-translate-x-2 bg-white")}></div>
-                </button>
-             </div>
-             <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl border border-border/50">
-                <div>
-                   <h3 className="text-xs font-bold">Email Alerts</h3>
-                   <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Receive weekly reports and alerts via email.</p>
-                </div>
-                <button onClick={() => handleUpdatePreferences({ emailAlerts: !preferences.emailAlerts })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.emailAlerts ? "bg-primary/20" : "bg-muted/50")}>
-                   <div className={cn("pointer-events-none inline-block h-4 w-4 transform rounded-full shadow-sm ring-0 transition duration-200 ease-in-out", preferences.emailAlerts ? "translate-x-2 bg-primary" : "-translate-x-2 bg-white")}></div>
-                </button>
-             </div>
-          </div>
-       </div>
+ <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col space-y-4">
+ <div className="flex items-center gap-2">
+ <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+ <h2 className="text-sm font-black tracking-tighter uppercase">Notification Preferences</h2>
+ </div>
+ <div className="space-y-3 pt-2">
+ <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl ">
+ <div>
+ <h3 className="text-xs font-bold">Push Notifications</h3>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium mt-0.5">Receive alerts on your device.</p>
+ </div>
+ <button onClick={() => handleUpdatePreferences({ pushNotifications: !preferences.pushNotifications })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.pushNotifications ? "bg-amber-200/50 dark:bg-amber-900/40" : "bg-muted/50")}>
+ <div className={cn("pointer-events-none inline-block h-4 w-4 transform rounded-full ring-0 transition duration-200 ease-in-out", preferences.pushNotifications ? "translate-x-2 bg-primary" : "-translate-x-2 bg-white")}></div>
+ </button>
+ </div>
+ <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl ">
+ <div>
+ <h3 className="text-xs font-bold">Email Alerts</h3>
+ <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium mt-0.5">Receive weekly reports and alerts via email.</p>
+ </div>
+ <button onClick={() => handleUpdatePreferences({ emailAlerts: !preferences.emailAlerts })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.emailAlerts ? "bg-amber-200/50 dark:bg-amber-900/40" : "bg-muted/50")}>
+ <div className={cn("pointer-events-none inline-block h-4 w-4 transform rounded-full ring-0 transition duration-200 ease-in-out", preferences.emailAlerts ? "translate-x-2 bg-primary" : "-translate-x-2 bg-white")}></div>
+ </button>
+ </div>
+ </div>
+ </div>
 
-       <button 
-         onClick={() => {
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-            setError(null);
-            setPwdSuccess(false);
-            setResetSuccess(false);
-            setIsPasswordModalOpen(true);
-         }}
-         className="w-full p-4 bg-card rounded-2xl shadow-sm border border-border/50 flex items-center justify-between gap-4 hover:border-primary/50 transition-all group active:scale-[0.99] cursor-pointer text-left"
-       >
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-xl text-primary group-hover:scale-110 transition-transform">
-               <Lock className="w-4 h-4" />
-            </div>
-            <div>
-               <h2 className="text-sm font-black tracking-tighter uppercase">Change Password</h2>
-               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Update security credentials</p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-       </button>
+ <button 
+ onClick={() => {
+ setCurrentPassword('');
+ setNewPassword('');
+ setConfirmPassword('');
+ setError(null);
+ setPwdSuccess(false);
+ setResetSuccess(false);
+ setIsPasswordModalOpen(true);
+ }}
+ className="w-full p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex items-center justify-between gap-4 hover:-primary/50 transition-all group active:scale-[0.99] cursor-pointer text-left"
+ >
+ <div className="flex items-center gap-3">
+ <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+ <Lock className="w-4 h-4" />
+ </div>
+ <div>
+ <h2 className="text-sm font-black tracking-tighter uppercase">Change Password</h2>
+ <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest mt-0.5">Update security credentials</p>
+ </div>
+ </div>
+ <ChevronRight className="w-5 h-5 text-slate-700 dark:text-slate-300 group-hover:text-amber-600 dark:text-amber-400 transition-colors" />
+ </button>
 
-      {isPasswordModalOpen && (
-        <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
-          <div className="bg-card w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-border flex flex-col animate-in zoom-in-95 duration-300 relative overflow-hidden">
-             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-             <div className="relative z-10">
-               <div className="flex justify-between items-start mb-6">
-                 <div className="w-14 h-14 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20 shadow-inner">
-                   <Lock size={28} className="text-primary" />
-                 </div>
-                 <button onClick={() => setIsPasswordModalOpen(false)} className="p-2.5 bg-muted/50 hover:bg-muted rounded-full transition-colors active:scale-95"><X size={20} /></button>
-               </div>
-               
-               <h3 className="text-2xl font-black tracking-tight mb-2">Change Password</h3>
-               <p className="text-muted-foreground text-xs font-medium mb-6">Update your account password. If you forgot your current password, you can request a reset link.</p>
+ {isPasswordModalOpen && (
+ <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-md rounded-2xl p-4 flex flex-col animate-in zoom-in-95 duration-300 relative overflow-hidden">
+ <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+ <div className="relative z-10">
+ <div className="flex justify-between items-start mb-3 md:mb-6">
+ <div className="w-14 h-14 bg-amber-100/50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center -primary/20 ">
+ <Lock size={28} className="text-amber-600 dark:text-amber-400" />
+ </div>
+ <button onClick={() => setIsPasswordModalOpen(false)} className="p-2.5 bg-muted/50 hover:bg-muted rounded-full transition-colors active:scale-95"><X size={20} /></button>
+ </div>
+ 
+ <h3 className="text-2xl font-black tracking-tight mb-2">Change Password</h3>
+ <p className="text-slate-700 dark:text-slate-300 text-xs font-medium mb-3 md:mb-6">Update your account password. If you forgot your current password, you can request a reset link.</p>
 
-              {error && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl flex items-center gap-2 font-bold">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  {error}
-                </motion.div>
-              )}
-              {pwdSuccess && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs rounded-xl flex items-center gap-2 font-bold">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                  Password updated successfully!
-                </motion.div>
-              )}
-              {resetSuccess && (
-                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-blue-500/10 border border-blue-500/20 text-blue-600 text-xs rounded-xl flex items-center gap-2 font-bold">
-                  <Mail className="w-4 h-4 flex-shrink-0" />
-                  Password reset link sent to your email!
-                </motion.div>
-              )}
+ {error && (
+ <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-red-500/10 -red-500/20 text-red-500 text-xs rounded-xl flex items-center gap-2 font-bold">
+ <AlertCircle className="w-4 h-4 flex-shrink-0" />
+ {error}
+ </motion.div>
+ )}
+ {pwdSuccess && (
+ <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-emerald-500/10 -emerald-500/20 text-emerald-600 text-xs rounded-xl flex items-center gap-2 font-bold">
+ <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+ Password updated successfully!
+ </motion.div>
+ )}
+ {resetSuccess && (
+ <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-blue-500/10 -blue-500/20 text-blue-600 text-xs rounded-xl flex items-center gap-2 font-bold">
+ <Mail className="w-4 h-4 flex-shrink-0" />
+ Password reset link sent to your email!
+ </motion.div>
+ )}
 
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Current Password</label>
-                    <button type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-[10px] font-bold text-primary hover:underline disabled:opacity-50 transition-all">
-                      {resetLoading ? 'Sending...' : 'Forgot password?'}
-                    </button>
-                  </div>
-                  <div className="relative">
-                    <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
-                    <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  </div>
-                </div>
-                
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Password</label>
-                  <div className="relative">
-                    <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
-                    <Key className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  </div>
-                </div>
+ <form onSubmit={handlePasswordSubmit} className="space-y-4">
+ <div className="space-y-1.5">
+ <div className="flex items-center justify-between">
+ <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 ml-1">Current Password</label>
+ <button type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline disabled:opacity-50 transition-all">
+ {resetLoading ? 'Sending...' : 'Forgot password?'}
+ </button>
+ </div>
+ <div className="relative">
+ <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+ <Lock className="w-4 h-4 text-slate-700 dark:text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+ </div>
+ </div>
+ 
+ <div className="space-y-1.5">
+ <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 ml-1">New Password</label>
+ <div className="relative">
+ <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+ <Key className="w-4 h-4 text-slate-700 dark:text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+ </div>
+ </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Confirm New Password</label>
-                  <div className="relative">
-                    <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 border border-border/50 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
-                    <Key className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  </div>
-                </div>
+ <div className="space-y-1.5">
+ <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 ml-1">Confirm New Password</label>
+ <div className="relative">
+ <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+ <Key className="w-4 h-4 text-slate-700 dark:text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+ </div>
+ </div>
 
-                <button type="submit" disabled={pwdLoading || resetLoading} className="w-full py-4 px-6 rounded-2xl bg-primary text-primary-foreground font-black text-[11px] tracking-widest uppercase shadow-xl shadow-primary/25 hover:opacity-95 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all mt-6 flex items-center justify-center gap-2">
-                  {pwdLoading ? 'Updating...' : 'Update Password'}
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+ <button type="submit" disabled={pwdLoading || resetLoading} className="w-full py-4 px-4 md:px-6 rounded-2xl bg-primary text-amber-600 dark:text-amber-400-foreground font-black text-[11px] tracking-widest uppercase shadow-primary/25 hover:opacity-95 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all mt-6 flex items-center justify-center gap-2">
+ {pwdLoading ? 'Updating...' : 'Update Password'}
+ </button>
+ </form>
+ </div>
+ </div>
+ </div>
+ )}
 
-       <div className="p-5 bg-card rounded-2xl shadow-sm border border-border/50 flex flex-col space-y-4 relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-             <div className="flex items-center gap-3">
-               <div className="p-2.5 bg-primary/10 rounded-xl border border-primary/20 text-primary">
-                 <ShieldCheck className="w-5 h-5" />
-               </div>
-               <div>
-                 <div className="flex items-center gap-2">
-                   <h2 className="text-sm font-black tracking-tight uppercase">System Version & Updates</h2>
-                   <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                     Stable
-                   </span>
-                 </div>
-                 <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
-                   Keep your system software up to date for optimal security and features.
-                 </p>
-               </div>
-             </div>
+ <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col space-y-4 relative overflow-hidden">
+ <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+ <div className="flex items-center gap-3">
+ <div className="p-2.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-xl -primary/20 text-amber-600 dark:text-amber-400">
+ <ShieldCheck className="w-5 h-5" />
+ </div>
+ <div>
+ <div className="flex items-center gap-2">
+ <h2 className="text-sm font-black tracking-tight uppercase">System Version & Updates</h2>
+ <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 -emerald-500/20">
+ <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+ Stable
+ </span>
+ </div>
+ <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium mt-0.5">
+ Keep your system software up to date for optimal security and features.
+ </p>
+ </div>
+ </div>
 
-             <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-                <div className="px-3 py-1.5 rounded-xl bg-muted/40 border border-border/60 text-xs font-black tracking-tight text-foreground flex items-center gap-1.5">
-                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Version:</span>
-                  <span>v{CURRENT_VERSION}</span>
-                </div>
-                <button 
-                  onClick={checkForUpdates} 
-                  disabled={updateChecking} 
-                  className="py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-black text-[10px] tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all shadow-sm disabled:opacity-50 flex items-center gap-2 shrink-0"
-                >
-                  <RefreshCw className={cn("w-3.5 h-3.5", updateChecking && "animate-spin")} />
-                  {updateChecking ? 'Checking...' : 'Check for updates'}
-                </button>
-             </div>
-          </div>
+ <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+ <div className="px-3 py-1.5 rounded-xl bg-muted/40 text-xs font-black tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+ <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider">Version:</span>
+ <span>v{CURRENT_VERSION}</span>
+ </div>
+ <button 
+ onClick={checkForUpdates} 
+ disabled={updateChecking} 
+ className="py-2.5 px-4 rounded-xl bg-primary text-amber-600 dark:text-amber-400-foreground font-black text-[10px] tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 shrink-0"
+ >
+ <RefreshCw className={cn("w-3.5 h-3.5", updateChecking && "animate-spin")} />
+ {updateChecking ? 'Checking...' : 'Check for updates'}
+ </button>
+ </div>
+ </div>
 
-          {updateMsg && updateMsg.type !== 'info' && (
-            <motion.div 
-              initial={{ opacity: 0, y: -6 }} 
-              animate={{ opacity: 1, y: 0 }} 
-              className={cn(
-               "p-3.5 rounded-xl text-xs font-bold border flex items-center justify-between gap-3",
-               updateMsg.type === 'success' 
-                 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
-                 : "bg-red-500/10 text-red-500 border-red-500/20"
-              )}
-            >
-              <div className="flex items-center gap-2.5">
-                {updateMsg.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                )}
-                <span>{updateMsg.text}</span>
-              </div>
-              <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-70">
-                {updateMsg.type === 'success' ? 'Up to date' : 'Check failed'}
-              </span>
-            </motion.div>
-          )}
+ {updateMsg && updateMsg.type !== 'info' && (
+ <motion.div 
+ initial={{ opacity: 0, y: -6 }} 
+ animate={{ opacity: 1, y: 0 }} 
+ className={cn(
+ "p-3.5 rounded-xl text-xs font-bold flex items-center justify-between gap-3",
+ updateMsg.type === 'success' 
+ ? "bg-emerald-500/10 text-emerald-600 -emerald-500/20" 
+ : "bg-red-500/10 text-red-500 -red-500/20"
+ )}
+ >
+ <div className="flex items-center gap-2.5">
+ {updateMsg.type === 'success' ? (
+ <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+ ) : (
+ <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+ )}
+ <span>{updateMsg.text}</span>
+ </div>
+ <span className="text-[10px] uppercase tracking-wider font-extrabold opacity-70">
+ {updateMsg.type === 'success' ? 'Up to date' : 'Check failed'}
+ </span>
+ </motion.div>
+ )}
 
-      {isUpdateModalOpen && (
-        <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
-          <div className="bg-card w-full max-w-md rounded-[2.5rem] shadow-2xl p-8 border border-primary/30 space-y-6 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
-            
-            <div className="relative z-10 flex flex-col items-center">
-              <div className="w-20 h-20 bg-primary/15 rounded-full flex items-center justify-center shadow-lg relative border border-primary/30 mb-4 animate-bounce duration-1000">
-                <Download className="w-10 h-10 text-primary drop-shadow-md" />
-              </div>
+ {isUpdateModalOpen && (
+ <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-md rounded-2xl p-4 -primary/30 space-y-3 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+ <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
+ 
+ <div className="relative z-10 flex flex-col items-center">
+ <div className="w-20 h-20 bg-primary/15 rounded-full flex items-center justify-center relative -primary/30 mb-4 animate-bounce duration-1000">
+ <Download className="w-10 h-10 text-amber-600 dark:text-amber-400 drop-" />
+ </div>
 
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/30 mb-2">
-                <Sparkles className="w-3 h-3" />
-                New Release Ready
-              </span>
+ <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/15 text-amber-600 dark:text-amber-400 -primary/30 mb-2">
+ <Sparkles className="w-3 h-3" />
+ New Release Ready
+ </span>
 
-              <h3 className="text-2xl font-black tracking-tight text-foreground">Software Update Available</h3>
-              <p className="text-muted-foreground text-xs font-medium px-2 mt-2 leading-relaxed">
-                {updateMsg?.text || "A new version of the application is available. Upgrade now for the latest features, security enhancements, and stability improvements."}
-              </p>
-            </div>
+ <h3 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">Software Update Available</h3>
+ <p className="text-slate-700 dark:text-slate-300 text-xs font-medium px-2 mt-2 leading-relaxed">
+ {updateMsg?.text || "A new version of the application is available. Upgrade now for the latest features, security enhancements, and stability improvements."}
+ </p>
+ </div>
 
-            <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 text-left space-y-2 relative z-10">
-              <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                <span>Release Highlights</span>
-                <span className="text-primary font-bold">Stable Channel</span>
-              </div>
-              <ul className="text-xs font-medium space-y-1.5 text-foreground/80">
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  Performance optimizations and faster startup
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  Enhanced system security and data sync
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  General bug fixes and UI refinements
-                </li>
-              </ul>
-            </div>
+ <div className="bg-muted/30 rounded-2xl p-4 text-left space-y-2 relative z-10">
+ <div className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
+ <span>Release Highlights</span>
+ <span className="text-amber-600 dark:text-amber-400 font-bold">Stable Channel</span>
+ </div>
+ <ul className="text-xs font-medium space-y-1.5 text-slate-900 dark:text-slate-100/80">
+ <li className="flex items-center gap-2">
+ <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+ Performance optimizations and faster startup
+ </li>
+ <li className="flex items-center gap-2">
+ <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+ Enhanced system security and data sync
+ </li>
+ <li className="flex items-center gap-2">
+ <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+ General bug fixes and UI refinements
+ </li>
+ </ul>
+ </div>
 
-            <div className="space-y-3 relative z-10 pt-2">
-               <button
-                 onClick={forceUpdate}
-                 className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-xl shadow-primary/25 hover:opacity-95 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2.5 uppercase"
-               >
-                 <Download size={18} />
-                 Install Update Now
-               </button>
-               <button
-                 onClick={() => setIsUpdateModalOpen(false)}
-                 className="w-full bg-muted/60 text-muted-foreground font-bold text-xs tracking-widest uppercase py-3.5 rounded-2xl border border-border/40 hover:bg-muted active:scale-95 transition-all"
-               >
-                 Remind Me Later
-               </button>
-            </div>
-          </div>
-        </div>
-      )}
-       </div>
-    </div>
-  );
+ <div className="space-y-3 relative z-10 pt-2">
+ <button
+ onClick={forceUpdate}
+ className="w-full bg-primary text-amber-600 dark:text-amber-400-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-primary/25 hover:opacity-95 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2.5 uppercase"
+ >
+ <Download size={18} />
+ Install Update Now
+ </button>
+ <button
+ onClick={() => setIsUpdateModalOpen(false)}
+ className="w-full bg-muted/60 text-slate-700 dark:text-slate-300 font-bold text-xs tracking-widest uppercase py-3.5 rounded-2xl hover:bg-muted active:scale-95 transition-all"
+ >
+ Remind Me Later
+ </button>
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ );
 };
 
 const ResetPasswordPage: React.FC = () => {
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <h2 className="text-2xl font-black mb-4">Reset Password</h2>
-      <p className="text-muted-foreground mb-4">Password reset is handled via Identity Reset or Admin panel.</p>
-      <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
-    </div>
-  );
+ return (
+ <div className="min-h-screen bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] flex flex-col items-center justify-center p-4">
+ <h2 className="text-2xl font-black mb-4">Reset Password</h2>
+ <p className="text-slate-700 dark:text-slate-300 mb-4">Password reset is handled via Identity Reset or Admin panel.</p>
+ <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
+ </div>
+ );
 };
 
 const IdentityResetPage: React.FC = () => {
-  return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
-      <h2 className="text-2xl font-black mb-4">Identity Reset</h2>
-      <p className="text-muted-foreground mb-4">Please contact an admin to reset your password or identity details.</p>
-      <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
-    </div>
-  );
+ return (
+ <div className="min-h-screen bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] flex flex-col items-center justify-center p-4">
+ <h2 className="text-2xl font-black mb-4">Identity Reset</h2>
+ <p className="text-slate-700 dark:text-slate-300 mb-4">Please contact an admin to reset your password or identity details.</p>
+ <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
+ </div>
+ );
 };
 
 const LoginPage: React.FC = () => {
-  const [loginMethod, setLoginMethod] = useState<'phone'|'email'>('phone');
-  const [identifier, setIdentifier] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  
-  const [viewState, setViewState] = useState<'welcome'|'login'|'signup'>('welcome');
-  const [signUpMethod, setSignUpMethod] = useState<'phone'|'email'>('phone');
-  const [signUpIdentifier, setSignUpIdentifier] = useState('');
-  const [signUpPassword, setSignUpPassword] = useState('');
-  const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
-  const [signUpName, setSignUpName] = useState('');
-  const [signUpDob, setSignUpDob] = useState('');
-  const [signUpShowPassword, setSignUpShowPassword] = useState(false);
-  
-  const [showHelp, setShowHelp] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const { loginWithPhone, loginWithEmail,  signUpWithPhone, signUp, login, error, setError, user, profile, loading, isCustomer } = useAuth();
-  const navigate = useNavigate();
-  const [hasBiometric, setHasBiometric] = useState(false);
-  
-  useEffect(() => {
-    const checkBiometric = async () => {
-      if (!Capacitor.isNativePlatform()) return;
-      try {
-        const avail = await NativeBiometric.isAvailable();
-        if (avail.isAvailable) {
-          const res = await NativeBiometric.getCredentials({ server: 'nail-pro-pos' }).catch(() => {
-            // Ignore error
-          });
-          if (res && res.password) {
-            setHasBiometric(true);
-          }
-        }
-      } catch (err) {
-        console.warn('Biometric check failed:', err);
-      } finally {
-        try {
-          await SplashScreen.hide();
-        } catch (e) {
-          // ignore
-        }
-      }
-    };
-    checkBiometric();
-  }, []);
+ const [loginMethod, setLoginMethod] = useState<'phone'|'email'>('phone');
+ const [identifier, setIdentifier] = useState('');
+ const [password, setPassword] = useState('');
+ const [showPassword, setShowPassword] = useState(false);
+ 
+ const [viewState, setViewState] = useState<'welcome'|'login'|'signup'>('welcome');
+ const [signUpMethod, setSignUpMethod] = useState<'phone'|'email'>('phone');
+ const [signUpIdentifier, setSignUpIdentifier] = useState('');
+ const [signUpPassword, setSignUpPassword] = useState('');
+ const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+ const [signUpName, setSignUpName] = useState('');
+ const [signUpDob, setSignUpDob] = useState('');
+ const [signUpShowPassword, setSignUpShowPassword] = useState(false);
+ 
+ const [showHelp, setShowHelp] = useState(false);
+ const [isSubmitting, setIsSubmitting] = useState(false);
+ 
+ const { loginWithPhone, loginWithEmail, signUpWithPhone, signUp, login, error, setError, user, profile, loading, isCustomer } = useAuth();
+ const navigate = useNavigate();
+ const [hasBiometric, setHasBiometric] = useState(false);
+ 
+ useEffect(() => {
+ const checkBiometric = async () => {
+ if (!Capacitor.isNativePlatform()) return;
+ try {
+ const avail = await NativeBiometric.isAvailable();
+ if (avail.isAvailable) {
+ const res = await NativeBiometric.getCredentials({ server: 'nail-pro-pos' }).catch(() => {
+ // Ignore error
+ });
+ if (res && res.password) {
+ setHasBiometric(true);
+ }
+ }
+ } catch (err) {
+ console.warn('Biometric check failed:', err);
+ } finally {
+ try {
+ await SplashScreen.hide();
+ } catch (e) {
+ // ignore
+ }
+ }
+ };
+ checkBiometric();
+ }, []);
 
 
-  useEffect(() => {
-    if (user && profile) {
-      if (isCustomer) {
-        navigate('/appointments');
-      } else {
-        navigate('/');
-      }
-    }
-  }, [user, profile, navigate]);
-  
-  if (loading) return null;
+ useEffect(() => {
+ if (user && profile) {
+ if (isCustomer) {
+ navigate('/appointments');
+ } else {
+ navigate('/');
+ }
+ }
+ }, [user, profile, navigate]);
+ 
+ if (loading) return null;
 
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!identifier || !password) {
-      setError("Please fill in all required fields.");
-      return;
-    }
+ const handleLoginSubmit = async (e: React.FormEvent) => {
+ e.preventDefault();
+ if (!identifier || !password) {
+ setError("Please fill in all required fields.");
+ return;
+ }
 
-    setIsSubmitting(true);
-    try {
-      if (loginMethod === 'phone') {
-        await loginWithPhone(identifier, password);
-      } else {
-        await loginWithEmail(identifier, password);
-      }
-      
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const avail = await NativeBiometric.isAvailable();
-          if (avail.isAvailable) {
-            try {
-              await NativeBiometric.deleteCredentials({ server: 'nail-pro-pos' });
-            } catch (e) {
-              // Ignore if no credentials exist
-            }
-            await NativeBiometric.setCredentials({
-              username: identifier,
-              password,
-              server: 'nail-pro-pos',
-            });
-          }
-        } catch (biometricErr) {
-          console.warn("Failed to set biometric credentials:", biometricErr);
-        }
-      }
-    } catch (err) {
-      // Error is already handled and set in AuthProvider
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+ setIsSubmitting(true);
+ try {
+ if (loginMethod === 'phone') {
+ await loginWithPhone(identifier, password);
+ } else {
+ await loginWithEmail(identifier, password);
+ }
+ 
+ if (Capacitor.isNativePlatform()) {
+ try {
+ const avail = await NativeBiometric.isAvailable();
+ if (avail.isAvailable) {
+ try {
+ await NativeBiometric.deleteCredentials({ server: 'nail-pro-pos' });
+ } catch (e) {
+ // Ignore if no credentials exist
+ }
+ await NativeBiometric.setCredentials({
+ username: identifier,
+ password,
+ server: 'nail-pro-pos',
+ });
+ }
+ } catch (biometricErr) {
+ console.warn("Failed to set biometric credentials:", biometricErr);
+ }
+ }
+ } catch (err) {
+ // Error is already handled and set in AuthProvider
+ } finally {
+ setIsSubmitting(false);
+ }
+ };
 
-  const handleBiometricLogin = async () => {
-    try {
-      const cred = await NativeBiometric.getCredentials({ server: 'nail-pro-pos' });
-      if (cred && cred.username && cred.password) {
-        setIsSubmitting(true);
-        if (cred.username.includes('@')) {
-          await loginWithEmail(cred.username, cred.password);
-        } else {
-          await loginWithPhone(cred.username, cred.password);
-        }
-      }
-    } catch (err) {
-      console.warn("Biometric login failed:", err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+ const handleBiometricLogin = async () => {
+ try {
+ const cred = await NativeBiometric.getCredentials({ server: 'nail-pro-pos' });
+ if (cred && cred.username && cred.password) {
+ setIsSubmitting(true);
+ if (cred.username.includes('@')) {
+ await loginWithEmail(cred.username, cred.password);
+ } else {
+ await loginWithPhone(cred.username, cred.password);
+ }
+ }
+ } catch (err) {
+ console.warn("Biometric login failed:", err);
+ } finally {
+ setIsSubmitting(false);
+ }
+ };
 
-  const handleSignUpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signUpIdentifier || !signUpPassword || !signUpName) {
-      setError("Please fill in all required fields.");
-      return;
-    }
+ const handleSignUpSubmit = async (e: React.FormEvent) => {
+ e.preventDefault();
+ if (!signUpIdentifier || !signUpPassword || !signUpName) {
+ setError("Please fill in all required fields.");
+ return;
+ }
 
-    if (signUpMethod === 'phone') {
-      if (signUpPassword !== signUpConfirmPassword) {
-        setError("Passwords do not match.");
-        return;
-      }
-      if (!signUpDob) {
-        setError("Date of Birth is required for phone sign up.");
-        return;
-      }
-    }
+ if (signUpMethod === 'phone') {
+ if (signUpPassword !== signUpConfirmPassword) {
+ setError("Passwords do not match.");
+ return;
+ }
+ if (!signUpDob) {
+ setError("Date of Birth is required for phone sign up.");
+ return;
+ }
+ }
 
-    setIsSubmitting(true);
-    try {
-      if (signUpMethod === 'phone') {
-        await signUpWithPhone(signUpIdentifier, signUpPassword, signUpDob, signUpName);
-      } else {
-        await signUp(signUpIdentifier, signUpPassword, signUpName);
-      }
-    } catch (err) {
-      // Error is already handled and set in AuthProvider
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+ setIsSubmitting(true);
+ try {
+ if (signUpMethod === 'phone') {
+ await signUpWithPhone(signUpIdentifier, signUpPassword, signUpDob, signUpName);
+ } else {
+ await signUp(signUpIdentifier, signUpPassword, signUpName);
+ }
+ } catch (err) {
+ // Error is already handled and set in AuthProvider
+ } finally {
+ setIsSubmitting(false);
+ }
+ };
 
-  const handleGoogleLogin = async () => {
-    setIsSubmitting(true);
-    try {
-      await login();
-      navigate('/');
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+ const handleGoogleLogin = async () => {
+ setIsSubmitting(true);
+ try {
+ await login();
+ navigate('/');
+ } catch (err) {
+ console.error(err);
+ } finally {
+ setIsSubmitting(false);
+ }
+ };
 
-  return (
-    <div 
-      className="fixed inset-0 z-[99999] overflow-hidden overscroll-none transition-colors duration-500 ease-in-out text-foreground [.midnight_&]:text-slate-200 select-none bg-cover bg-center"
-      style={{ backgroundImage: `url(${nailSalonBg})` }}
-    >
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
-      <div className="h-[100dvh] w-full flex flex-col items-center justify-center overflow-hidden relative z-10">
-        <div className="relative w-full flex flex-col justify-center z-10 shrink-0 h-full">
-        <AnimatePresence mode="wait">
-        {viewState === 'welcome' && (
-          <motion.div 
-            key="welcome"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            className="w-full h-full flex flex-col items-center justify-center space-y-8 bg-black/30 backdrop-blur-md p-10 sm:p-16 shadow-2xl"
-          >
-            {/* Header */}
-            <div className="text-center shrink-0 w-full flex flex-col items-center">
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="flex flex-col items-center w-full"
-              >
-                <h1 className="text-5xl sm:text-6xl font-serif text-white tracking-[0.25em] leading-none mb-4 uppercase ml-4 text-shadow-lg">NAIL PRO</h1>
-                <p className="text-xs sm:text-sm font-medium text-white/90 uppercase tracking-[0.5em] ml-2 font-serif">Beauty Studio Management</p>
-              </motion.div>
-            </div>
+ return (
+ <div 
+ className="fixed inset-0 z-[99999] overflow-hidden overscroll-none transition-colors duration-500 ease-in-out text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 select-none bg-cover bg-center"
+ style={{ backgroundImage: `url(${nailSalonBg})` }}
+ >
+ <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+ <div className="h-screen w-full flex flex-col items-center justify-center overflow-hidden relative z-10">
+ <div className="relative w-full flex flex-col justify-center z-10 shrink-0 h-full">
+ <AnimatePresence mode="wait">
+ {viewState === 'welcome' && (
+ <motion.div 
+ key="welcome"
+ initial={{ opacity: 0, scale: 0.95 }}
+ animate={{ opacity: 1, scale: 1 }}
+ exit={{ opacity: 0, scale: 0.95 }}
+ transition={{ duration: 0.4, delay: 0.2 }}
+ className="w-full h-full flex flex-col items-center justify-center space-y-3 bg-black/30 backdrop-blur-md p-4 sm:p-16 "
+ >
+ {/* Header */}
+ <div className="text-center shrink-0 w-full flex flex-col items-center">
+ <motion.div
+ initial={{ opacity: 0, y: -20 }}
+ animate={{ opacity: 1, y: 0 }}
+ transition={{ duration: 0.6 }}
+ className="flex flex-col items-center w-full"
+ >
+ <h1 className="text-5xl sm:text-6xl font-serif text-white tracking-[0.25em] leading-none mb-4 uppercase ml-4 text-">NAIL PRO</h1>
+ <p className="text-xs sm:text-sm font-medium text-white/90 uppercase tracking-[0.5em] ml-2 font-serif">Beauty Studio Management</p>
+ </motion.div>
+ </div>
 
-            <div className="w-full flex flex-row gap-4 pt-10">
-              <button
-                onClick={() => { setViewState('login'); setError(null); }}
-                className="flex-1 bg-white text-[#4A2E31] font-black py-4 px-8 rounded-xl shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
-              >
-                SIGN IN
-              </button>
-              <button
-                onClick={() => { setViewState('signup'); setError(null); }}
-                className="flex-1 bg-transparent border-2 border-white text-white font-black py-4 px-8 rounded-xl shadow-sm hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
-              >
-                CREATE ACCOUNT
-              </button>
-            </div>
-          </motion.div>
-        )}
+ <div className="w-full flex flex-row gap-4 pt-10">
+ <button
+ onClick={() => { setViewState('login'); setError(null); }}
+ className="flex-1 bg-white text-[#4A2E31] font-black py-4 px-4 md:px-8 rounded-xl hover: hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
+ >
+ SIGN IN
+ </button>
+ <button
+ onClick={() => { setViewState('signup'); setError(null); }}
+ className="flex-1 bg-transparent -2 -white text-white font-black py-4 px-4 md:px-8 rounded-xl hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
+ >
+ CREATE ACCOUNT
+ </button>
+ </div>
+ </motion.div>
+ )}
 
-        {viewState === 'login' && (
-          <motion.div 
-            key="login"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="bg-black/40 backdrop-blur-md text-white p-6 sm:p-10 shadow-2xl shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto"
-          >
-            <button
-              onClick={() => setViewState('welcome')}
-              className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
-            >
-              <ArrowLeft size={14} /> Back
-            </button>
-            
-            <div className="w-full max-w-md mx-auto">
-            <div className="text-center mb-6 mt-4">
-              <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Welcome Back</h2>
-            </div>
+ {viewState === 'login' && (
+ <motion.div 
+ key="login"
+ initial={{ opacity: 0, x: 20 }}
+ animate={{ opacity: 1, x: 0 }}
+ exit={{ opacity: 0, x: -20 }}
+ transition={{ duration: 0.3 }}
+ className="bg-black/40 backdrop-blur-md text-white p-4 sm:p-4 shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto"
+ >
+ <button
+ onClick={() => setViewState('welcome')}
+ className="absolute top-4 left-4 p-2 text-slate-700 dark:text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
+ >
+ <ArrowLeft size={14} /> Back
+ </button>
+ 
+ <div className="w-full max-w-md mx-auto">
+ <div className="text-center mb-3 md:mb-6 mt-4">
+ <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Welcome Back</h2>
+ </div>
 
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3"
-              >
-                <AlertCircle size={16} className="shrink-0" />
-                {error}
-              </motion.div>
-            )}
+ {error && (
+ <motion.div 
+ initial={{ opacity: 0, x: -10 }}
+ animate={{ opacity: 1, x: 0 }}
+ className="mb-4 p-3 bg-red-500/10 -red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3"
+ >
+ <AlertCircle size={16} className="shrink-0" />
+ {error}
+ </motion.div>
+ )}
 
-            {/* Auth Method Selector */}
-            <div className="flex p-1 bg-white/10 rounded-xl mb-5 border border-white/20 shadow-sm backdrop-blur-sm">
-              <button
-                type="button"
-                onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
-                className={cn(
-                  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  loginMethod === 'phone' ? "text-white" : "text-muted-foreground hover:text-white"
-                )}
-              >
-                {loginMethod === 'phone' && (
-                  <motion.div layoutId="activeTabLogin" className="absolute inset-0 bg-primary rounded-xl z-0" />
-                )}
-                <span className="relative z-10">Phone</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
-                className={cn(
-                  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  loginMethod === 'email' ? "text-white" : "text-muted-foreground hover:text-white"
-                )}
-              >
-                {loginMethod === 'email' && (
-                  <motion.div layoutId="activeTabLogin" className="absolute inset-0 bg-primary rounded-xl z-0" />
-                )}
-                <span className="relative z-10">Email</span>
-              </button>
-            </div>
+ {/* Auth Method Selector */}
+ <div className="flex p-1 bg-white/10 rounded-xl mb-5 -white/20 backdrop-blur-sm">
+ <button
+ type="button"
+ onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
+ className={cn(
+ "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+ loginMethod === 'phone' ? "text-white" : "text-slate-700 dark:text-slate-300 hover:text-white"
+ )}
+ >
+ {loginMethod === 'phone' && (
+ <motion.div layoutId="activeTabLogin" className="absolute inset-0 bg-primary rounded-xl z-0" />
+ )}
+ <span className="relative z-10">Phone</span>
+ </button>
+ <button
+ type="button"
+ onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
+ className={cn(
+ "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+ loginMethod === 'email' ? "text-white" : "text-slate-700 dark:text-slate-300 hover:text-white"
+ )}
+ >
+ {loginMethod === 'email' && (
+ <motion.div layoutId="activeTabLogin" className="absolute inset-0 bg-primary rounded-xl z-0" />
+ )}
+ <span className="relative z-10">Email</span>
+ </button>
+ </div>
 
-            <form onSubmit={handleLoginSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">
-                  {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
-                </label>
-                <div className="relative">
-                  {loginMethod === 'email' ? (
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                  ) : (
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                  )}
-                  <input 
-                    type={loginMethod === 'email' ? "email" : "tel"} 
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    placeholder={loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
-                  />
-                </div>
-              </div>
+ <form onSubmit={handleLoginSubmit} className="space-y-4">
+ <div className="space-y-1">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">
+ {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
+ </label>
+ <div className="relative">
+ {loginMethod === 'email' ? (
+ <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+ ) : (
+ <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+ )}
+ <input 
+ type={loginMethod === 'email' ? "email" : "tel"} 
+ value={identifier}
+ onChange={(e) => setIdentifier(e.target.value)}
+ placeholder={loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
+ className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ />
+ </div>
+ </div>
 
-              <div className="space-y-1">
-                <div className="flex justify-between items-center px-1">
-                  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Password</label>
-                  <button 
-                    type="button"
-                    onClick={() => navigate('/identity-reset')}
-                    className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-bold hover:underline"
-                  >
-                    Forgot?
-                  </button>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                  <input 
-                    type={showPassword ? "text" : "password"} 
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
+ <div className="space-y-1">
+ <div className="flex justify-between items-center px-1">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest">Password</label>
+ <button 
+ type="button"
+ onClick={() => navigate('/identity-reset')}
+ className="text-[9px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-bold hover:underline"
+ >
+ Forgot?
+ </button>
+ </div>
+ <div className="relative">
+ <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+ <input 
+ type={showPassword ? "text" : "password"} 
+ value={password}
+ onChange={(e) => setPassword(e.target.value)}
+ placeholder="••••••••"
+ className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ />
+ <button 
+ type="button"
+ onClick={() => setShowPassword(!showPassword)}
+ className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+ >
+ {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+ </button>
+ </div>
+ </div>
 
-              <button 
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-white text-[#4A2E31] font-black py-3 mt-2 rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
-              >
-                {isSubmitting ? "PROCESSING..." : "SIGN IN"}
-              </button>
-            </form>
+ <button 
+ type="submit"
+ disabled={isSubmitting}
+ className="w-full bg-white text-[#4A2E31] font-black py-3 mt-2 rounded-xl hover: active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
+ >
+ {isSubmitting ? "PROCESSING..." : "SIGN IN"}
+ </button>
+ </form>
 
-            {hasBiometric && (
-              <button 
-                onClick={handleBiometricLogin}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-white/10 border border-white/20 text-white font-bold py-3 mt-4 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm backdrop-blur-sm"
-              >
-                <Zap size={18} />
-                <span className="text-[10px] font-black uppercase tracking-widest">1-Tap Login</span>
-              </button>
-            )}
+ {hasBiometric && (
+ <button 
+ onClick={handleBiometricLogin}
+ disabled={isSubmitting}
+ className="w-full flex items-center justify-center gap-3 bg-white/10 -white/20 text-white font-bold py-3 mt-4 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ >
+ <Zap size={18} />
+ <span className="text-[10px] font-black uppercase tracking-widest">1-Tap Login</span>
+ </button>
+ )}
 
-            <div className="mt-5 space-y-4">
-              <div className="relative flex items-center justify-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border"></div>
-                </div>
-                <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-transparent">Or continue with</span>
-              </div>
+ <div className="mt-5 space-y-4">
+ <div className="relative flex items-center justify-center">
+ <div className="absolute inset-0 flex items-center">
+ <div className="w-full "></div>
+ </div>
+ <span className="relative px-4 text-[8px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest bg-transparent">Or continue with</span>
+ </div>
 
-              <button 
-                onClick={handleGoogleLogin}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-white/10 border border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm backdrop-blur-sm"
-              >
-                <span className="text-xs tracking-wider">Continue with Google</span>
-              </button>
-            </div>
-            
-            </div>
-            <div className="pt-6 text-center">
-              <button 
-                onClick={() => setShowHelp(!showHelp)}
-                className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
-              >
-                <HelpCircle size={12} />
-                Need help?
-              </button>
-              
-              {showHelp && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-4 p-4 bg-primary/5 border border-primary/10 rounded-2xl text-left"
-                >
-                  <p className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest mb-2">Staff Registration</p>
-                  <p className="text-[9px] text-muted-foreground leading-relaxed">
-                    If you were added as a staff member by an admin, you still need to <strong className="text-primary [.midnight_&]:text-amber-400">Sign Up</strong> once with your email to set your password.
-                  </p>
-                </motion.div>
-              )}
-            </div>
-          </motion.div>
-        )}
+ <button 
+ onClick={handleGoogleLogin}
+ disabled={isSubmitting}
+ className="w-full flex items-center justify-center gap-3 bg-white/10 -white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ >
+ <span className="text-xs tracking-wider">Continue with Google</span>
+ </button>
+ </div>
+ 
+ </div>
+ <div className="pt-6 text-center">
+ <button 
+ onClick={() => setShowHelp(!showHelp)}
+ className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-[0.2em] hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+ >
+ <HelpCircle size={12} />
+ Need help?
+ </button>
+ 
+ {showHelp && (
+ <motion.div 
+ initial={{ opacity: 0, y: 10 }}
+ animate={{ opacity: 1, y: 0 }}
+ className="mt-4 p-4 bg-amber-50/50 dark:bg-amber-900/20 -primary/10 rounded-2xl text-left"
+ >
+ <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest mb-2">Staff Registration</p>
+ <p className="text-[9px] text-slate-700 dark:text-slate-300 leading-relaxed">
+ If you were added as a staff member by an admin, you still need to <strong className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400">Sign Up</strong> once with your email to set your password.
+ </p>
+ </motion.div>
+ )}
+ </div>
+ </motion.div>
+ )}
 
-        {viewState === 'signup' && (
-          <motion.div
-            key="signup"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-            className="bg-black/40 backdrop-blur-md text-white p-6 sm:p-10 shadow-2xl shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto custom-scrollbar"
-          >
-            <button
-              onClick={() => setViewState('welcome')}
-              className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
-            >
-              <ArrowLeft size={14} /> Back
-            </button>
-            
-            <div className="w-full max-w-md mx-auto">
-            <div className="text-center mb-6 mt-4">
-              <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Create Account</h2>
-              <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-[0.2em] mt-1">Join Nail Pro Studio</p>
-            </div>
+ {viewState === 'signup' && (
+ <motion.div
+ key="signup"
+ initial={{ opacity: 0, x: 20 }}
+ animate={{ opacity: 1, x: 0 }}
+ exit={{ opacity: 0, x: -20 }}
+ transition={{ duration: 0.3 }}
+ className="bg-black/40 backdrop-blur-md text-white p-4 sm:p-4 shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto custom-scrollbar"
+ >
+ <button
+ onClick={() => setViewState('welcome')}
+ className="absolute top-4 left-4 p-2 text-slate-700 dark:text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
+ >
+ <ArrowLeft size={14} /> Back
+ </button>
+ 
+ <div className="w-full max-w-md mx-auto">
+ <div className="text-center mb-3 md:mb-6 mt-4">
+ <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Create Account</h2>
+ <p className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em] mt-1">Join Nail Pro Studio</p>
+ </div>
 
-            {error && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3">
-                <AlertCircle size={16} className="shrink-0" />
-                {error}
-              </div>
-            )}
+ {error && (
+ <div className="mb-4 p-3 bg-red-500/10 -red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3">
+ <AlertCircle size={16} className="shrink-0" />
+ {error}
+ </div>
+ )}
 
-            <div className="flex p-1 bg-white/10 rounded-xl mb-5 border border-white/20 shadow-sm backdrop-blur-sm">
-              <button
-                type="button"
-                onClick={() => { setSignUpMethod('phone'); setSignUpIdentifier(''); setError(null); }}
-                className={cn(
-                  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  signUpMethod === 'phone' ? "text-white" : "text-muted-foreground hover:text-white"
-                )}
-              >
-                {signUpMethod === 'phone' && (
-                  <motion.div layoutId="signUpActiveTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
-                )}
-                <span className="relative z-10">Phone</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setSignUpMethod('email'); setSignUpIdentifier(''); setError(null); }}
-                className={cn(
-                  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
-                  signUpMethod === 'email' ? "text-white" : "text-muted-foreground hover:text-white"
-                )}
-              >
-                {signUpMethod === 'email' && (
-                  <motion.div layoutId="signUpActiveTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
-                )}
-                <span className="relative z-10">Email</span>
-              </button>
-            </div>
+ <div className="flex p-1 bg-white/10 rounded-xl mb-5 -white/20 backdrop-blur-sm">
+ <button
+ type="button"
+ onClick={() => { setSignUpMethod('phone'); setSignUpIdentifier(''); setError(null); }}
+ className={cn(
+ "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+ signUpMethod === 'phone' ? "text-white" : "text-slate-700 dark:text-slate-300 hover:text-white"
+ )}
+ >
+ {signUpMethod === 'phone' && (
+ <motion.div layoutId="signUpActiveTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
+ )}
+ <span className="relative z-10">Phone</span>
+ </button>
+ <button
+ type="button"
+ onClick={() => { setSignUpMethod('email'); setSignUpIdentifier(''); setError(null); }}
+ className={cn(
+ "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
+ signUpMethod === 'email' ? "text-white" : "text-slate-700 dark:text-slate-300 hover:text-white"
+ )}
+ >
+ {signUpMethod === 'email' && (
+ <motion.div layoutId="signUpActiveTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
+ )}
+ <span className="relative z-10">Email</span>
+ </button>
+ </div>
 
-            <form onSubmit={handleSignUpSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Full Name</label>
-                <div className="relative">
-                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                  <input 
-                    type="text" 
-                    value={signUpName}
-                    onChange={(e) => setSignUpName(e.target.value)}
-                    placeholder="Your Name"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
-                  />
-                </div>
-              </div>
+ <form onSubmit={handleSignUpSubmit} className="space-y-4">
+ <div className="space-y-1">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Full Name</label>
+ <div className="relative">
+ <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+ <input 
+ type="text" 
+ value={signUpName}
+ onChange={(e) => setSignUpName(e.target.value)}
+ placeholder="Your Name"
+ className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ />
+ </div>
+ </div>
 
-              <div className="space-y-1">
-                <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">
-                  {signUpMethod === 'phone' ? 'Phone Number' : 'Email Address'}
-                </label>
-                <div className="relative">
-                  {signUpMethod === 'email' ? (
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                  ) : (
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                  )}
-                  <input 
-                    type={signUpMethod === 'email' ? "email" : "tel"} 
-                    value={signUpIdentifier}
-                    onChange={(e) => setSignUpIdentifier(e.target.value)}
-                    placeholder={signUpMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
-                  />
-                </div>
-              </div>
+ <div className="space-y-1">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">
+ {signUpMethod === 'phone' ? 'Phone Number' : 'Email Address'}
+ </label>
+ <div className="relative">
+ {signUpMethod === 'email' ? (
+ <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+ ) : (
+ <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+ )}
+ <input 
+ type={signUpMethod === 'email' ? "email" : "tel"} 
+ value={signUpIdentifier}
+ onChange={(e) => setSignUpIdentifier(e.target.value)}
+ placeholder={signUpMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
+ className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ />
+ </div>
+ </div>
 
-              {signUpMethod === 'phone' && (
-                <div className="space-y-1">
-                  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Date of Birth</label>
-                  <input 
-                    type="date"
-                    value={signUpDob}
-                    onChange={(e) => setSignUpDob(e.target.value)}
-                    className="w-full bg-input border border-border rounded-xl p-3 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all"
-                  />
-                </div>
-              )}
+ {signUpMethod === 'phone' && (
+ <div className="space-y-1">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Date of Birth</label>
+ <input 
+ type="date"
+ value={signUpDob}
+ onChange={(e) => setSignUpDob(e.target.value)}
+ className="w-full bg-input rounded-xl p-3 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-sm focus:-primary outline-none transition-all"
+ />
+ </div>
+ )}
 
-              <div className="space-y-1">
-                <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                  <input 
-                    type={signUpShowPassword ? "text" : "password"} 
-                    value={signUpPassword}
-                    onChange={(e) => setSignUpPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setSignUpShowPassword(!signUpShowPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
-                  >
-                    {signUpShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
-                </div>
-              </div>
+ <div className="space-y-1">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Password</label>
+ <div className="relative">
+ <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+ <input 
+ type={signUpShowPassword ? "text" : "password"} 
+ value={signUpPassword}
+ onChange={(e) => setSignUpPassword(e.target.value)}
+ placeholder="••••••••"
+ className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ />
+ <button 
+ type="button"
+ onClick={() => setSignUpShowPassword(!signUpShowPassword)}
+ className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
+ >
+ {signUpShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+ </button>
+ </div>
+ </div>
 
-              {signUpMethod === 'phone' && (
-                <div className="space-y-1">
-                  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Confirm Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
-                    <input 
-                      type={signUpShowPassword ? "text" : "password"} 
-                      value={signUpConfirmPassword}
-                      onChange={(e) => setSignUpConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-white/10 border border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:border-white/50 outline-none transition-all placeholder:text-white/50"
-                    />
-                  </div>
-                </div>
-              )}
+ {signUpMethod === 'phone' && (
+ <div className="space-y-1">
+ <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Confirm Password</label>
+ <div className="relative">
+ <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
+ <input 
+ type={signUpShowPassword ? "text" : "password"} 
+ value={signUpConfirmPassword}
+ onChange={(e) => setSignUpConfirmPassword(e.target.value)}
+ placeholder="••••••••"
+ className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ />
+ </div>
+ </div>
+ )}
 
-              <button 
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-white text-[#4A2E31] font-black py-3 mt-4 rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
-              >
-                {isSubmitting ? "PROCESSING..." : "CREATE ACCOUNT"}
-              </button>
-            </form>
+ <button 
+ type="submit"
+ disabled={isSubmitting}
+ className="w-full bg-white text-[#4A2E31] font-black py-3 mt-4 rounded-xl hover: active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
+ >
+ {isSubmitting ? "PROCESSING..." : "CREATE ACCOUNT"}
+ </button>
+ </form>
 
-            <div className="mt-5 space-y-4">
-              <div className="relative flex items-center justify-center">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border"></div>
-                </div>
-                <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-transparent">Or continue with</span>
-              </div>
+ <div className="mt-5 space-y-4">
+ <div className="relative flex items-center justify-center">
+ <div className="absolute inset-0 flex items-center">
+ <div className="w-full "></div>
+ </div>
+ <span className="relative px-4 text-[8px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest bg-transparent">Or continue with</span>
+ </div>
 
-              <button 
-                onClick={handleGoogleLogin}
-                disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-3 bg-white/10 border border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 shadow-sm backdrop-blur-sm"
-              >
-                <span className="text-xs tracking-wider">Continue with Google</span>
-              </button>
-            </div>
-            </div>
-          </motion.div>
-        )}
-        </AnimatePresence>
-        </div>
-      </div>
-    </div>
-  );
+ <button 
+ onClick={handleGoogleLogin}
+ disabled={isSubmitting}
+ className="w-full flex items-center justify-center gap-3 bg-white/10 -white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ >
+ <span className="text-xs tracking-wider">Continue with Google</span>
+ </button>
+ </div>
+ </div>
+ </motion.div>
+ )}
+ </AnimatePresence>
+ </div>
+ </div>
+ </div>
+ );
 };
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user, profile, loading, isCustomer, isSuperAdmin, isOwner, isCashier } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState<{latestVersion: string, updateUrl: string} | null>(null);
+ const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+ const { user, profile, loading, isCustomer, isSuperAdmin, isOwner, isCashier } = useAuth();
+ const navigate = useNavigate();
+ const location = useLocation();
+ const [showExitConfirm, setShowExitConfirm] = useState(false);
+ const [updateInfo, setUpdateInfo] = useState<{latestVersion: string, updateUrl: string} | null>(null);
 
-  useEffect(() => {
-    const fetchUpdateConfig = async () => {
-      try {
-        const remoteSnap = await getDoc(doc(db, 'app_config', 'version_control'));
-        const data = remoteSnap.data();
-        if (data && data.latestVersion && data.updateUrl) {
-          setUpdateInfo({ latestVersion: data.latestVersion, updateUrl: data.updateUrl });
-        }
-      } catch (err) {
-      }
-    };
-    fetchUpdateConfig();
-  }, []);
+ useEffect(() => {
+ const fetchUpdateConfig = async () => {
+ try {
+ const remoteSnap = await getDoc(doc(db, 'app_config', 'version_control'));
+ const data = remoteSnap.data();
+ if (data && data.latestVersion && data.updateUrl) {
+ setUpdateInfo({ latestVersion: data.latestVersion, updateUrl: data.updateUrl });
+ }
+ } catch (err) {
+ }
+ };
+ fetchUpdateConfig();
+ }, []);
 
-  
+ 
 
 
-  const needsUpdate = Capacitor.isNativePlatform() && updateInfo && isOlderVersion(CURRENT_VERSION, updateInfo.latestVersion);
+ const needsUpdate = Capacitor.isNativePlatform() && updateInfo && isOlderVersion(CURRENT_VERSION, updateInfo.latestVersion);
 
-  useEffect(() => {
-    let listener: any = null;
-    
-    const handleBackButton = () => {
-      // If we are not logged in, or on main pages, confirm exit instead of going back.
-      if (!user || location.pathname === '/' || location.pathname === '/login' || location.pathname === '/appointments') {
-        setShowExitConfirm(true);
-      } else {
-        navigate(-1);
-      }
-    };
+ useEffect(() => {
+ let listener: any = null;
+ 
+ const handleBackButton = () => {
+ // If we are not logged in, or on main pages, confirm exit instead of going back.
+ if (!user || location.pathname === '/' || location.pathname === '/login' || location.pathname === '/appointments') {
+ setShowExitConfirm(true);
+ } else {
+ navigate(-1);
+ }
+ };
 
-    if (Capacitor.isNativePlatform()) {
-      CapApp.addListener('backButton', handleBackButton).then(handle => {
-        listener = handle;
-      }).catch(() => {
-        listener = CapApp.addListener('backButton', handleBackButton);
-      });
-    }
+ if (Capacitor.isNativePlatform()) {
+ CapApp.addListener('backButton', handleBackButton).then(handle => {
+ listener = handle;
+ }).catch(() => {
+ listener = CapApp.addListener('backButton', handleBackButton);
+ });
+ }
 
-    return () => {
-      if (listener) {
-        if (typeof listener.remove === 'function') {
-          listener.remove();
-        } else if (listener.then) {
-          listener.then((l: any) => l?.remove?.());
-        }
-      }
-    };
-  }, [location.pathname, navigate, user]);
+ return () => {
+ if (listener) {
+ if (typeof listener.remove === 'function') {
+ listener.remove();
+ } else if (listener.then) {
+ listener.then((l: any) => l?.remove?.());
+ }
+ }
+ };
+ }, [location.pathname, navigate, user]);
 
-  useEffect(() => {
-    if (!loading && user && profile) {
-      const hasRedirected = initialRedirectDone;
-      if (!hasRedirected) {
-        navigate('/');
-        initialRedirectDone = true;
-      }
-    }
-  }, [user, profile, loading, navigate]);
+ useEffect(() => {
+ if (!loading && user && profile) {
+ const hasRedirected = initialRedirectDone;
+ if (!hasRedirected) {
+ navigate('/');
+ initialRedirectDone = true;
+ }
+ }
+ }, [user, profile, loading, navigate]);
 
-  const renderExitConfirm = () => {
-    if (!showExitConfirm) return null;
-    return (
-      <div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300 select-none">
-        <div className="bg-card p-6 rounded-3xl border border-border w-full max-w-[320px] text-center space-y-6 shadow-xl">
-          <h3 className="text-xl font-black text-foreground uppercase tracking-widest font-serif">Exit App</h3>
-          <p className="text-muted-foreground text-sm">Are you sure you want to exit the app?</p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowExitConfirm(false)}
-              className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
-            >
-              NO
-            </button>
-            <button
-              onClick={() => {
-                setShowExitConfirm(false);
-                if (Capacitor.isNativePlatform()) {
-                  CapApp.exitApp();
-                } else {
-                  window.location.href = "about:blank";
-                }
-              }}
-              className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-all text-xs tracking-wider shadow-md"
-            >
-              YES
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+ const renderExitConfirm = () => {
+ if (!showExitConfirm) return null;
+ return (
+ <div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300 select-none">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl w-full max-w-[320px] text-center space-y-3 ">
+ <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest font-serif">Exit App</h3>
+ <p className="text-slate-700 dark:text-slate-300 text-sm">Are you sure you want to exit the app?</p>
+ <div className="flex gap-3">
+ <button
+ onClick={() => setShowExitConfirm(false)}
+ className="flex-1 bg-muted text-slate-900 dark:text-slate-100 font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
+ >
+ NO
+ </button>
+ <button
+ onClick={() => {
+ setShowExitConfirm(false);
+ if (Capacitor.isNativePlatform()) {
+ CapApp.exitApp();
+ } else {
+ window.location.href = "about:blank";
+ }
+ }}
+ className="flex-1 bg-primary text-amber-600 dark:text-amber-400-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-all text-xs tracking-wider "
+ >
+ YES
+ </button>
+ </div>
+ </div>
+ </div>
+ );
+ };
 
-    const renderNeedsUpdate = () => {
-    if (!needsUpdate || !updateInfo?.updateUrl) return null;
-    return (
-        <div className="fixed inset-0 z-[60000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-card w-full max-w-sm rounded-[2.5rem] shadow-2xl p-10 border border-primary/20 space-y-8 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto shadow-inner relative z-10 border border-primary/20">
-              <Download className="w-10 h-10 text-primary drop-shadow-sm" />
-            </div>
-            <div className="space-y-3 relative z-10">
-              <h3 className="text-3xl font-black tracking-tighter text-foreground">Update Available</h3>
-              <p className="text-muted-foreground text-sm font-medium px-4">A new version of the application is available. Please update to continue using all features securely.</p>
-            </div>
-            <div className="space-y-4 relative z-10">
-               <button
-                 onClick={() => { window.location.href = updateInfo.updateUrl; }}
-                 className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-xl shadow-primary/20 hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
-               >
-                 <Download size={18} />
-                 UPDATE NOW
-               </button>
-            </div>
-          </div>
-        </div>
-    );
-  };
+ const renderNeedsUpdate = () => {
+ if (!needsUpdate || !updateInfo?.updateUrl) return null;
+ return (
+ <div className="fixed inset-0 z-[60000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+ <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-sm rounded-2xl p-4 -primary/20 space-y-3 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+ <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+ <div className="w-20 h-20 bg-amber-100/50 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto relative z-10 -primary/20">
+ <Download className="w-10 h-10 text-amber-600 dark:text-amber-400 drop-" />
+ </div>
+ <div className="space-y-3 relative z-10">
+ <h3 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-slate-100">Update Available</h3>
+ <p className="text-slate-700 dark:text-slate-300 text-sm font-medium px-4">A new version of the application is available. Please update to continue using all features securely.</p>
+ </div>
+ <div className="space-y-4 relative z-10">
+ <button
+ onClick={() => { window.location.href = updateInfo.updateUrl; }}
+ className="w-full bg-primary text-amber-600 dark:text-amber-400-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-primary/20 hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
+ >
+ <Download size={18} />
+ UPDATE NOW
+ </button>
+ </div>
+ </div>
+ </div>
+ );
+ };
 
-  if (loading) return (
-    <div className="fixed inset-0 flex items-center justify-center bg-background transition-colors duration-300 select-none">
-      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+ if (loading) return (
+ <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] transition-colors duration-300 select-none">
+ <div className="w-12 h-12 -4 -primary -transparent rounded-full animate-spin" />
+ </div>
+ );
 
-  if (!user) {
-    if (location.pathname === '/reset-password') {
-      return <>{renderNeedsUpdate()}{renderExitConfirm()}
+ if (!user) {
+ if (location.pathname === '/reset-password') {
+ return <>{renderNeedsUpdate()}{renderExitConfirm()}
 
 
 <ResetPasswordPage /></>;
-    }
-    if (location.pathname === '/identity-reset') {
-      return <>{renderNeedsUpdate()}{renderExitConfirm()}<IdentityResetPage /></>;
-    }
-    return <>{renderNeedsUpdate()}{renderExitConfirm()}<LoginPage /></>;
-  }
+ }
+ if (location.pathname === '/identity-reset') {
+ return <>{renderNeedsUpdate()}{renderExitConfirm()}<IdentityResetPage /></>;
+ }
+ return <>{renderNeedsUpdate()}{renderExitConfirm()}<LoginPage /></>;
+ }
 
-  if (profile?.mustChangePassword && location.pathname !== '/force-password-change') {
-    return <Navigate to="/force-password-change" />;
-  }
+ if (profile?.mustChangePassword && location.pathname !== '/force-password-change') {
+ return <Navigate to="/force-password-change" />;
+ }
 
-  const handleRefresh = async () => {
-    // Dispatch event for components to optionally re-fetch
-    window.dispatchEvent(new CustomEvent('app:refresh'));
-    // Await for a brief duration for the spinner to show, mimicking data sync over live sockets
-    await new Promise(resolve => setTimeout(resolve, 1500));
-  };
+ const handleRefresh = async () => {
+ // Dispatch event for components to optionally re-fetch
+ window.dispatchEvent(new CustomEvent('app:refresh'));
+ // Await for a brief duration for the spinner to show, mimicking data sync over live sockets
+ await new Promise(resolve => setTimeout(resolve, 1500));
+ };
 
-  return (
-    <div className="min-h-screen bg-background text-foreground pb-10 transition-colors duration-300 select-none animate-in fade-in duration-500">
-      {renderNeedsUpdate()}
-      {renderExitConfirm()}
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <Header onMenuClick={() => setIsSidebarOpen(true)} />
-      <main className="max-w-md mx-auto px-4 pt-4 h-full">
-        <PullToRefresh onRefresh={handleRefresh}>
-          {children}
-        </PullToRefresh>
-      </main>
-    </div>
-  );
+ const isPos = location.pathname === '/pos';
+
+ return (
+ <div className={`${isPos ? 'h-screen w-full flex flex-col overflow-hidden' : 'min-h-screen pb-10'} bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none animate-in fade-in duration-500`}>
+ {renderNeedsUpdate()}
+ {renderExitConfirm()}
+ <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+ <Header onMenuClick={() => setIsSidebarOpen(true)} className={isPos ? "flex-shrink-0" : ""} />
+ <main className={isPos ? "flex-1 flex flex-col overflow-hidden relative w-full min-h-0" : "w-full flex-1 flex flex-col"}>
+ {isPos ? (
+ children
+ ) : (
+ <PullToRefresh onRefresh={handleRefresh} isPos={isPos}>
+ {children}
+ </PullToRefresh>
+ )}
+ </main>
+ </div>
+ );
 };
 
 
@@ -10171,75 +10116,78 @@ const LazyMonthlySummaryPage = React.lazy(() => import('./pages/MonthlySummaryPa
 const LazySalesReportPage = React.lazy(() => import('./pages/SalesReportPage'));
 const LazyExpenseListPage = React.lazy(() => import('./pages/ExpenseListPage'));
 const LazyManagePage = React.lazy(() => import('./pages/ManagePage'));
+const LazyBusinessAnalysisPage = React.lazy(() => import('./pages/BusinessAnalysisPage'));
 
 const AppRoutes = () => {
-  const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
-  
-  return (
-    <ErrorBoundary>
-      <React.Suspense fallback={
-        <div style={{ display: 'flex', flex: '1 1 0%', alignItems: 'center', justifyContent: 'center', padding: '2.5rem' }}>
-          <div style={{ width: '40px', height: '40px', border: '4px solid #d4af37', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-        </div>
-      }>
-        <Routes>
-        <Route path="/" element={isCustomer ? <LazyCustomerDashboardPage /> : <LazyDashboardPage />} />
-        <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <LazyPOSPage />} />
-        <Route path="/appointments" element={<LazyAppointmentsPage />} />
-        <Route path="/history" element={!isStaff ? <Navigate to="/appointments" /> : <LazyHistoryPage />} />
-        <Route path="/staff-commissions" element={!(isAdmin || isCashier || isStaffMember) ? <Navigate to="/appointments" /> : <LazyStaffCommissionsPage />} />
-        <Route path="/monthly" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazyMonthlySummaryPage />} />
-        <Route path="/sales-report" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazySalesReportPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/identity-reset" element={<IdentityResetPage />} />
-        <Route path="/expenses" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazyExpenseListPage />} />
-        <Route path="/manage" element={!isAdmin ? <Navigate to="/appointments" /> : <LazyManagePage />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-      </React.Suspense>
-    </ErrorBoundary>
-  );
+ const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
+ 
+ return (
+ <ErrorBoundary>
+ <React.Suspense fallback={
+ <div style={{ display: 'flex', flex: '1 1 0%', alignItems: 'center', justifyContent: 'center', padding: '2.5rem' }}>
+ <div style={{ width: '40px', height: '40px', border: '4px solid #d4af37', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+ </div>
+ }>
+ <Routes>
+ <Route path="/" element={isCustomer ? <LazyCustomerDashboardPage /> : <LazyDashboardPage />} />
+ <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <LazyPOSPage />} />
+ <Route path="/appointments" element={<LazyAppointmentsPage />} />
+ <Route path="/history" element={!isStaff ? <Navigate to="/appointments" /> : <LazyHistoryPage />} />
+ <Route path="/staff-commissions" element={!(isAdmin || isCashier || isStaffMember) ? <Navigate to="/appointments" /> : <LazyStaffCommissionsPage />} />
+ <Route path="/monthly" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazyMonthlySummaryPage />} />
+ <Route path="/sales-report" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazySalesReportPage />} />
+ <Route path="/business-analysis" element={!isAdmin ? <Navigate to="/appointments" /> : <LazyBusinessAnalysisPage />} />
+ <Route path="/settings" element={<SettingsPage />} />
+ <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
+ <Route path="/reset-password" element={<ResetPasswordPage />} />
+ <Route path="/identity-reset" element={<IdentityResetPage />} />
+ <Route path="/expenses" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazyExpenseListPage />} />
+ <Route path="/manage" element={!isAdmin ? <Navigate to="/appointments" /> : <LazyManagePage />} />
+ <Route path="*" element={<Navigate to="/" />} />
+ </Routes>
+ </React.Suspense>
+ </ErrorBoundary>
+ );
 };
 
 // --- App ---
 
 const PrintRoot = () => {
-  const [printContent, setPrintContent] = useState<string | null>(null);
+ const [printContent, setPrintContent] = useState<string | null>(null);
 
-  useEffect(() => {
-    const handlePrint = (e: CustomEvent) => {
-      setPrintContent(e.detail);
-      setTimeout(() => {
-        window.print();
-        setTimeout(() => setPrintContent(null), 500);
-      }, 100);
-    };
-    window.addEventListener('print-html', handlePrint as EventListener);
-    return () => window.removeEventListener('print-html', handlePrint as EventListener);
-  }, []);
+ useEffect(() => {
+ const handlePrint = (e: CustomEvent) => {
+ setPrintContent(e.detail);
+ setTimeout(() => {
+ window.print();
+ setTimeout(() => setPrintContent(null), 500);
+ }, 100);
+ };
+ window.addEventListener('print-html', handlePrint as EventListener);
+ return () => window.removeEventListener('print-html', handlePrint as EventListener);
+ }, []);
 
-  if (!printContent) return null;
+ if (!printContent) return null;
 
-  return (
-    <div id="print-root" dangerouslySetInnerHTML={{ __html: printContent }} />
-  );
+ return (
+ <div id="print-root" dangerouslySetInnerHTML={{ __html: printContent }} />
+ );
 };
 
 export function AppCore() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider>
-        <AuthProvider>
-          <ScrollToTop />
-          <Layout>
-            <AppRoutes />
-          </Layout>
-          <PrintRoot />
-        </AuthProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  );
+ return (
+ <ErrorBoundary>
+ <ThemeProvider>
+ <AuthProvider>
+ <ScrollToTop />
+ <Layout>
+ <AppRoutes />
+ </Layout>
+ <PrintRoot />
+ </AuthProvider>
+ </ThemeProvider>
+ </ErrorBoundary>
+ );
 }
 export default AppCore;
+export const BusinessAnalysisPage = LazyBusinessAnalysisPage;
