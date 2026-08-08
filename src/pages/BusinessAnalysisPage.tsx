@@ -619,36 +619,36 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="w-full px-3 py-4 md:p-6 space-y-3 pb-12 animate-in fade-in duration-300">
  
  {/* BUSINESS ANALYTICS CARD WITH EMBEDDED FILTERING & CUSTOM DATE RANGE */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 md:p-5 space-y-3">
+ <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-3">
  {/* Top Header Row */}
  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
  <div>
  <div className="flex flex-wrap items-center gap-2 mb-1">
- <span className="p-2 rounded-xl bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+ <span className="p-2 rounded-xl bg-primary/20 text-primary">
  <BarChart3 size={22} />
  </span>
- <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+ <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
  Business Analytics
  </h1>
- <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full -emerald-500/20">
+ <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full border-emerald-500/20">
  <Sparkles size={12} /> Actual Live Firestore
  </span>
  </div>
- <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-medium">
+ <p className="text-xs sm:text-sm text-muted-foreground font-medium">
  Real-time analytics computed directly from your POS transactions, appointments, and staff sales.
  </p>
  </div>
 
- <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 bg-muted/60 px-3.5 py-2 rounded-xl shrink-0 self-start lg:self-auto shadow-2xs">
- <Calendar size={14} className="text-amber-600 dark:text-amber-400 shrink-0" />
- <span>Selected Period: <strong className="text-slate-900 dark:text-slate-100 font-black">{periodLabel}</strong></span>
+ <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground bg-muted/60 px-3.5 py-2 rounded-xl shrink-0 self-start lg:self-auto shadow-2xs">
+ <Calendar size={14} className="text-primary shrink-0" />
+ <span>Selected Period: <strong className="text-foreground font-black">{periodLabel}</strong></span>
  </div>
  </div>
 
  {/* Date Range Filtering Controls Row inside the Card */}
- <div className=" -slate-200/60 dark:-slate-700/50 pt-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 min-w-0 max-w-full">
- <div className="flex items-center gap-2 text-xs font-black text-slate-900 dark:text-slate-100 shrink-0">
- <Filter size={15} className="text-amber-600 dark:text-amber-400 shrink-0" />
+ <div className=" border-slate-200/60 dark:-slate-700/50 pt-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3 min-w-0 max-w-full">
+ <div className="flex items-center gap-2 text-xs font-black text-foreground shrink-0">
+ <Filter size={15} className="text-primary shrink-0" />
  <span>Date Range Filtering:</span>
  </div>
 
@@ -667,8 +667,8 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  onClick={() => setTimeRange(preset.id as any)}
  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0 ${
  timeRange === preset.id 
- ? 'bg-primary text-amber-600 dark:text-amber-400-foreground shadow-xs font-extrabold' 
- : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 hover:bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50'
+ ? 'bg-primary text-primary-foreground shadow-xs font-extrabold' 
+ : 'text-muted-foreground hover:text-foreground hover:bg-card'
  }`}
  >
  {preset.label}
@@ -678,7 +678,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
 
  <button
  onClick={handleExportReport}
- className="flex items-center justify-center gap-1.5 px-4 py-2 bg-amber-100/50 dark:bg-amber-900/30 hover:bg-amber-200/50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 text-xs font-extrabold rounded-xl transition-all cursor-pointer active:scale-95 shrink-0 -primary/20 shadow-2xs"
+ className="flex items-center justify-center gap-1.5 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary text-xs font-extrabold rounded-xl transition-all cursor-pointer active:scale-95 shrink-0 border-primary/20 shadow-2xs"
  title="Export Report"
  >
  <Download size={14} />
@@ -689,34 +689,34 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
 
  {/* Embedded Custom Analysis Date Range inside the Card */}
  {timeRange === 'custom' && (
- <div className="bg-muted/40 rounded-xl p-3.5 -primary/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 min-w-0 max-w-full animate-in fade-in slide-in-from-top-1 duration-200">
- <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900 dark:text-slate-100 shrink-0">
- <Calendar size={15} className="text-amber-600 dark:text-amber-400 shrink-0" />
+ <div className="bg-muted/40 rounded-xl p-3.5 border-primary/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 min-w-0 max-w-full animate-in fade-in slide-in-from-top-1 duration-200">
+ <div className="flex items-center gap-2 text-xs font-extrabold text-foreground shrink-0">
+ <Calendar size={15} className="text-primary shrink-0" />
  <span>Custom Analysis Date Range:</span>
  </div>
 
  <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto overflow-x-auto max-w-full min-w-0 pb-1 sm:pb-0">
- <div className="flex items-center gap-1.5 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] px-3 py-1.5 rounded-lg text-xs shadow-2xs shrink-0">
- <span className="text-slate-700 dark:text-slate-300 font-semibold">From:</span>
+ <div className="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-lg text-xs shadow-2xs shrink-0">
+ <span className="text-muted-foreground font-semibold">From:</span>
  <input
  type="date"
  value={customStartDate}
  onChange={(e) => setCustomStartDate(e.target.value)}
- className="bg-transparent text-slate-900 dark:text-slate-100 font-extrabold outline-none cursor-pointer"
+ className="bg-transparent border-none text-foreground font-extrabold outline-none cursor-pointer"
  />
  </div>
 
- <div className="flex items-center gap-1.5 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] px-3 py-1.5 rounded-lg text-xs shadow-2xs shrink-0">
- <span className="text-slate-700 dark:text-slate-300 font-semibold">To:</span>
+ <div className="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-lg text-xs shadow-2xs shrink-0">
+ <span className="text-muted-foreground font-semibold">To:</span>
  <input
  type="date"
  value={customEndDate}
  onChange={(e) => setCustomEndDate(e.target.value)}
- className="bg-transparent text-slate-900 dark:text-slate-100 font-extrabold outline-none cursor-pointer"
+ className="bg-transparent border-none text-foreground font-extrabold outline-none cursor-pointer"
  />
  </div>
 
- <span className="text-[11px] font-extrabold text-amber-600 dark:text-amber-400 bg-amber-100/50 dark:bg-amber-900/30 px-2.5 py-1 rounded-md -primary/20 shrink-0 whitespace-nowrap">
+ <span className="text-[11px] font-extrabold text-primary bg-primary/20 px-2.5 py-1 rounded-md border-primary/20 shrink-0 whitespace-nowrap">
  {periodLabel}
  </span>
  </div>
@@ -726,7 +726,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
 
  {/* EMPTY SALES DATA NOTICE IF NEEDED */}
  {currentSales.length === 0 && !loading && (
- <div className="bg-amber-500/10 -amber-500/20 rounded-2xl p-4 flex items-center gap-3 text-amber-700 dark:text-amber-300 text-xs font-bold">
+ <div className="bg-primary/10 border-primary/20 rounded-2xl p-4 flex items-center gap-3 text-primary text-xs font-bold">
  <AlertCircle size={18} className="shrink-0" />
  <span>No sales transactions recorded in Firestore for the selected range ({timeRange}). New completed sales from POS will automatically populate this dashboard in real time.</span>
  </div>
@@ -736,14 +736,14 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-3 md:gap-5">
  
  {/* Card 1: Total Revenue */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
+ <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
  <div className="flex justify-between items-start mb-3">
  <div>
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1">
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
  Total Revenue
  </p>
- <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
- {metrics.totalRevenue.toLocaleString()} <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Ks</span>
+ <h3 className="text-2xl font-black text-foreground tracking-tight">
+ {metrics.totalRevenue.toLocaleString()} <span className="text-xs font-extrabold text-muted-foreground">Ks</span>
  </h3>
  </div>
  <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -758,19 +758,19 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  }`}>
  {metrics.isRevUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {metrics.revenueGrowth}
  </span>
- <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">vs previous period</span>
+ <span className="text-muted-foreground font-medium text-[11px]">vs previous period</span>
  </div>
  </div>
 
  {/* Card 2: Average Ticket Size */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
+ <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
  <div className="flex justify-between items-start mb-3">
  <div>
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1">
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
  Avg Ticket Size
  </p>
- <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
- {metrics.avgTicket.toLocaleString()} <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Ks</span>
+ <h3 className="text-2xl font-black text-foreground tracking-tight">
+ {metrics.avgTicket.toLocaleString()} <span className="text-xs font-extrabold text-muted-foreground">Ks</span>
  </h3>
  </div>
  <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
@@ -785,42 +785,42 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  }`}>
  {metrics.isTicketUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {metrics.ticketGrowth}
  </span>
- <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">per transaction</span>
+ <span className="text-muted-foreground font-medium text-[11px]">per transaction</span>
  </div>
  </div>
 
  {/* Card 3: Total Discounts Given */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
+ <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
  <div className="flex justify-between items-start mb-3">
  <div>
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1">
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
  Discounts Given
  </p>
- <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
- {metrics.totalDiscount.toLocaleString()} <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Ks</span>
+ <h3 className="text-2xl font-black text-foreground tracking-tight">
+ {metrics.totalDiscount.toLocaleString()} <span className="text-xs font-extrabold text-muted-foreground">Ks</span>
  </h3>
  </div>
- <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+ <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
  <Percent size={20} />
  </div>
  </div>
  <div className="flex items-center justify-between text-xs pt-1 ">
- <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-extrabold bg-amber-500/10 px-2 py-0.5 rounded-md">
+ <span className="inline-flex items-center gap-1 text-primary font-extrabold bg-primary/10 px-2 py-0.5 rounded-md">
  {metrics.discountRatio} of total
  </span>
- <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">loyalty & promos</span>
+ <span className="text-muted-foreground font-medium text-[11px]">loyalty & promos</span>
  </div>
  </div>
 
  {/* Card 4: Clients Served / Active Appointments */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
+ <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
  <div className="flex justify-between items-start mb-3">
  <div>
- <p className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1">
+ <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
  Clients Served
  </p>
- <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
- {metrics.clientCount} <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">Clients</span>
+ <h3 className="text-2xl font-black text-foreground tracking-tight">
+ {metrics.clientCount} <span className="text-xs font-extrabold text-muted-foreground">Clients</span>
  </h3>
  </div>
  <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
@@ -835,7 +835,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  }`}>
  {metrics.isClientUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {metrics.clientGrowth}
  </span>
- <span className="text-slate-700 dark:text-slate-300 font-medium text-[11px]">active appointments</span>
+ <span className="text-muted-foreground font-medium text-[11px]">active appointments</span>
  </div>
  </div>
 
@@ -845,15 +845,15 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
  
  {/* CHART 1: REVENUE TREND OVER TIME (AREA CHART) */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
- <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
- <TrendingUp size={18} className="text-amber-600 dark:text-amber-400" /> Revenue Growth Trend
+ <h3 className="text-base font-black text-foreground flex items-center gap-2">
+ <TrendingUp size={18} className="text-primary" /> Revenue Growth Trend
  </h3>
- <p className="text-xs text-slate-700 dark:text-slate-300">Sales volume vs previous comparative period</p>
+ <p className="text-xs text-muted-foreground">Sales volume vs previous comparative period</p>
  </div>
- <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg">
+ <span className="text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary px-2.5 py-1 rounded-lg">
  Area Graph
  </span>
  </div>
@@ -871,7 +871,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <stop offset="95%" stopColor="#94A3B8" stopOpacity={0.0}/>
  </linearGradient>
  </defs>
- <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-/40" />
+ <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-muted-foreground/40" />
  <XAxis 
  dataKey="name" 
  tick={{ fontSize: 10 }} 
@@ -888,7 +888,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  />
  <Tooltip 
  formatter={(value: any) => [`${Number(value).toLocaleString()} Ks`, 'Revenue']}
- contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-, #334155)', borderRadius: '12px', fontSize: '12px' }}
+ contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-border, #334155)', borderRadius: '12px', fontSize: '12px' }}
  />
  <Legend iconType="circle" wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
  <Area type="monotone" dataKey="revenue" name="Current Revenue" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
@@ -899,15 +899,15 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* CHART 2: PAYMENT METHODS BREAKDOWN (DONUT CHART) */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
- <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
- <PieChartIcon size={18} className="text-amber-600 dark:text-amber-400" /> Payment Method Share
+ <h3 className="text-base font-black text-foreground flex items-center gap-2">
+ <PieChartIcon size={18} className="text-primary" /> Payment Method Share
  </h3>
- <p className="text-xs text-slate-700 dark:text-slate-300">Distribution across digital payment providers & cash</p>
+ <p className="text-xs text-muted-foreground">Distribution across digital payment providers & cash</p>
  </div>
- <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg">
+ <span className="text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary px-2.5 py-1 rounded-lg">
  Donut Chart
  </span>
  </div>
@@ -930,7 +930,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </Pie>
  <Tooltip 
  formatter={(value: any) => [`${Number(value).toLocaleString()} Ks`, 'Amount']}
- contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-, #334155)', borderRadius: '12px', fontSize: '12px' }}
+ contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-border, #334155)', borderRadius: '12px', fontSize: '12px' }}
  />
  <Legend 
  layout="horizontal" 
@@ -945,22 +945,22 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* CHART 3: TOP-SELLING SERVICES (HORIZONTAL BAR CHART) */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
- <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
- <Award size={18} className="text-amber-600 dark:text-amber-400" /> Top Performing Services
+ <h3 className="text-base font-black text-foreground flex items-center gap-2">
+ <Award size={18} className="text-primary" /> Top Performing Services
  </h3>
- <p className="text-xs text-slate-700 dark:text-slate-300">Most requested nail treatments & revenue volume</p>
+ <p className="text-xs text-muted-foreground">Most requested nail treatments & revenue volume</p>
  </div>
- <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-lg">
+ <span className="text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary px-2.5 py-1 rounded-lg">
  Horizontal Bar
  </span>
  </div>
 
  <div className="h-64 sm:h-72 w-full pt-2">
  {topServicesData.length === 0 ? (
- <div className="h-full flex flex-col items-center justify-center text-center text-slate-700 dark:text-slate-300 p-4">
+ <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground p-4">
  <p className="text-xs font-bold">No services sold yet in this period.</p>
  </div>
  ) : (
@@ -970,7 +970,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  data={topServicesData} 
  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
  >
- <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-/40" />
+ <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-muted-foreground/40" />
  <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : (v/1000).toFixed(0) + 'k'}`} />
  <YAxis 
  dataKey="name" 
@@ -982,7 +982,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  />
  <Tooltip 
  formatter={(value: any) => [`${Number(value).toLocaleString()} Ks`, 'Revenue']}
- contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-, #334155)', borderRadius: '12px', fontSize: '12px' }}
+ contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-border, #334155)', borderRadius: '12px', fontSize: '12px' }}
  />
  <Bar dataKey="revenue" name="Revenue (Ks)" fill="#10B981" radius={[0, 8, 8, 0]} />
  </BarChart>
@@ -992,13 +992,13 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* CHART 4: HOURLY TRAFFIC & PEAK HOURS (COLUMN CHART) */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
- <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
- <Clock size={18} className="text-amber-600 dark:text-amber-400" /> Peak Hour Foot Traffic
+ <h3 className="text-base font-black text-foreground flex items-center gap-2">
+ <Clock size={18} className="text-primary" /> Peak Hour Foot Traffic
  </h3>
- <p className="text-xs text-slate-700 dark:text-slate-300">Hourly client count distribution for shift scheduling</p>
+ <p className="text-xs text-muted-foreground">Hourly client count distribution for shift scheduling</p>
  </div>
  <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-lg">
  Traffic Peak
@@ -1008,12 +1008,12 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="h-64 sm:h-72 w-full pt-2">
  <ResponsiveContainer width="100%" height="100%">
  <BarChart data={hourlyTrafficData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
- <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-/40" />
+ <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-muted-foreground/40" />
  <XAxis dataKey="hour" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
  <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
  <Tooltip 
  formatter={(value: any) => [`${value} Clients`, 'Visits']}
- contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-, #334155)', borderRadius: '12px', fontSize: '12px' }}
+ contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-border, #334155)', borderRadius: '12px', fontSize: '12px' }}
  />
  <Bar dataKey="clients" name="Clients" radius={[6, 6, 0, 0]}>
  {hourlyTrafficData.map((entry, index) => (
@@ -1031,15 +1031,15 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* SECTION C: STAFF LEADERBOARD & COMMISSION TABLE */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden">
+ <div className="bg-card border border-border rounded-2xl overflow-hidden">
  
  {/* Table Header & Controls */}
- <div className="p-4 -slate-200/60 dark:-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+ <div className="p-4 border-slate-200/60 dark:-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
  <div>
- <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
- <Star size={18} className="text-amber-500 fill-amber-500" /> Staff Leaderboard & Commission Tracker
+ <h3 className="text-base font-black text-foreground flex items-center gap-2">
+ <Star size={18} className="text-primary fill-primary" /> Staff Leaderboard & Commission Tracker
  </h3>
- <p className="text-xs text-slate-700 dark:text-slate-300">
+ <p className="text-xs text-muted-foreground">
  Individual staff contribution, service volume, and commission earnings calculated from live sales.
  </p>
  </div>
@@ -1047,13 +1047,13 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="flex items-center gap-2.5">
  {/* Search Input */}
  <div className="relative flex-1 sm:w-56">
- <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300" />
+ <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
  <input
  type="text"
  placeholder="Search staff..."
  value={staffSearch}
  onChange={(e) => setStaffSearch(e.target.value)}
- className="w-full bg-input rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:-primary outline-none"
+ className="w-full bg-input border border-border rounded-xl pl-9 pr-3 py-1.5 text-xs text-foreground focus:border-primary outline-none"
  />
  </div>
 
@@ -1061,7 +1061,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <select
  value={sortBy}
  onChange={(e) => setSortBy(e.target.value as any)}
- className="bg-input rounded-xl px-3 py-1.5 text-xs font-bold text-slate-900 dark:text-slate-100 outline-none cursor-pointer"
+ className="bg-input border border-border rounded-xl px-3 py-1.5 text-xs font-bold text-foreground outline-none cursor-pointer"
  >
  <option value="revenue">Sort by Revenue</option>
  <option value="commission">Sort by Commission</option>
@@ -1072,9 +1072,9 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
 
  {/* Data Table */}
  <div className="overflow-x-auto">
- <table className="w-full text-left -collapse">
+ <table className="w-full text-left border-collapse">
  <thead>
- <tr className="bg-muted/40 text-[10px] uppercase tracking-widest font-black text-slate-700 dark:text-slate-300">
+ <tr className="bg-muted/40 text-[10px] uppercase tracking-widest font-black text-muted-foreground">
  <th className="py-3.5 px-3 md:px-5">Rank & Staff Member</th>
  <th className="py-3.5 px-4 text-center">Services Done</th>
  <th className="py-3.5 px-4 text-right">Revenue Generated</th>
@@ -1082,10 +1082,10 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <th className="py-3.5 px-3 md:px-5 text-right">Status</th>
  </tr>
  </thead>
- <tbody className="divide-y divide-/40 text-xs font-medium">
+ <tbody className="divide-y divide-border/40 text-xs font-medium">
  {staffLeaderboardData.length === 0 ? (
  <tr>
- <td colSpan={5} className="text-center py-4 md:py-8 text-slate-700 dark:text-slate-300 font-bold">
+ <td colSpan={5} className="text-center py-4 md:py-8 text-muted-foreground font-bold">
  No staff records found for the selected filter.
  </td>
  </tr>
@@ -1098,35 +1098,35 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="flex items-center gap-3">
  <span className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[11px] shrink-0 ${
  idx === 0 
- ? 'bg-amber-500 text-white ' 
+ ? 'bg-primary text-white ' 
  : idx === 1 
  ? 'bg-slate-300 text-slate-800' 
  : idx === 2 
- ? 'bg-amber-700/80 text-white' 
- : 'bg-muted text-slate-700 dark:text-slate-300'
+ ? 'bg-primary/80 text-white' 
+ : 'bg-muted text-muted-foreground'
  }`}>
  {idx + 1}
  </span>
  <div>
- <p className="font-extrabold text-slate-900 dark:text-slate-100 text-sm leading-tight flex items-center gap-1.5">
+ <p className="font-extrabold text-foreground text-sm leading-tight flex items-center gap-1.5">
  {staff.name}
- {idx === 0 && <Award size={14} className="text-amber-500 inline shrink-0" />}
+ {idx === 0 && <Award size={14} className="text-primary inline shrink-0" />}
  </p>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-semibold">{staff.role}</p>
+ <p className="text-[10px] text-muted-foreground font-semibold">{staff.role}</p>
  </div>
  </div>
  </td>
 
  {/* Services Count */}
- <td className="py-4 px-4 text-center font-bold text-slate-900 dark:text-slate-100">
+ <td className="py-4 px-4 text-center font-bold text-foreground">
  <span className="bg-muted/60 px-2.5 py-1 rounded-lg text-xs font-extrabold">
  {staff.servicesCount} jobs
  </span>
  </td>
 
  {/* Total Revenue */}
- <td className="py-4 px-4 text-right font-black text-slate-900 dark:text-slate-100 text-sm">
- {staff.revenueGenerated.toLocaleString()} <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold">Ks</span>
+ <td className="py-4 px-4 text-right font-black text-foreground text-sm">
+ {staff.revenueGenerated.toLocaleString()} <span className="text-[10px] text-muted-foreground font-bold">Ks</span>
  </td>
 
  {/* Commission Earned */}
@@ -1138,10 +1138,10 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <td className="py-4 px-3 md:px-5 text-right">
  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-black ${
  idx === 0 
- ? 'bg-amber-500/10 text-amber-600 -amber-500/30 dark:text-amber-400' 
+ ? 'bg-primary/10 text-primary border-primary/30 ' 
  : staff.servicesCount > 0 
- ? 'bg-emerald-500/10 text-emerald-600 -emerald-500/30 dark:text-emerald-400' 
- : 'bg-muted text-slate-700 dark:text-slate-300 '
+ ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30 dark:text-emerald-400' 
+ : 'bg-muted text-muted-foreground '
  }`}>
  {idx === 0 ? 'Top Performer' : staff.servicesCount > 0 ? 'Active' : 'No Sales'}
  </span>

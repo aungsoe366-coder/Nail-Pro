@@ -263,7 +263,7 @@ const CustomDatePicker: React.FC<{
  iconColor?: string;
  className?: string;
  disabled?: boolean;
-}> = ({ label, value, onChange, iconColor = "text-amber-600 dark:text-amber-400", className, disabled }) => {
+}> = ({ label, value, onChange, iconColor = "text-primary", className, disabled }) => {
  const dayOfWeek = value ? new Date(value).toLocaleDateString('en-US', { weekday: 'long' }) : 'All Time';
  
  return (
@@ -279,18 +279,18 @@ const CustomDatePicker: React.FC<{
  <CalendarIcon size={18} className={iconColor} />
  <div className="flex flex-col flex-1 min-w-0">
  <div className="flex items-center justify-between mb-1">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest leading-none">
+ <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest leading-none">
  {label}
  </label>
- <span className="text-[8px] text-amber-600 dark:text-amber-400/50 font-mono font-bold uppercase tracking-tighter">
+ <span className="text-[8px] text-primary/50 font-mono font-bold uppercase tracking-tighter">
  {dayOfWeek}
  </span>
  </div>
  <div className="flex items-center justify-between">
- <span className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight truncate">
+ <span className="text-sm font-black text-foreground tracking-tight truncate">
  {value ? formatDateToMDY(value) : "Select Date"}
  </span>
- <ChevronDown size={12} className="text-slate-700 dark:text-slate-300 ml-2 opacity-30 group-hover:opacity-100 transition-opacity" />
+ <ChevronDown size={12} className="text-muted-foreground ml-2 opacity-30 group-hover:opacity-100 transition-opacity" />
  </div>
  </div>
  <input
@@ -584,9 +584,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  unsubProfile = null;
  }
 
- if (u) {
- setUser(u);
- const email = u.email!.toLowerCase();
+ if (u) { setLoading(true); setUser(u); const email = u.email!.toLowerCase();
  const docRef = doc(db, 'users', email);
  let initDone = false;
 
@@ -620,7 +618,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  // Do not await this so it doesn't block UI if offline.
  setDoc(docRef, profileData).catch(err => console.error("setDoc failed", err));
 
- if (currentRole === 'customer') {
+ if (currentRole === 'customer' && u.displayName) {
  getDocs(query(collection(db, 'customers'), where('email', '==', email))).then(custSnap => {
  if (custSnap.empty) {
  addDoc(collection(db, 'customers'), {
@@ -860,8 +858,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  const cleanEmail = email.trim().toLowerCase();
  let newlyCreatedUser: any = null;
  
- try {
- // 1. Check for existing user document to preserve role
+ try {// 1. Create Auth User
+ const authResult = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
+ newlyCreatedUser = authResult.user;
+
+ // 2. Check for existing user document to preserve role
  const docRef = doc(db, 'users', cleanEmail);
  const existingDoc = await getDoc(docRef);
  let roleToSet: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer' = 'customer';
@@ -889,9 +890,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  }
  }
 
- // 2. Create Auth User
- const authResult = await createUserWithEmailAndPassword(auth, cleanEmail, pass);
- newlyCreatedUser = authResult.user;
+ 
  
  // 3. Update Auth Profile
  await updateProfile(newlyCreatedUser, { displayName: name });
@@ -928,9 +927,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  if (custSnap.empty) {
  // Create new customer record if it doesn't exist
  await addDoc(collection(db, 'customers'), {
- name: name,
- email: cleanEmail,
- phone: '',
+            name: name,
+            email: cleanEmail,
+            phone: existingPhone,
  address: '',
  notes: 'Registered via Email Sign-Up',
  points: existingPoints,
@@ -938,15 +937,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  });
  } else {
  // Update existing customer record
- await setDoc(custSnap.docs[0].ref, { name: name }, { merge: true });
+ await setDoc(custSnap.docs[0].ref, { name: name, phone: existingPhone }, { merge: true });
  }
  } catch (custErr) {
  console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
  try {
  await addDoc(collection(db, 'customers'), {
- name: name,
- email: cleanEmail,
- phone: '',
+            name: name,
+            email: cleanEmail,
+            phone: existingPhone,
  address: '',
  notes: 'Registered via Email Sign-Up',
  points: existingPoints,
@@ -1095,23 +1094,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  // 5. Create or Update Customer Record (Only if role is customer)
  if (roleToSet === 'customer') {
  try {
- const custQuery = query(collection(db, 'customers'), where('email', '==', dummyEmail));
- const custSnap = await getDocs(custQuery);
- if (custSnap.empty) {
- // Create new customer record if it doesn't exist
- await addDoc(collection(db, 'customers'), {
- name: name,
- phone: cleanPhone,
- email: dummyEmail,
- address: '',
- notes: 'Registered via Phone Sign-Up',
- points: existingPoints,
- createdAt: new Date().toISOString()
- });
- } else {
- // Update existing customer record
- await setDoc(custSnap.docs[0].ref, { name: name, email: dummyEmail }, { merge: true });
- }
+ const custQuery = query(collection(db, 'customers'), where('phone', '==', cleanPhone));
+        const custSnap = await getDocs(custQuery);
+        if (custSnap.empty) {
+          // Create new customer record if it doesn't exist
+          await addDoc(collection(db, 'customers'), {
+            name: name,
+            phone: cleanPhone,
+            email: dummyEmail,
+            address: '',
+            notes: 'Registered via Phone Sign-Up',
+            points: existingPoints,
+            createdAt: new Date().toISOString()
+          });
+        } else {
+          // Update existing customer record
+          await setDoc(custSnap.docs[0].ref, { name: name, email: dummyEmail, phone: cleanPhone }, { merge: true });
+        }
  } catch (custErr) {
  console.warn("Failed to query customer record, attempting to create one anyway:", custErr);
  try {
@@ -1384,18 +1383,18 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  onClick={onClose}
  />
  <div className={cn(
- "fixed top-0 left-0 w-[300px] h-full bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-r border-rose-200/30 dark:border-rose-900/30 z-[10001] transition-transform duration-500 ease-out flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.2)]",
+ "fixed top-0 left-0 w-[300px] h-full bg-card backdrop-blur-xl border-r border-border z-[10001] transition-transform duration-500 ease-out flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.2)]",
  isOpen ? "translate-x-0" : "-translate-x-full"
  )}>
  <div className="p-4 relative overflow-hidden group">
- <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/50 dark:bg-amber-900/20 rounded-full -mr-16 -mt-16 blur-3xl" />
+ <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-3xl" />
  <div className="relative z-10 flex items-center space-x-4">
  <div className="relative shrink-0">
- <div className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center -2 -primary/20">
+ <div className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center border-2 border-primary/20">
  {profile?.photoURL ? (
  <img src={profile.photoURL} alt={profile.name} className="w-full h-full object-cover" />
  ) : (
- <UserIcon size={32} className="text-slate-700 dark:text-slate-300" />
+ <UserIcon size={32} className="text-muted-foreground" />
  )}
  </div>
  <label className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer">
@@ -1404,14 +1403,14 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  </label>
  {isUploadingPhoto && (
  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full">
- <div className="w-5 h-5 -2 -white -transparent rounded-full animate-spin" />
+ <div className="w-5 h-5 border-2 border-white border-transparent rounded-full animate-spin" />
  </div>
  )}
  </div>
  <div className="min-w-0 flex-1">
- <span className="text-[10px] text-amber-600 dark:text-amber-400 font-black uppercase tracking-[0.3em] mb-1 block truncate">{profile?.role}</span>
- <h2 className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tighter leading-tight truncate">{profile?.name}</h2>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold mt-1 uppercase tracking-widest opacity-60 truncate">{profile?.email}</p>
+ <span className="text-[10px] text-primary font-black uppercase tracking-[0.3em] mb-1 block truncate">{profile?.role}</span>
+ <h2 className="text-xl font-black text-foreground tracking-tighter leading-tight truncate">{profile?.name}</h2>
+ <p className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-widest opacity-60 truncate">{profile?.email}</p>
  </div>
  </div>
  </div>
@@ -1427,7 +1426,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  "w-full flex items-center px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
  isActive 
  ? "bg-primary text-white font-bold shadow-primary/20 scale-[1.02]" 
- : "text-slate-700 dark:text-slate-300 hover:bg-amber-50/50 dark:bg-amber-900/20 hover:text-amber-600 dark:text-amber-400"
+ : "text-muted-foreground hover:bg-primary/20 hover:text-primary"
  )}
  >
  {isActive && (
@@ -1439,7 +1438,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  )}
  <span className={cn(
  "mr-4 transition-all duration-300 relative z-10",
- isActive ? "text-white scale-110" : "text-amber-600 dark:text-amber-400 group-hover:scale-120"
+ isActive ? "text-white scale-110" : "text-primary group-hover:scale-120"
  )}>
  {item.icon}
  </span>
@@ -1453,7 +1452,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  <div className="p-4 bg-muted/5">
  <button 
  onClick={logout}
- className="w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-red-500 font-black text-xs tracking-[0.2em] -red-500/20 hover:bg-red-500 hover:text-slate-900 dark:text-slate-100 transition-all duration-300 hover:shadow-red-500/20 active:scale-95"
+ className="w-full flex items-center justify-center gap-3 px-4 py-4 rounded-2xl text-red-500 font-black text-xs tracking-[0.2em] border border-red-500 hover:bg-red-500 hover:text-white transition-all duration-300 hover:shadow-red-500/20 active:scale-95"
  >
  <LogOut size={18} />
  LOGOUT
@@ -1468,11 +1467,11 @@ const Header: React.FC<{ onMenuClick: () => void, className?: string }> = ({ onM
  const navigate = useNavigate();
  
  return (
- <header className={cn("sticky top-0 z-[1000] flex justify-between items-center px-4 md:px-6 py-4 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-rose-200/30 dark:border-rose-900/30 transition-all duration-500", className)}>
+ <header className={cn("sticky top-0 z-[1000] flex justify-between items-center px-4 md:px-6 py-4 bg-card backdrop-blur-xl border-b border-border transition-all duration-500", className)}>
  <div className="flex items-center gap-3">
  <button 
  onClick={onMenuClick} 
- className="text-amber-600 dark:text-amber-400 hover:scale-110 active:scale-90 transition-all p-2 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl -primary/10"
+ className="text-primary hover:scale-110 active:scale-90 transition-all p-2 bg-primary/20 rounded-xl border-primary/10"
  >
  <Menu size={20} />
  </button>
@@ -1480,8 +1479,8 @@ const Header: React.FC<{ onMenuClick: () => void, className?: string }> = ({ onM
  onClick={() => navigate('/')} 
  className="flex flex-col cursor-pointer group"
  >
- <span className="text-xl font-black text-slate-900 dark:text-slate-100 tracking-tighter group-hover:text-amber-600 dark:text-amber-400 transition-colors leading-none">NAIL PRO</span>
- <span className="text-[8px] font-black text-amber-600 dark:text-amber-400 tracking-[0.4em] mt-0.5 opacity-80 uppercase">Luxury Salon</span>
+ <span className="text-xl font-black text-foreground tracking-tighter group-hover:text-primary transition-colors leading-none">NAIL PRO</span>
+ <span className="text-[8px] font-black text-primary tracking-[0.4em] mt-0.5 opacity-80 uppercase">Luxury Salon</span>
  </div>
  </div>
  <div className="flex items-center gap-4">
@@ -1580,10 +1579,10 @@ const PullToRefresh: React.FC<{ children: React.ReactNode; onRefresh: () => Prom
  opacity: isRefreshing ? 1 : currentY / MAX_PULL 
  }}
  >
- <div className={`w-8 h-8 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center rounded-full ${isRefreshing ? 'animate-spin' : ''}`} 
+ <div className={`w-8 h-8 bg-card border border-border text-primary flex items-center justify-center rounded-full ${isRefreshing ? 'animate-spin' : ''}`} 
  style={{ transform: `rotate(${currentY * 3}deg)` }}
  >
- <div className="w-5 h-5 -2 -primary -transparent rounded-full" />
+ <div className="w-5 h-5 border-2 border-primary border-transparent rounded-full" />
  </div>
  </div>
  <div 
@@ -1611,13 +1610,13 @@ export const CustomerDashboardPage: React.FC = () => {
  </div>
  
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
- <div className="w-16 h-16 bg-amber-100/50 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-amber-600 dark:text-amber-400">
+ <div className="bg-card border border-border p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
+ <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-primary">
  <Calendar size={32} />
  </div>
  <div className="space-y-1">
  <h3 className="font-bold text-lg">Book an Appointment</h3>
- <p className="text-sm text-slate-700 dark:text-slate-300">Schedule your next visit easily with our online booking system.</p>
+ <p className="text-sm text-muted-foreground">Schedule your next visit easily with our online booking system.</p>
  </div>
  <button 
  onClick={() => navigate('/appointments')}
@@ -1627,13 +1626,13 @@ export const CustomerDashboardPage: React.FC = () => {
  </button>
  </div>
 
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
+ <div className="bg-card border border-border p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
  <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
  <Star size={32} />
  </div>
  <div className="space-y-1">
  <h3 className="font-bold text-lg">Loyalty Points</h3>
- <p className="text-sm text-slate-700 dark:text-slate-300">You currently have <strong className="text-green-500 text-xl">{profile?.points || 0}</strong> points.</p>
+ <p className="text-sm text-muted-foreground">You currently have <strong className="text-green-500 text-xl">{profile?.points || 0}</strong> points.</p>
  </div>
  </div>
  </div>
@@ -1642,20 +1641,17 @@ export const CustomerDashboardPage: React.FC = () => {
 };
 
 export const DashboardPage: React.FC = () => {
- const { profile, isAdmin, isOwner, isSuperAdmin, isCustomer } = useAuth();
+  const { profile, isAdmin, isOwner, isSuperAdmin, isCustomer, isCashier } = useAuth();
  const navigate = useNavigate();
  const [sales, setSales] = useState<Sale[]>([]);
  const [expenses, setExpenses] = useState<Expense[]>([]);
  const [appointments, setAppointments] = useState<Appointment[]>([]);
- const [last7DaysSales, setLast7DaysSales] = useState<{ date: string; amount: number }[]>([]);
  const [loading, setLoading] = useState(true);
-
- const isOwnerOrAdmin = isAdmin || isOwner || (profile?.role as string) === 'admin';
 
  const today = getLocalISODate();
 
  useEffect(() => {
- if (isCustomer) return;
+ if (isCustomer || !profile) return;
 
  const qSales = query(collection(db, 'sales'), where('date', '==', today));
  const qAppts = query(collection(db, 'appointments'), where('date', '==', today));
@@ -1665,12 +1661,12 @@ export const DashboardPage: React.FC = () => {
  }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
 
  let unsubExp = () => {};
- if (isOwnerOrAdmin) {
+    if (isAdmin || isCashier) {
  const qExp = query(collection(db, 'expenses'), where('date', '==', today));
  unsubExp = onSnapshot(qExp, (snapshot) => {
  setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
  }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
- }
+    }
 
  const unsubAppts = onSnapshot(qAppts, (snapshot) => {
  let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
@@ -1680,77 +1676,14 @@ export const DashboardPage: React.FC = () => {
  });
  setAppointments(data);
  }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
-
- let unsubChart = () => {};
- if (isOwnerOrAdmin) {
- // Fetch last 7 days for chart
- const qChart = query(collection(db, 'sales'));
-
- unsubChart = onSnapshot(qChart, (snapshot) => {
- const data = snapshot.docs.map(doc => doc.data() as Sale);
- const chartData: { [key: string]: number } = {};
- 
- // Initialize last 7 days with 0
- for (let i = 6; i >= 0; i--) {
- const d = new Date();
- d.setDate(d.getDate() - i);
- const dStr = getLocalISODate(d);
- chartData[dStr] = 0;
- }
-
- data.forEach(s => {
- if (s.date && chartData[s.date] !== undefined) {
- chartData[s.date] += (Number(s.total) || 0);
- }
- });
-
- const sortedDates = Object.keys(chartData).sort();
- const formattedChart = sortedDates.map(date => {
- let label = date;
- try {
- const parts = date.split('-');
- if (parts.length === 3) {
- const [y, m, d] = parts.map(Number);
- label = format(new Date(y, m - 1, d), 'MMM dd');
- }
- } catch (e) {
- console.error("Error formatting chart date:", e);
- }
- return {
- date: label,
- amount: chartData[date] || 0
- };
- });
-
- setLast7DaysSales(formattedChart);
  setLoading(false);
- }, (error) => {
- console.warn("Error fetching chart sales:", error);
- // Fallback 7 days
- const chartData: { [key: string]: number } = {};
- for (let i = 6; i >= 0; i--) {
- const d = new Date();
- d.setDate(d.getDate() - i);
- chartData[getLocalISODate(d)] = 0;
- }
- setLast7DaysSales(Object.keys(chartData).sort().map(date => {
- const [y, m, d] = date.split('-').map(Number);
- return {
- date: format(new Date(y, m - 1, d), 'MMM dd'),
- amount: 0
- };
- }));
- setLoading(false);
- });
- }
 
  return () => {
  unsubSales();
  unsubExp();
  unsubAppts();
- unsubChart();
  };
- }, [profile, today, isOwnerOrAdmin]);
+ }, [profile, today]);
 
  const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
@@ -1758,190 +1691,99 @@ export const DashboardPage: React.FC = () => {
  const pendingAppts = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
 
  const stats = [
- { label: "Today's Sales", value: `${totalSales.toLocaleString()} Ks`, icon: <DollarSign size={24} />, color: "text-green-500", bg: "bg-green-500/10" },
- ...(isAdmin ? [
- { label: "Today's Expenses", value: `${totalExpenses.toLocaleString()} Ks`, icon: <TrendingDown size={24} />, color: "text-red-500", bg: "bg-red-500/10" },
- { label: "Net Profit", value: `${netProfit.toLocaleString()} Ks`, icon: <TrendingUp size={24} />, color: "text-blue-500", bg: "bg-blue-500/10" },
- ] : []),
- { label: "Appointments", value: pendingAppts.toString(), icon: <Calendar size={24} />, color: "text-purple-500", bg: "bg-purple-500/10" },
- ];
+    { label: "Today's Sales", value: `${totalSales.toLocaleString()} Ks`, icon: <DollarSign size={24} strokeWidth={2.5} />, color: "text-amber-600", bg: "bg-amber-500/10" },
+    ...((isAdmin || isCashier) ? [
+    { label: "Today's Expenses", value: `${totalExpenses.toLocaleString()} Ks`, icon: <TrendingDown size={24} strokeWidth={2.5} />, color: "text-rose-600", bg: "bg-rose-500/10" },
+    { label: "Net Profit", value: `${netProfit.toLocaleString()} Ks`, icon: <TrendingUp size={24} strokeWidth={2.5} />, color: "text-emerald-600", bg: "bg-emerald-500/10" },
+    ] : []),
+    { label: "Appointments", value: pendingAppts.toString(), icon: <CalendarIcon size={24} strokeWidth={2.5} />, color: "text-indigo-600", bg: "bg-indigo-500/10" },
+  ];
 
 
 
  return (
- <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-500">
- <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
- <div className="space-y-1">
- <h3 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-slate-100 uppercase">Dashboard</h3>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em]">Business Overview for {formatFullDate(new Date())}</p>
- </div>
- <div className="flex gap-3">
- <button 
- onClick={() => navigate('/pos')}
- className="flex items-center gap-2 bg-primary text-white px-4 md:px-6 py-3 rounded-2xl font-black text-xs tracking-widest shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
- >
- <Plus size={16} />
- NEW SALE
- </button>
- <button 
- onClick={() => navigate('/appointments')}
- className="flex items-center gap-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 px-4 md:px-6 py-3 rounded-2xl font-black text-xs tracking-widest hover:-primary transition-all"
- >
- <Calendar size={16} />
- APPOINTMENTS
- </button>
- </div>
- </div>
+ <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-4 animate-in fade-in duration-500">
+ <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4">
+          <div className="space-y-0.5">
+            <h3 className="text-2xl font-black tracking-tighter text-foreground uppercase">Dashboard</h3>
+            <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Overview • {formatFullDate(new Date())}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 w-full md:w-[400px]">
+            <button 
+              onClick={() => navigate('/pos')}
+              className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 bg-primary text-white h-16 sm:h-14 rounded-2xl font-black text-[10px] sm:text-xs tracking-widest shadow-lg shadow-primary/20 active:scale-95 transition-all hover:bg-primary/90"
+            >
+              <Plus size={16} />
+              <span>NEW SALE</span>
+            </button>
+            <button 
+              onClick={() => navigate('/appointments')}
+              className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 bg-card border-2 border-border h-16 sm:h-14 rounded-2xl font-black text-[10px] sm:text-xs tracking-widest hover:border-primary active:scale-95 transition-all"
+            >
+              <Calendar size={16} />
+              <span>APPOINTMENTS</span>
+            </button>
+          </div>
+        </div>
 
- <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
  {stats.map((s, i) => (
  <motion.div 
- initial={{ opacity: 0, y: 20 }}
- animate={{ opacity: 1, y: 0 }}
- transition={{ delay: i * 0.1 }}
- key={i} 
- className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-3 relative overflow-hidden group"
- >
- <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500", s.bg, s.color)}>
- {s.icon}
- </div>
- <div className="space-y-1">
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest">{s.label}</p>
- <h4 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tighter">{s.value}</h4>
- </div>
- <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/50 dark:bg-amber-900/20 rounded-full -mr-12 -mt-12 blur-3xl group-hover:bg-amber-100/50 dark:bg-amber-900/30 transition-colors" />
- </motion.div>
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              key={i} 
+              className="bg-white border border-stone-100 shadow-sm p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider leading-tight">{s.label}</p>
+                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 duration-500", s.bg, s.color)}>
+                  {React.cloneElement(s.icon as any, { size: 16 })}
+                </div>
+              </div>
+              <h4 className="text-xl md:text-2xl font-black text-foreground tracking-tighter truncate">{s.value}</h4>
+            </motion.div>
  ))}
  </div>
 
- {isOwnerOrAdmin && (
- <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
- {/* Sales Chart */}
- <div className="lg:col-span-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-3 md:space-y-4 flex flex-col">
- <div className="flex justify-between items-center">
- <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
- <div className="w-1.5 h-4 bg-primary rounded-full"></div>
- Revenue Trend (Last 7 Days)
- </h4>
- </div>
- <div className="flex-1 h-[300px] w-full min-h-[280px]">
- <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={250}>
- <AreaChart data={last7DaysSales} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
- <defs>
- <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
- <stop offset="5%" stopColor="#d4af37" stopOpacity={0.4}/>
- <stop offset="95%" stopColor="#d4af37" stopOpacity={0.0}/>
- </linearGradient>
- </defs>
- <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.15)" />
- <XAxis 
- dataKey="date" 
- axisLine={false} 
- tickLine={false} 
- tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--muted-foreground)' }}
- dy={10}
- />
- <YAxis 
- axisLine={false} 
- tickLine={false} 
- tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--muted-foreground)' }}
- tickFormatter={(val) => {
- if (val >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
- if (val >= 1000) return `${(val / 1000).toFixed(0)}k`;
- return `${val}`;
- }}
- />
- <Tooltip 
- contentStyle={{ 
- backgroundColor: 'var(--card)', 
- borderColor: 'var(---color)', 
- borderRadius: '1rem',
- fontSize: '12px',
- fontWeight: 'bold',
- boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)'
- }}
- formatter={(value: any) => [`${Number(value || 0).toLocaleString()} Ks`, 'Revenue']}
- labelStyle={{ color: 'var(--fg)', fontWeight: 800, marginBottom: '4px' }}
- itemStyle={{ color: '#d4af37', fontWeight: 800 }}
- />
- <Area 
- type="monotone" 
- dataKey="amount" 
- stroke="#d4af37" 
- strokeWidth={3.5}
- fillOpacity={1} 
- fill="url(#colorSales)" 
- activeDot={{ r: 6, fill: '#d4af37', stroke: '#ffffff', strokeWidth: 2 }}
- />
- </AreaChart>
- </ResponsiveContainer>
- </div>
- </div>
-
- {/* Quick Stats / Info */}
- <div className="bg-primary rounded-2xl p-4 text-white space-y-4 relative overflow-hidden">
- <div className="relative z-10 space-y-2">
- <h4 className="text-xs font-black uppercase tracking-[0.3em] opacity-60">Today's Performance</h4>
- <h2 className="text-4xl font-black tracking-tighter leading-none">
- {netProfit > 0 ? "+" : ""}{netProfit.toLocaleString()} <span className="text-lg opacity-60">Ks</span>
- </h2>
- <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Net Profit after expenses</p>
- </div>
-
- <div className="relative z-10 space-y-4">
- <div className="bg-white/10 p-3 rounded-xl flex justify-between items-center">
- <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Sales Count</span>
- <span className="text-lg font-black">{sales.length}</span>
- </div>
- <div className="bg-white/10 p-3 rounded-xl flex justify-between items-center">
- <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Avg. Ticket</span>
- <span className="text-lg font-black">{sales.length > 0 ? Math.floor(totalSales / sales.length).toLocaleString() : 0} Ks</span>
- </div>
- <div className="bg-white/10 p-3 rounded-xl flex justify-between items-center">
- <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Expense Ratio</span>
- <span className="text-lg font-black">{totalSales > 0 ? Math.floor((totalExpenses / totalSales) * 100) : 0}%</span>
- </div>
- </div>
-
- <div className="absolute bottom-0 right-0 w-64 h-64 bg-input rounded-full -mr-32 -mb-32 blur-3xl" />
- </div>
- </div>
- )}
+ 
 
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
  {/* Recent Sales */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden flex flex-col">
- <div className="p-4 flex justify-between items-center bg-muted/5">
- <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
- <div className="w-1.5 h-4 bg-primary rounded-full"></div>
- Recent Sales
- </h4>
- <button onClick={() => navigate('/history')} className="text-[10px] font-black text-amber-600 dark:text-amber-400 hover:underline tracking-widest">VIEW ALL</button>
+ <div className="bg-white rounded-2xl border border-rose-100/40 shadow-sm overflow-hidden mb-4 flex flex-col">
+              <div className="px-4 py-3 flex justify-between items-center border-b border-stone-100">
+                <h4 className="text-xs font-bold tracking-wider text-stone-500 uppercase flex items-center">
+                  <div className="w-1 h-3.5 bg-amber-500 rounded-full mr-2"></div>
+                  Recent Sales
+                </h4>
+ <button onClick={() => navigate('/history')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW ALL</button>
  </div>
  <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
  {sales.length === 0 ? (
- <div className="p-20 text-center space-y-4 opacity-40">
- <ShoppingCart size={40} className="mx-auto text-slate-700 dark:text-slate-300" />
- <p className="text-xs font-bold uppercase tracking-widest">No sales today yet</p>
- </div>
+ <div className="py-12 flex flex-col items-center justify-center text-stone-400 space-y-3 bg-stone-50/50 rounded-xl m-4 border border-dashed border-stone-200">
+                    <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-stone-100 flex items-center justify-center text-stone-400">
+                      <ShoppingCart size={20} strokeWidth={1.5} />
+                    </div>
+                    <p className="text-xs font-medium text-stone-500">No sales today yet</p>
+                  </div>
  ) : (
- <div className="divide-y divide-/50">
+ <div className="divide-y divide-stone-100">
  {sales.slice(0, 10).map((s) => (
- <div key={s.id} className="p-4 flex justify-between items-center hover:bg-muted/5 transition-colors group">
+ <div key={s.id} className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group">
  <div className="flex items-center gap-4">
- <div className="w-10 h-10 bg-amber-100/50 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 font-black text-xs">
+ <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary font-black text-xs">
  {s.customerName ? s.customerName[0].toUpperCase() : 'G'}
  </div>
  <div>
- <p className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight group-hover:text-amber-600 dark:text-amber-400 transition-colors">{s.customerName || 'Guest Customer'}</p>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">
+ <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{s.customerName || 'Guest Customer'}</p>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
  {formatDisplayDate(s.dateTime)} • {formatTime(s.dateTime)} • {s.method}
  </p>
  </div>
  </div>
  <div className="text-right">
- <p className="text-sm font-black text-slate-900 dark:text-slate-100">{s.total.toLocaleString()} Ks</p>
- <p className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">{s.items.length} items</p>
+ <p className="text-sm font-black text-foreground">{s.total.toLocaleString()} Ks</p>
+ <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">{s.items.length} items</p>
  </div>
  </div>
  ))}
@@ -1951,24 +1793,26 @@ export const DashboardPage: React.FC = () => {
  </div>
 
  {/* Upcoming Appointments */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden flex flex-col">
- <div className="p-4 flex justify-between items-center bg-muted/5">
- <h4 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
- <div className="w-1.5 h-4 bg-purple-500 rounded-full"></div>
- Today's Appointments
- </h4>
- <button onClick={() => navigate('/appointments')} className="text-[10px] font-black text-amber-600 dark:text-amber-400 hover:underline tracking-widest">VIEW CALENDAR</button>
+ <div className="bg-white rounded-2xl border border-rose-100/40 shadow-sm overflow-hidden mb-4 flex flex-col">
+              <div className="px-4 py-3 flex justify-between items-center border-b border-stone-100">
+                <h4 className="text-xs font-bold tracking-wider text-stone-500 uppercase flex items-center">
+                  <div className="w-1 h-3.5 bg-amber-500 rounded-full mr-2"></div>
+                  Today's Appointments
+                </h4>
+ <button onClick={() => navigate('/appointments')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW CALENDAR</button>
  </div>
  <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
  {appointments.length === 0 ? (
- <div className="p-20 text-center space-y-4 opacity-40">
- <Calendar size={40} className="mx-auto text-slate-700 dark:text-slate-300" />
- <p className="text-xs font-bold uppercase tracking-widest">No appointments today</p>
- </div>
+ <div className="py-12 flex flex-col items-center justify-center text-stone-400 space-y-3 bg-stone-50/50 rounded-xl m-4 border border-dashed border-stone-200">
+                    <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-stone-100 flex items-center justify-center text-stone-400">
+                      <Calendar size={20} strokeWidth={1.5} />
+                    </div>
+                    <p className="text-xs font-medium text-stone-500">No appointments today</p>
+                  </div>
  ) : (
- <div className="divide-y divide-/50">
+ <div className="divide-y divide-stone-100">
  {appointments.sort((a, b) => a.time.localeCompare(b.time)).map((a) => (
- <div key={a.id} className="p-4 flex justify-between items-center hover:bg-muted/5 transition-colors group">
+ <div key={a.id} className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group">
  <div className="flex items-center gap-4">
  <div className={cn(
  "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
@@ -1977,14 +1821,14 @@ export const DashboardPage: React.FC = () => {
  {a.time}
  </div>
  <div>
- <p className="text-sm font-black text-slate-900 dark:text-slate-100 tracking-tight group-hover:text-amber-600 dark:text-amber-400 transition-colors">{a.customerName}</p>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">{a.serviceName} • {a.staffName}</p>
+ <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{a.customerName}</p>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{a.serviceName} • {a.staffName}</p>
  </div>
  </div>
  <div className="text-right">
  <span className={cn(
  "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full ",
- a.status === 'confirmed' ? "bg-green-500/10 text-green-500 -green-500/20" : "bg-yellow-500/10 text-yellow-500 -yellow-500/20"
+ a.status === 'confirmed' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
  )}>
  {a.status}
  </span>
@@ -1996,8 +1840,8 @@ export const DashboardPage: React.FC = () => {
  </div>
  </div>
  </div>
- </div>
- );
+</div>
+);
 };
 
 export const POSPage: React.FC = () => {
@@ -2100,7 +1944,7 @@ export const POSPage: React.FC = () => {
  }, [profile, isStaff]);
 
  useEffect(() => {
- if (isCustomer) return;
+ if (isCustomer || !profile) return;
  const docRef = doc(db, 'settings', 'salon');
  const unsubscribe = onSnapshot(docRef, (docSnap) => {
  if (docSnap.exists()) setShopSettings(docSnap.data() as ShopSettings);
@@ -2409,16 +2253,16 @@ export const POSPage: React.FC = () => {
 
  if (loadingPOS) {
  return (
- <div className="flex-1 flex justify-center items-center h-screen w-full bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]">
- <div className="w-8 h-8 -4 -primary -transparent rounded-full animate-spin"></div>
+ <div className="flex-1 flex justify-center items-center h-screen w-full bg-background">
+ <div className="w-8 h-8 border-4 border-primary border-transparent rounded-full animate-spin"></div>
  </div>
  );
  }
 
  return (
- <div className="h-screen w-full flex flex-col overflow-hidden bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]">
+ <div className="h-screen w-full flex flex-col overflow-hidden bg-background">
  {/* Top Header & Step Indicator (Fixed, shrink-0) */}
- <div className="flex-shrink-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 -b py-3 md:py-5 z-20 relative">
+ <div className="flex-shrink-0 bg-card border border-border -b py-3 md:py-5 z-20 relative">
  <div className="max-w-2xl mx-auto w-full relative flex items-center justify-between px-4 md:px-6 sm:px-12">
  {/* Progress Track (Single Line) */}
  <div className="absolute top-1/2 left-[48px] right-[48px] sm:left-[64px] sm:right-[64px] h-[3px] bg-/50 -translate-y-1/2 rounded-full overflow-hidden -z-10">
@@ -2450,16 +2294,16 @@ export const POSPage: React.FC = () => {
  onClick={() => setCurrentStep(step.id as any)}
  className="relative z-10 flex flex-col items-center gap-2 group outline-none"
  >
- <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center -2 transition-all duration-300 relative bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 ${stateClass}`}>
- <div className={`absolute inset-0 rounded-full ${isActive ? 'bg-primary' : isPast ? 'bg-amber-200/50 dark:bg-amber-900/40' : ''}`} />
- <step.icon size={20} className={`relative z-10 ${isActive ? "text-amber-600 dark:text-amber-400-foreground animate-pulse" : isPast ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"}`} />
+ <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center border-2 transition-all duration-300 relative bg-card border border-border ${stateClass}`}>
+ <div className={`absolute inset-0 rounded-full ${isActive ? 'bg-primary' : isPast ? 'bg-primary/20' : ''}`} />
+ <step.icon size={20} className={`relative z-10 ${isActive ? "text-primary-foreground animate-pulse" : isPast ? "text-primary" : "text-muted-foreground"}`} />
  {step.id === 'cart' && cart.length > 0 && (
- <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full -2 -background ">
+ <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black flex items-center justify-center rounded-full border-2 -background ">
  {cart.length}
  </span>
  )}
  </div>
- <span className={`text-[10px] sm:text-xs font-black uppercase tracking-widest transition-colors ${isActive ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"}`}>
+ <span className={`text-[10px] sm:text-xs font-black uppercase tracking-widest transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}>
  {step.label}
  </span>
  </button>
@@ -2473,18 +2317,18 @@ export const POSPage: React.FC = () => {
  {currentStep === 'services' && (
  <div className="w-full max-w-5xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
  {/* Search and Category Filter */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-4">
+ <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
  <div className="relative">
- <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300" />
+ <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
  <input
  type="text"
  placeholder="Search services..."
  value={search}
  onChange={(e) => setSearch(e.target.value)}
- className="w-full bg-input rounded-xl pl-12 pr-10 py-3.5 text-slate-900 dark:text-slate-100 placeholder-muted-foreground focus:outline-none focus:-primary transition-all font-medium"
+ className="w-full bg-input border border-border rounded-xl pl-12 pr-10 py-3.5 text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all font-medium"
  />
  {search && (
- <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 hover:text-red-500 transition-colors">
+ <button onClick={() => setSearch('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-red-500 transition-colors">
  <X size={18} />
  </button>
  )}
@@ -2496,8 +2340,8 @@ export const POSPage: React.FC = () => {
  onClick={() => setSelectedCategory(cat)}
  className={`whitespace-nowrap px-3 md:px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all shrink-0 ${
  selectedCategory === cat 
- ? 'bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20' 
- : 'bg-muted text-slate-700 dark:text-slate-300 hover:bg-muted/80'
+ ? 'bg-primary text-primary-foreground shadow-primary/20' 
+ : 'bg-muted text-muted-foreground hover:bg-muted/80'
  }`}
  >
  {cat}
@@ -2508,8 +2352,8 @@ export const POSPage: React.FC = () => {
 
  {/* Grid of Services */}
  {filteredServices.length === 0 ? (
- <div className="text-center p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl ">
- <p className="text-slate-700 dark:text-slate-300 font-medium">No services found matching your criteria.</p>
+ <div className="text-center p-4 bg-card border border-border rounded-2xl ">
+ <p className="text-muted-foreground font-medium">No services found matching your criteria.</p>
  </div>
  ) : (
  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -2519,20 +2363,20 @@ export const POSPage: React.FC = () => {
  <button
  key={service.id}
  onClick={() => addToCart(service)}
- className={`text-left bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-3.5 rounded-xl transition-all active:scale-95 group relative overflow-hidden flex flex-col justify-between min-h-[90px] ${
- isInCart ? '-primary bg-amber-50/50 dark:bg-amber-900/20 ring-2 ring-primary/20 shadow-primary/10' : ' hover:-primary/50 hover:'
+ className={`text-left bg-card border border-border p-3.5 rounded-xl transition-all active:scale-95 group relative overflow-hidden flex flex-col justify-between min-h-[90px] ${
+ isInCart ? '-primary bg-primary/20 ring-2 ring-primary/20 shadow-primary/10' : ' hover:border-primary/50 hover:'
  }`}
  >
  {isInCart && (
- <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-amber-600 dark:text-amber-400-foreground rounded-full flex items-center justify-center transition-transform scale-110">
+ <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center transition-transform scale-110">
  <Check size={12} strokeWidth={3} />
  </div>
  )}
  <div className="space-y-0.5 mt-1 pr-6">
- <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest opacity-80 truncate">{service.category}</p>
- <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-snug group-hover:text-amber-600 dark:text-amber-400 transition-colors line-clamp-2">{service.name}</h3>
+ <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-80 truncate">{service.category}</p>
+ <h3 className="text-sm font-bold text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">{service.name}</h3>
  </div>
- <p className="text-sm font-black text-slate-900 dark:text-slate-100 mt-2">{service.price.toLocaleString()} Ks</p>
+ <p className="text-sm font-black text-foreground mt-2">{service.price.toLocaleString()} Ks</p>
  </button>
  );
  })}
@@ -2544,21 +2388,21 @@ export const POSPage: React.FC = () => {
  {currentStep === 'cart' && (
  <div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
  {cart.length === 0 ? (
- <div className="text-center p-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col items-center gap-4 ">
- <div className="w-16 h-16 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center">
+ <div className="text-center p-12 bg-card border border-border rounded-2xl flex flex-col items-center gap-4 ">
+ <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center">
  <ShoppingCart size={32} />
  </div>
- <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">Your cart is empty</h3>
- <p className="text-slate-700 dark:text-slate-300">Select services to begin your order.</p>
- <button onClick={() => setCurrentStep('services')} className="mt-2 bg-primary text-amber-600 dark:text-amber-400-foreground px-4 md:px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:opacity-90 active:scale-95 transition-all">
+ <h3 className="text-lg font-black text-foreground">Your cart is empty</h3>
+ <p className="text-muted-foreground">Select services to begin your order.</p>
+ <button onClick={() => setCurrentStep('services')} className="mt-2 bg-primary text-primary-foreground px-4 md:px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:opacity-90 active:scale-95 transition-all">
  Browse Services
  </button>
  </div>
  ) : (
  <div className="space-y-4">
- <div className="flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
- <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
- <ShoppingCart size={18} className="text-amber-600 dark:text-amber-400" />
+ <div className="flex justify-between items-center bg-card border border-border p-4 rounded-xl ">
+ <h3 className="font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+ <ShoppingCart size={18} className="text-primary" />
  Order Items ({cart.length})
  </h3>
  <button 
@@ -2572,7 +2416,7 @@ export const POSPage: React.FC = () => {
  </div>
 
  {cart.map((item, index) => (
- <div key={item.id + index} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-2.5 sm:p-3 rounded-xl space-y-2.5 relative">
+ <div key={item.id + index} className="bg-card border border-border p-2.5 sm:p-3 rounded-xl space-y-2.5 relative">
  {/* Remove */}
  <button 
  onClick={() => {
@@ -2589,31 +2433,31 @@ export const POSPage: React.FC = () => {
  <Trash2 size={14} />
  </button>
  <div className="flex flex-row items-center justify-between gap-3 pr-8">
- <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm truncate">{item.name}</h4>
- <p className="text-amber-600 dark:text-amber-400 font-bold text-xs shrink-0">{item.price.toLocaleString()} Ks</p>
+ <h4 className="font-bold text-foreground text-sm truncate">{item.name}</h4>
+ <p className="text-primary font-bold text-xs shrink-0">{item.price.toLocaleString()} Ks</p>
  </div>
 
  <div className="flex items-center gap-2 pt-2 ">
  {/* Quantity */}
  <div className="flex items-center bg-muted rounded-lg p-0.5 h-8">
- <button onClick={() => updateCartItem(index, { qty: Math.max(1, item.qty - 1) })} className="w-6 h-full flex items-center justify-center hover:bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-md transition-colors text-slate-900 dark:text-slate-100">
+ <button onClick={() => updateCartItem(index, { qty: Math.max(1, item.qty - 1) })} className="w-6 h-full flex items-center justify-center hover:bg-background rounded-md transition-colors text-foreground">
  <Minus size={12} />
  </button>
  <input 
  type="number"
  value={item.qty}
- onChange={(e) => updateCartItem(index, { qty: Math.max(1, parseInt(e.target.value) || 1) })}
- className="w-8 text-center text-xs font-bold text-slate-900 dark:text-slate-100 bg-transparent outline-none appearance-none"
+ onChange={(e) => { const val = e.target.value; updateCartItem(index, { qty: val === '' ? ('' as any) : parseInt(val) || 1 }); }} onFocus={() => updateCartItem(index, { qty: '' as any })} onBlur={(e) => { if (!e.target.value || parseInt(e.target.value) < 1) updateCartItem(index, { qty: 1 }); }}
+ className="w-8 text-center text-xs font-bold text-foreground bg-transparent border-none outline-none appearance-none"
  style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
  />
- <button onClick={() => updateCartItem(index, { qty: item.qty + 1 })} className="w-6 h-full flex items-center justify-center hover:bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-md transition-colors text-slate-900 dark:text-slate-100">
+ <button onClick={() => updateCartItem(index, { qty: item.qty + 1 })} className="w-6 h-full flex items-center justify-center hover:bg-background rounded-md transition-colors text-foreground">
  <Plus size={12} />
  </button>
  </div>
 
  {/* Discount % */}
  <div className="relative w-20">
- <Percent size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300" />
+ <Percent size={10} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
  <input
  type="number"
  min="0"
@@ -2633,7 +2477,7 @@ export const POSPage: React.FC = () => {
  const val = e.target.value;
  updateCartItem(index, { disP: val === '' ? ('' as any) : Number(val) });
  }}
- className="w-full h-8 bg-input rounded-lg pl-6 pr-1 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all"
+ className="w-full h-8 bg-input border border-border rounded-lg pl-6 pr-1 text-xs font-bold text-foreground focus:border-primary outline-none transition-all"
  placeholder="Disc"
  />
  </div>
@@ -2644,11 +2488,11 @@ export const POSPage: React.FC = () => {
  {(!item.staffAssignments || item.staffAssignments.length === 0) ? (
  <div className="flex items-center gap-2">
  <div className="relative flex-1">
- <UserIcon size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 z-10" />
+ <UserIcon size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
  <select 
  value={item.staffName || ''}
  onChange={(e) => updateCartItem(index, { staffName: e.target.value, staffEmail: staff.find(s => s.name === e.target.value)?.email || '' })}
- className="w-full h-8 bg-input rounded-lg pl-7 pr-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all appearance-none"
+ className="w-full h-8 bg-input border border-border rounded-lg pl-7 pr-2 text-xs font-bold text-foreground focus:border-primary outline-none transition-all appearance-none"
  >
  <option value="">Select Staff</option>
  {staff.map(s => (
@@ -2666,7 +2510,7 @@ export const POSPage: React.FC = () => {
  staffAssignments: [...firstStaff, { name: '', qty: Math.max(1, Math.ceil(item.qty / 2)) }]
  });
  }}
- className="h-8 px-2 bg-muted text-slate-900 dark:text-slate-100 text-[10px] font-bold rounded-lg whitespace-nowrap hover:bg-muted/80"
+ className="h-8 px-2 bg-muted text-foreground text-[10px] font-bold rounded-lg whitespace-nowrap hover:bg-muted/80"
  >
  Split
  </button>
@@ -2676,7 +2520,7 @@ export const POSPage: React.FC = () => {
  {item.staffAssignments.map((assignment, aIndex) => (
  <div key={aIndex} className="flex items-center gap-2">
  <div className="relative flex-1">
- <UserIcon size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 z-10" />
+ <UserIcon size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
  <select 
  value={assignment.name || ''}
  onChange={(e) => {
@@ -2684,7 +2528,7 @@ export const POSPage: React.FC = () => {
  newAssignments[aIndex].name = e.target.value;
  updateCartItem(index, { staffAssignments: newAssignments });
  }}
- className="w-full h-8 bg-input rounded-lg pl-7 pr-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all appearance-none"
+ className="w-full h-8 bg-input border border-border rounded-lg pl-7 pr-2 text-xs font-bold text-foreground focus:border-primary outline-none transition-all appearance-none"
  >
  <option value="">Select Staff</option>
  {staff.map(s => (
@@ -2693,7 +2537,7 @@ export const POSPage: React.FC = () => {
  </select>
  </div>
  <div className="relative w-16">
- <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-700 dark:text-slate-300 pointer-events-none">qty</span>
+ <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none">qty</span>
  <input
  type="number"
  min="0"
@@ -2705,7 +2549,7 @@ export const POSPage: React.FC = () => {
  newAssignments[aIndex].qty = val;
  updateCartItem(index, { staffAssignments: newAssignments });
  }}
- className="w-full h-8 bg-input rounded-lg pl-2 pr-6 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all text-center"
+ className="w-full h-8 bg-input border border-border rounded-lg pl-2 pr-6 text-xs font-bold text-foreground focus:border-primary outline-none transition-all text-center"
  />
  </div>
  <button 
@@ -2729,7 +2573,7 @@ export const POSPage: React.FC = () => {
  const newAssignments = [...(item.staffAssignments || []), { name: '', qty: 1 }];
  updateCartItem(index, { staffAssignments: newAssignments });
  }}
- className="h-8 flex items-center justify-center gap-1 bg-muted/50 text-slate-900 dark:text-slate-100 text-[10px] font-bold rounded-lg -dashed hover:bg-muted"
+ className="h-8 flex items-center justify-center gap-1 bg-muted/50 text-foreground text-[10px] font-bold rounded-lg border-dashed hover:bg-muted"
  >
  <Plus size={10} /> Add Staff
  </button>
@@ -2740,7 +2584,7 @@ export const POSPage: React.FC = () => {
  return (
  <div className="space-y-1 mt-1">
  {itemValidation.errors.map((err, errIdx) => (
- <div key={errIdx} className="bg-red-500/10 -red-500/30 text-red-600 dark:text-red-400 p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5">
+ <div key={errIdx} className="bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5">
  <AlertCircle size={14} className="shrink-0 text-red-500" />
  <span>{err}</span>
  </div>
@@ -2763,19 +2607,19 @@ export const POSPage: React.FC = () => {
  {currentStep === 'checkout' && cart.length > 0 && (
  <div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
  {/* Order Summary */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-4">
+ <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
  <div className="flex items-center justify-between pb-3">
- <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest text-sm sm:text-base flex items-center gap-2">
- <Receipt size={18} className="text-amber-600 dark:text-amber-400" /> Order Summary
+ <h3 className="font-black text-foreground uppercase tracking-widest text-sm sm:text-base flex items-center gap-2">
+ <Receipt size={18} className="text-primary" /> Order Summary
  </h3>
- <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-muted px-2.5 py-1 rounded-lg">
+ <span className="text-xs font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-lg">
  {cart.reduce((sum, item) => sum + item.qty, 0)} {cart.reduce((sum, item) => sum + item.qty, 0) === 1 ? 'item' : 'items'}
  </span>
  </div>
 
  {/* Cart Items Detailed Breakdown */}
  <div className="space-y-2">
- <div className="grid grid-cols-12 text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 pb-2 gap-2">
+ <div className="grid grid-cols-12 text-[10px] font-black uppercase tracking-widest text-muted-foreground pb-2 gap-2">
  <div className="col-span-5 sm:col-span-6">Item (Dis%)</div>
  <div className="col-span-2 text-center">Qty</div>
  <div className="col-span-2 text-right">Price</div>
@@ -2787,25 +2631,25 @@ export const POSPage: React.FC = () => {
  return (
  <div key={idx} className="grid grid-cols-12 text-xs items-center py-2 gap-2">
  <div className="col-span-5 sm:col-span-6 min-w-0 pr-1">
- <div className="font-bold text-slate-900 dark:text-slate-100 truncate">{item.name}</div>
+ <div className="font-bold text-foreground truncate">{item.name}</div>
  {item.disP > 0 && (
  <span className="inline-block text-[10px] font-extrabold text-red-500 bg-red-500/10 px-1.5 py-0.2 rounded mt-0.5">
  Dis: {item.disP}%
  </span>
  )}
  {item.staffAssignments && item.staffAssignments.length > 0 ? (
- <div className="text-[10px] text-slate-700 dark:text-slate-300 truncate mt-0.5">
+ <div className="text-[10px] text-muted-foreground truncate mt-0.5">
  Staff: {item.staffAssignments.map(a => `${a.name || 'Staff'} (${a.qty})`).join(', ')}
  </div>
  ) : item.staffName ? (
- <div className="text-[10px] text-slate-700 dark:text-slate-300 truncate mt-0.5">
+ <div className="text-[10px] text-muted-foreground truncate mt-0.5">
  Staff: {item.staffName}
  </div>
  ) : null}
  </div>
- <div className="col-span-2 text-center text-slate-700 dark:text-slate-300 font-semibold">{item.qty}</div>
- <div className="col-span-2 text-right text-slate-700 dark:text-slate-300 font-semibold">{item.price.toLocaleString()} Ks</div>
- <div className="col-span-3 sm:col-span-2 text-right font-extrabold text-slate-900 dark:text-slate-100">{lineAmount.toLocaleString()} Ks</div>
+ <div className="col-span-2 text-center text-muted-foreground font-semibold">{item.qty}</div>
+ <div className="col-span-2 text-right text-muted-foreground font-semibold">{item.price.toLocaleString()} Ks</div>
+ <div className="col-span-3 sm:col-span-2 text-right font-extrabold text-foreground">{lineAmount.toLocaleString()} Ks</div>
  </div>
  );
  })}
@@ -2815,7 +2659,7 @@ export const POSPage: React.FC = () => {
  <div className="h-px w-full bg-/50 my-2" />
 
  <div className="space-y-2">
- <div className="flex justify-between items-center text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+ <div className="flex justify-between items-center text-xs sm:text-sm font-medium text-muted-foreground">
  <span>Subtotal</span>
  <span>{subTotal.toLocaleString()} Ks</span>
  </div>
@@ -2826,15 +2670,15 @@ export const POSPage: React.FC = () => {
  </div>
  )}
  {pointsDiscount > 0 && (
- <div className="flex justify-between items-center text-xs sm:text-sm font-medium text-amber-600 dark:text-amber-400">
+ <div className="flex justify-between items-center text-xs sm:text-sm font-medium text-primary">
  <span>Points Redeemed</span>
  <span>-{pointsDiscount.toLocaleString()} Ks</span>
  </div>
  )}
  <div className="h-px w-full bg-/50 my-2" />
- <div className="flex justify-between items-center text-lg sm:text-2xl font-black text-slate-900 dark:text-slate-100">
+ <div className="flex justify-between items-center text-lg sm:text-2xl font-black text-foreground">
  <span>Net Total</span>
- <span className="text-amber-600 dark:text-amber-400">{netTotal.toLocaleString()} Ks</span>
+ <span className="text-primary">{netTotal.toLocaleString()} Ks</span>
  </div>
  </div>
  </div>
@@ -2842,16 +2686,16 @@ export const POSPage: React.FC = () => {
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {/* Global Options */}
  <div className="space-y-3">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-4">
- <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
- <UserIcon size={16} className="text-amber-600 dark:text-amber-400" /> Global Settings
+ <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
+ <h3 className="font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+ <UserIcon size={16} className="text-primary" /> Global Settings
  </h3>
  <div>
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1.5 block">Global Staff Assignment</label>
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Global Staff Assignment</label>
  <select 
  value={selectedStaffEmail}
  onChange={(e) => setSelectedStaffEmail(e.target.value)}
- className="w-full bg-input rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all"
+ className="w-full bg-input border border-border rounded-xl px-4 py-3 text-sm font-bold text-foreground focus:border-primary outline-none transition-all"
  >
  {staff.map(s => (
  <option key={s.id} value={s.email}>{s.name}</option>
@@ -2860,43 +2704,43 @@ export const POSPage: React.FC = () => {
  </div>
 
  <div className="pt-2 ">
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1.5 block">Customer Search</label>
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Customer Search</label>
  <div className="relative">
  <input 
  type="text" 
  placeholder="Search customer by name or phone..."
  value={customerSearch}
  onChange={(e) => setCustomerSearch(e.target.value)}
- className="w-full bg-input rounded-xl pl-4 pr-10 py-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all"
+ className="w-full bg-input border border-border rounded-xl pl-4 pr-10 py-3 text-sm font-bold text-foreground focus:border-primary outline-none transition-all"
  />
  {customerSearch && (
- <button onClick={() => setCustomerSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 hover:text-red-500 transition-colors">
+ <button onClick={() => setCustomerSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-red-500 transition-colors">
  <X size={16} />
  </button>
  )}
  </div>
  {customerSuggestions.length > 0 && (
- <div className="absolute z-30 w-full mt-2 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-xl overflow-hidden max-w-sm">
+ <div className="absolute z-30 w-full mt-2 bg-card border border-border rounded-xl overflow-hidden max-w-sm">
  {customerSuggestions.map(c => (
  <button
  key={c.id}
  onClick={() => { setSelectedCustomerId(c.id); setCustomerSearch(''); }}
  className="w-full text-left px-4 py-3 hover:bg-muted transition-colors last:-0"
  >
- <div className="font-bold text-slate-900 dark:text-slate-100">{c.name}</div>
- <div className="text-xs text-slate-700 dark:text-slate-300">{c.phone}</div>
+ <div className="font-bold text-foreground">{c.name}</div>
+ <div className="text-xs text-muted-foreground">{c.phone}</div>
  </button>
  ))}
  </div>
  )}
 
  {selectedCustomerId && (
- <div className="mt-4 p-3 bg-amber-100/50 dark:bg-amber-900/30 -primary/20 rounded-xl flex justify-between items-center">
+ <div className="mt-4 p-3 bg-primary/20 border-primary/20 rounded-xl flex justify-between items-center">
  <div>
- <div className="text-xs font-black text-amber-600 dark:text-amber-400 uppercase tracking-widest">Selected Customer</div>
- <div className="font-bold text-slate-900 dark:text-slate-100">{customers.find(c => c.id === selectedCustomerId)?.name}</div>
+ <div className="text-xs font-black text-primary uppercase tracking-widest">Selected Customer</div>
+ <div className="font-bold text-foreground">{customers.find(c => c.id === selectedCustomerId)?.name}</div>
  </div>
- <button onClick={() => { setSelectedCustomerId(''); setPointsToRedeem(0); setIsLoyaltyDiscountActive(false); }} className="p-2 text-slate-700 dark:text-slate-300 hover:text-red-500 transition-colors">
+ <button onClick={() => { setSelectedCustomerId(''); setPointsToRedeem(0); setIsLoyaltyDiscountActive(false); }} className="p-2 text-muted-foreground hover:text-red-500 transition-colors">
  <X size={16} />
  </button>
  </div>
@@ -2905,9 +2749,9 @@ export const POSPage: React.FC = () => {
  
  {selectedCustomerId && (
  <div className="pt-2 ">
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1.5 flex justify-between">
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 flex justify-between">
  <span>Redeem Points</span>
- <span className="text-amber-600 dark:text-amber-400 font-bold">Avail: {customers.find(c => c.id === selectedCustomerId)?.points || 0}</span>
+ <span className="text-primary font-bold">Avail: {customers.find(c => c.id === selectedCustomerId)?.points || 0}</span>
  </label>
  <div className="flex items-center gap-3">
  <input 
@@ -2918,9 +2762,9 @@ export const POSPage: React.FC = () => {
  const maxP = customers.find(c => c.id === selectedCustomerId)?.points || 0;
  setPointsToRedeem(Math.min(Math.max(0, Number(e.target.value)), maxP));
  }}
- className="flex-1 bg-input rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all"
+ className="flex-1 bg-input border border-border rounded-xl px-4 py-3 text-sm font-bold text-foreground focus:border-primary outline-none transition-all"
  />
- <div className="bg-red-500 text-slate-900 dark:text-slate-100 px-4 py-3 rounded-xl text-xs font-black shadow-red-500/20 whitespace-nowrap">
+ <div className="bg-red-500 text-foreground px-4 py-3 rounded-xl text-xs font-black shadow-red-500/20 whitespace-nowrap">
  -{ (pointsToRedeem * 10).toLocaleString() } Ks
  </div>
  </div>
@@ -2931,21 +2775,21 @@ export const POSPage: React.FC = () => {
 
  {/* Payments & Split Payment */}
  <div className="space-y-3">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-4">
+ <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
  <div className="flex justify-between items-center mb-1">
- <h3 className="font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2 text-sm sm:text-base">
- <DollarSign size={18} className="text-amber-600 dark:text-amber-400" /> Split Payments
+ <h3 className="font-black text-foreground uppercase tracking-widest flex items-center gap-2 text-sm sm:text-base">
+ <DollarSign size={18} className="text-primary" /> Split Payments
  </h3>
  <button 
  type="button"
  onClick={addPaymentMethod} 
- className="text-xs text-amber-600 dark:text-amber-400 font-extrabold uppercase tracking-widest bg-amber-100/50 dark:bg-amber-900/30 hover:bg-amber-200/50 dark:bg-amber-900/40 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+ className="text-xs text-primary font-extrabold uppercase tracking-widest bg-primary/20 hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
  >
  <Plus size={14} /> Add Payment Method
  </button>
  </div>
 
- <p className="text-xs text-slate-700 dark:text-slate-300">
+ <p className="text-xs text-muted-foreground">
  Split total across payment options (Cash, KBZPay, WavePay, AYA Pay, etc.).
  </p>
 
@@ -2953,11 +2797,11 @@ export const POSPage: React.FC = () => {
  {payments.map((payment, index) => (
  <div key={index} className="flex gap-2.5 items-center bg-muted/30 p-2.5 rounded-xl ">
  <div className="flex-1 min-w-0">
- <label className="text-[9px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 mb-1 block">Method {index + 1}</label>
+ <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1 block">Method {index + 1}</label>
  <select
  value={payment.method}
  onChange={(e) => updatePayment(index, { method: e.target.value as any })}
- className="w-full bg-input rounded-lg px-3 py-2 text-xs font-bold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all appearance-none"
+ className="w-full bg-input border border-border rounded-lg px-3 py-2 text-xs font-bold text-foreground focus:border-primary outline-none transition-all appearance-none"
  >
  {paymentMethods.map(pm => (
  <option key={pm.id} value={pm.id}>{pm.label}</option>
@@ -2967,12 +2811,12 @@ export const POSPage: React.FC = () => {
 
  <div className="w-32 sm:w-36">
  <div className="flex justify-between items-center mb-1">
- <label className="text-[9px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Amount</label>
+ <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Amount</label>
  {remainingAmount > 0 && payments.length > 1 && (
  <button 
  type="button"
  onClick={() => updatePayment(index, { amount: payment.amount + remainingAmount })}
- className="text-amber-600 dark:text-amber-400 hover:underline font-bold text-[9px] lowercase cursor-pointer"
+ className="text-primary hover:underline font-bold text-[9px] lowercase cursor-pointer"
  >
  +fill
  </button>
@@ -2984,9 +2828,9 @@ export const POSPage: React.FC = () => {
  value={payment.amount === 0 ? '' : payment.amount}
  placeholder="0"
  onChange={(e) => updatePayment(index, { amount: e.target.value === '' ? 0 : Number(e.target.value) })}
- className="w-full bg-input rounded-lg px-2.5 py-2 text-xs font-extrabold text-slate-900 dark:text-slate-100 focus:-primary outline-none transition-all text-right pr-7"
+ className="w-full bg-input border border-border rounded-lg px-2.5 py-2 text-xs font-extrabold text-foreground focus:border-primary outline-none transition-all text-right pr-7"
  />
- <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-700 dark:text-slate-300 pointer-events-none font-bold">
+ <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none font-bold">
  Ks
  </span>
  </div>
@@ -3008,12 +2852,12 @@ export const POSPage: React.FC = () => {
 
  {/* Payment Summary & Balance Status */}
  <div className="pt-4 space-y-2">
- <div className="flex justify-between items-center text-xs font-bold text-slate-700 dark:text-slate-300">
+ <div className="flex justify-between items-center text-xs font-bold text-muted-foreground">
  <span>Total Allocated</span>
- <span className="text-slate-900 dark:text-slate-100">{totalPaid.toLocaleString()} Ks</span>
+ <span className="text-foreground">{totalPaid.toLocaleString()} Ks</span>
  </div>
  <div className="flex justify-between items-center">
- <span className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Balance Status</span>
+ <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">Balance Status</span>
  <span className={`text-sm font-black ${remainingAmount > 0 ? 'text-red-500' : remainingAmount < 0 ? 'text-amber-500' : 'text-green-500'}`}>
  {remainingAmount === 0 ? (
  <span className="inline-flex items-center gap-1 bg-green-500/10 text-green-600 dark:text-green-400 px-2.5 py-1 rounded-lg text-xs font-extrabold">
@@ -3039,12 +2883,12 @@ export const POSPage: React.FC = () => {
  </div>
 
  {/* Bottom Footer (Fixed, shrink-0) */}
- <div className="flex-shrink-0 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/95 backdrop-blur-md p-4 z-20 shadow-[0_-20px_40px_rgba(0,0,0,0.05)]">
+ <div className="flex-shrink-0 bg-background backdrop-blur-md p-4 z-20 shadow-[0_-20px_40px_rgba(0,0,0,0.05)]">
  <div className="max-w-5xl mx-auto w-full flex justify-between items-center gap-4">
  {/* Left Info / Back Buttons */}
  <div className="hidden sm:block">
  {currentStep !== 'services' && (
- <button onClick={() => setCurrentStep(currentStep === 'checkout' ? 'cart' : 'services')} className="text-slate-700 dark:text-slate-300 font-bold hover:text-slate-900 dark:text-slate-100 transition-colors uppercase tracking-widest text-xs px-4 py-2 -transparent hover: rounded-lg">
+ <button onClick={() => setCurrentStep(currentStep === 'checkout' ? 'cart' : 'services')} className="text-muted-foreground font-bold hover:text-foreground transition-colors uppercase tracking-widest text-xs px-4 py-2 border-transparent hover: rounded-lg">
  Back
  </button>
  )}
@@ -3055,7 +2899,7 @@ export const POSPage: React.FC = () => {
  {currentStep === 'services' && (
  <button 
  onClick={() => setCurrentStep('cart')} 
- className="w-full sm:w-auto bg-primary text-amber-600 dark:text-amber-400-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 group"
+ className="w-full sm:w-auto bg-primary text-primary-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 group"
  >
  PROCEED TO CART 
  {cart.length > 0 && (
@@ -3071,7 +2915,7 @@ export const POSPage: React.FC = () => {
  <button 
  onClick={handleProceedToCheckout} 
  disabled={cart.length === 0 || !isCartValid}
- className="w-full sm:w-auto bg-primary text-amber-600 dark:text-amber-400-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+ className="w-full sm:w-auto bg-primary text-primary-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
  >
  CHECKOUT <ChevronRight size={18} />
  </button>
@@ -3081,7 +2925,7 @@ export const POSPage: React.FC = () => {
  <button 
  onClick={() => handleCheckout()} 
  disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid}
- className="w-full sm:w-auto bg-primary text-amber-600 dark:text-amber-400-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
+ className="w-full sm:w-auto bg-primary text-primary-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
  >
  COMPLETE SALE <ChevronRight size={18} />
  </button>
@@ -3105,14 +2949,14 @@ export const POSPage: React.FC = () => {
  )}
 
  {confirmAction && (
- <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-sm rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-200">
- <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 mb-2">Confirm Action</h3>
- <p className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-4 md:mb-8">{confirmAction.message}</p>
+ <div className="fixed inset-0 bg-black/60 z-[9999] flex items-start justify-center p-4 pt-[100px] sm:pt-[120px]">
+ <div className="bg-card border border-border w-full max-w-sm rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-200">
+ <h3 className="text-xl font-black text-foreground mb-2">Confirm Action</h3>
+ <p className="text-muted-foreground text-sm font-medium mb-4 md:mb-8">{confirmAction.message}</p>
  <div className="flex gap-3">
  <button 
  onClick={() => setConfirmAction(null)}
- className="flex-1 bg-muted text-slate-700 dark:text-slate-300 font-bold py-3.5 rounded-xl hover:bg-muted/80 transition-colors"
+ className="flex-1 bg-muted text-muted-foreground font-bold py-3.5 rounded-xl hover:bg-muted/80 transition-colors"
  >
  Cancel
  </button>
@@ -3216,12 +3060,12 @@ export const MonthlySummaryPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
  <div className="space-y-1">
- <h3 className="text-3xl font-light tracking-tight text-slate-900 dark:text-slate-100">Monthly <span className="italic font-serif">Summary</span></h3>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em]">Financial Performance Overview</p>
+ <h3 className="text-3xl font-light tracking-tight text-foreground">Monthly <span className="italic font-serif">Summary</span></h3>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Financial Performance Overview</p>
  </div>
- <div className="flex items-center gap-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-2 rounded-2xl ">
+ <div className="flex items-center gap-4 bg-card border border-border p-2 rounded-2xl ">
  <div className="flex flex-col px-3">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest mb-0.5">Fiscal Year</label>
+ <label className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest mb-0.5">Fiscal Year</label>
  <CustomSelect
  value={year}
  onChange={setYear}
@@ -3232,60 +3076,60 @@ export const MonthlySummaryPage: React.FC = () => {
  </div>
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-1 relative overflow-hidden group">
+ <div className="bg-card border border-border p-4 rounded-2xl space-y-1 relative overflow-hidden group">
  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
  <TrendingUp size={48} className="text-green-500" />
  </div>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Total Incomes</p>
- <h2 className="text-3xl font-mono tracking-tighter text-slate-900 dark:text-slate-100">{gIncome.toLocaleString()} <span className="text-sm font-sans font-normal text-slate-700 dark:text-slate-300 uppercase">Ks</span></h2>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Incomes</p>
+ <h2 className="text-3xl font-mono tracking-tighter text-foreground">{gIncome.toLocaleString()} <span className="text-sm font-sans font-normal text-muted-foreground uppercase">Ks</span></h2>
  <div className="h-1 w-12 bg-green-500/30 rounded-full" />
  </div>
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-1 relative overflow-hidden group">
+ <div className="bg-card border border-border p-4 rounded-2xl space-y-1 relative overflow-hidden group">
  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
  <TrendingDown size={48} className="text-red-500" />
  </div>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Total Expenses</p>
- <h2 className="text-3xl font-mono tracking-tighter text-slate-900 dark:text-slate-100">{gExp.toLocaleString()} <span className="text-sm font-sans font-normal text-slate-700 dark:text-slate-300 uppercase">Ks</span></h2>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Expenses</p>
+ <h2 className="text-3xl font-mono tracking-tighter text-foreground">{gExp.toLocaleString()} <span className="text-sm font-sans font-normal text-muted-foreground uppercase">Ks</span></h2>
  <div className="h-1 w-12 bg-red-500/30 rounded-full" />
  </div>
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-1 relative overflow-hidden group">
+ <div className="bg-card border border-border p-4 rounded-2xl space-y-1 relative overflow-hidden group">
  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
- <DollarSign size={48} className={cn(gProfit >= 0 ? "text-amber-600 dark:text-amber-400" : "text-red-500")} />
+ <DollarSign size={48} className={cn(gProfit >= 0 ? "text-primary" : "text-red-500")} />
  </div>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Net Profit</p>
- <h2 className={cn("text-3xl font-mono tracking-tighter", gProfit >= 0 ? "text-amber-600 dark:text-amber-400" : "text-red-500")}>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Net Profit</p>
+ <h2 className={cn("text-3xl font-mono tracking-tighter", gProfit >= 0 ? "text-primary" : "text-red-500")}>
  {gProfit.toLocaleString()} <span className="text-sm font-sans font-normal opacity-50 uppercase">Ks</span>
  </h2>
  <div className={cn("h-1 w-12 rounded-full", gProfit >= 0 ? "bg-primary/30" : "bg-red-500/30")} />
  </div>
  </div>
 
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden">
+ <div className="bg-card border border-border rounded-2xl overflow-hidden">
  <div className="overflow-x-auto">
- <table className="w-full -collapse">
+ <table className="w-full border-collapse">
  <thead>
  <tr className=" bg-muted/30">
- <th className="px-4 md:px-8 py-3 md:py-5 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Month</th>
- <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Income</th>
- <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Expense</th>
- <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Profit</th>
- <th className="px-4 md:px-8 py-3 md:py-5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Status</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-left text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Month</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Income</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Expense</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-right text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Profit</th>
+ <th className="px-4 md:px-8 py-3 md:py-5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Status</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-/50">
  {monthlyData.map((d, i) => (
  <tr key={i} className="hover:bg-primary/[0.02] transition-colors group">
  <td className="px-4 md:px-8 py-4 md:py-6">
- <span className="text-lg font-serif italic text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:text-amber-400 transition-colors">{d.mName}</span>
+ <span className="text-lg font-serif italic text-foreground group-hover:text-primary transition-colors">{d.mName}</span>
  </td>
  <td className="px-4 md:px-8 py-4 md:py-6 text-right">
- <span className="font-mono text-base text-slate-900 dark:text-slate-100">{d.income.toLocaleString()}</span>
+ <span className="font-mono text-base text-foreground">{d.income.toLocaleString()}</span>
  </td>
  <td className="px-4 md:px-8 py-4 md:py-6 text-right">
  <span className="font-mono text-base text-red-500/80">{d.totalExp.toLocaleString()}</span>
  </td>
  <td className="px-4 md:px-8 py-4 md:py-6 text-right">
- <span className={cn("font-mono text-lg font-bold", d.profit >= 0 ? "text-amber-600 dark:text-amber-400" : "text-red-500")}>
+ <span className={cn("font-mono text-lg font-bold", d.profit >= 0 ? "text-primary" : "text-red-500")}>
  {d.profit.toLocaleString()}
  </span>
  </td>
@@ -3479,7 +3323,7 @@ export const ExpenseListPage: React.FC = () => {
  >
  <div className="space-y-4">
  <div className="space-y-1.5">
- <label className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest ml-1">Expense Type</label>
+ <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Expense Type</label>
  <CustomSelect
  value={expCategory}
  onChange={(val) => {
@@ -3492,19 +3336,19 @@ export const ExpenseListPage: React.FC = () => {
  { value: '', label: 'General' },
  ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
  ]}
- buttonClassName="w-full bg-input rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 text-sm focus:-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
+ buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
  />
  </div>
 
  {(expCategory === 'Staff Salary' || expCategory === 'Advance Pay') && (
  <div className="space-y-1.5 animate-in fade-in zoom-in duration-200">
- <label className="text-[10px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37] font-bold uppercase tracking-widest ml-1">Assign Staff</label>
+ <label className="text-[10px] text-primary [.midnight_&]:text-[#D4AF37] font-bold uppercase tracking-widest ml-1">Assign Staff</label>
  <CustomSelect
  value={assignedStaff}
  onChange={setAssignedStaff}
  placeholder="Select Staff Member..."
  options={staffList.map(s => ({ value: s.name, label: s.name }))}
- buttonClassName="w-full bg-input rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 text-sm focus:-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:-[#D4AF37]/50"
+ buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:border-[#D4AF37]/50"
  />
  </div>
  )}
@@ -3522,7 +3366,7 @@ export const ExpenseListPage: React.FC = () => {
  onChange={setExpAmt}
  onFocusClear
  />
- <button onClick={handleAddExpense} className="w-full bg-primary text-white font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:-[#D4AF37]">Add Expense</button>
+ <button onClick={handleAddExpense} className="w-full bg-primary text-white font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Add Expense</button>
  </div>
  </Modal>
 
@@ -3540,18 +3384,18 @@ export const ExpenseListPage: React.FC = () => {
  onFocusClear
  />
  {editingExpenseCategory ? (
- <button onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:-[#D4AF37]">Update Category</button>
+ <button onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Update Category</button>
  ) : (
- <button onClick={handleAddExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:-[#D4AF37]">Add Category</button>
+ <button onClick={handleAddExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Add Category</button>
  )}
  </div>
  <div className="space-y-3 pt-6 ">
- <h4 className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">Existing Categories</h4>
+ <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Existing Categories</h4>
  <div className="flex flex-wrap gap-2">
  {expenseCategories.map(c => (
- <div key={c.id} className="flex items-center gap-2 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] px-3 py-1.5 rounded-full group hover:-primary/50 transition-all">
- <span className="text-xs font-bold text-slate-900 dark:text-slate-100">{c.name}</span>
- <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-slate-700 dark:text-slate-300 hover:text-amber-600 dark:text-amber-400 hover:scale-110 transition-all"><Settings size={12} /></button>
+ <div key={c.id} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-full group hover:border-primary/50 transition-all">
+ <span className="text-xs font-bold text-foreground">{c.name}</span>
+ <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-muted-foreground hover:text-primary hover:scale-110 transition-all"><Settings size={12} /></button>
  {isAdmin && (
  <button onClick={() => setShowConfirm({ coll: 'expense_categories', id: c.id })} className="text-red-500 hover:text-red-600 hover:scale-110 transition-all"><Trash2 size={12} /></button>
  )}
@@ -3569,9 +3413,9 @@ export const ExpenseListPage: React.FC = () => {
  title="Confirm Deletion"
  >
  <div className="space-y-3">
- <p className="text-sm text-slate-700 dark:text-slate-300">Are you sure you want to delete this record? This action cannot be undone.</p>
+ <p className="text-sm text-muted-foreground">Are you sure you want to delete this record? This action cannot be undone.</p>
  <div className="flex gap-4">
- <button onClick={() => setShowConfirm(null)} className="flex-1 bg-muted text-slate-900 dark:text-slate-100 font-bold py-3 rounded-xl hover:opacity-80 transition-opacity">Cancel</button>
+ <button onClick={() => setShowConfirm(null)} className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:opacity-80 transition-opacity">Cancel</button>
  <button onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-red-500/20">Delete</button>
  </div>
  </div>
@@ -3579,43 +3423,43 @@ export const ExpenseListPage: React.FC = () => {
 
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
  <div className="space-y-1 flex-1 min-w-0">
- <h3 className="text-3xl font-light tracking-tight text-slate-900 dark:text-slate-100">Shop <span className="italic font-serif">Expenses</span></h3>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em] mb-4">Operating Cost Management</p>
+ <h3 className="text-3xl font-light tracking-tight text-foreground">Shop <span className="italic font-serif">Expenses</span></h3>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em] mb-4">Operating Cost Management</p>
  <div className="flex items-center gap-3 mt-4">
  <button 
  onClick={() => setShowExpForm(true)}
- className="bg-primary text-white px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-primary/20 hover:opacity-90 transition-all active:scale-95 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:-[#D4AF37]"
+ className="bg-primary text-white px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 shadow-primary/20 hover:opacity-90 transition-all active:scale-95 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]"
  >
  <Plus size={14} /> ADD EXPENSE
  </button>
  <button 
  onClick={() => setShowExpCatForm(true)}
- className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 text-slate-900 dark:text-slate-100 px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 hover:-primary/30 transition-colors"
+ className="bg-card border border-border text-foreground px-4 py-2 text-[10px] font-bold rounded-xl flex items-center gap-2 hover:border-primary/30 transition-colors"
  >
  <Settings size={14} /> MANAGE CATEGORIES
  </button>
  </div>
  </div>
  
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl z-40 relative min-w-[320px] [.midnight_&]:bg-[#221C18] [.midnight_&]:-[#3D322C]">
+ <div className="bg-card border border-border rounded-2xl z-40 relative min-w-[320px] [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C]">
  <div className={cn("grid grid-cols-1", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') ? "md:grid-cols-4" : "md:grid-cols-3")}>
  <CustomDatePicker 
  label="FROM" 
  value={dateFrom} 
  onChange={setDateFrom} 
- iconColor="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]"
+ iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
  className=" md:-0 md: "
  />
  <CustomDatePicker 
  label="TO" 
  value={dateTo} 
  onChange={setDateTo} 
- iconColor="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]"
+ iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
  className=" md:-0 md: "
  />
  <div className={cn("flex flex-col p-4", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && " md:-0 md: ")}>
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <Settings size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]" /> CATEGORY
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <Settings size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> CATEGORY
  </label>
  <CustomSelect
  value={expFilterCat}
@@ -3631,13 +3475,13 @@ export const ExpenseListPage: React.FC = () => {
  { value: 'General', label: 'General' },
  ...expenseCategories.map(c => ({ value: c.name, label: c.name }))
  ]}
- buttonClassName="bg-input rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 text-xs focus:-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
+ buttonClassName="bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
  />
  </div>
  {(expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && (
  <div className="flex flex-col p-4 animate-in fade-in zoom-in duration-200">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <UsersIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]" /> STAFF
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <UsersIcon size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> STAFF
  </label>
  <CustomSelect
  value={expFilterStaff}
@@ -3647,7 +3491,7 @@ export const ExpenseListPage: React.FC = () => {
  { value: '', label: 'All Staff' },
  ...staffList.map(s => ({ value: s.name, label: s.name }))
  ]}
- buttonClassName="bg-input rounded-xl px-3 py-2 text-slate-900 dark:text-slate-100 text-xs focus:-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
+ buttonClassName="bg-input border border-border rounded-xl px-3 py-2 text-foreground text-xs focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
  />
  </div>
  )}
@@ -3655,10 +3499,10 @@ export const ExpenseListPage: React.FC = () => {
  </div>
  </div>
 
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl text-center space-y-3 relative overflow-hidden group [.midnight_&]:bg-[#221C18] [.midnight_&]:-[#3D322C]">
+ <div className="bg-card border border-border p-4 rounded-2xl text-center space-y-3 relative overflow-hidden group [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C]">
  <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
  <div className="relative z-10 space-y-2">
- <span className="text-slate-700 dark:text-slate-300 text-[11px] font-bold uppercase tracking-[0.3em]">Total Operating Expenditure</span>
+ <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Total Operating Expenditure</span>
  <div className="flex items-center justify-center gap-4">
  <TrendingDown size={32} className="text-red-500/50 [.midnight_&]:text-red-400/50" />
  <h1 className="text-6xl font-mono tracking-tighter text-red-500 drop- [.midnight_&]:text-[#D4AF37]">
@@ -3672,12 +3516,12 @@ export const ExpenseListPage: React.FC = () => {
  <button 
  onClick={handleExportCSV}
  disabled={isExporting}
- className="px-4 md:px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full hover: hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 [.midnight_&]:from-[#3A2F28] [.midnight_&]:to-[#2E2520] [.midnight_&]: [.midnight_&]:-[#D4AF37]"
+ className="px-4 md:px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full hover: hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 [.midnight_&]:from-[#3A2F28] [.midnight_&]:to-[#2E2520] [.midnight_&]: [.midnight_&]:border-[#D4AF37]"
  title="Export to Excel"
  >
  {isExporting ? (
  <>
- <div className="w-4 h-4 -2 -primary-foreground/30 -primary-foreground rounded-full animate-spin [.midnight_&]:-[#D4AF37]/30 [.midnight_&]:-[#D4AF37]" />
+ <div className="w-4 h-4 border-2 border-primary-foreground/30 border-primary-foreground rounded-full animate-spin [.midnight_&]:border-[#D4AF37]/30 [.midnight_&]:border-[#D4AF37]" />
  <span className="text-xs uppercase tracking-widest font-bold [.midnight_&]:text-[#D4AF37]">Generating...</span>
  </>
  ) : (
@@ -3693,31 +3537,31 @@ export const ExpenseListPage: React.FC = () => {
 
  <div className="space-y-4">
  <div className="flex items-center justify-between px-2">
- <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Transaction Ledger</h4>
- <span className="text-[10px] font-mono text-slate-700 dark:text-slate-300">{filteredExpenses.length} Entries</span>
+ <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Transaction Ledger</h4>
+ <span className="text-[10px] font-mono text-muted-foreground">{filteredExpenses.length} Entries</span>
  </div>
 
  <div className="space-y-12">
  {groupedExpenses.length === 0 ? (
- <div className="text-center py-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed [.midnight_&]:bg-[#1A1613]">
+ <div className="text-center py-20 bg-card border border-border rounded-2xl border-dashed [.midnight_&]:bg-[#1A1613]">
  <div className="flex flex-col items-center gap-3 opacity-30">
  <Receipt size={48} className="[.midnight_&]:text-[#D4AF37]" />
- <p className="text-sm font-medium italic text-slate-700 dark:text-slate-300">No expense records found for this period.</p>
+ <p className="text-sm font-medium italic text-muted-foreground">No expense records found for this period.</p>
  </div>
  </div>
  ) : (
  groupedExpenses.map(([date, expenses]) => (
  <div key={date} className="space-y-4">
- <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/90 backdrop-blur-sm ">
- <div className="flex items-center gap-3 px-3 md:px-5 py-2 bg-amber-100/50 dark:bg-amber-900/30 -primary/20 rounded-2xl shadow-primary/5 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:-[#D4AF37]/20">
- <CalendarIcon size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]" />
- <span className="text-xs font-black uppercase tracking-[0.15em] text-amber-600 dark:text-amber-400 [.midnight_&]:text-[#D4AF37]">
+ <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background backdrop-blur-sm ">
+ <div className="flex items-center gap-3 px-3 md:px-5 py-2 bg-primary/20 border-primary/20 rounded-2xl shadow-primary/5 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:border-[#D4AF37]/20">
+ <CalendarIcon size={14} className="text-primary [.midnight_&]:text-[#D4AF37]" />
+ <span className="text-xs font-black uppercase tracking-[0.15em] text-primary [.midnight_&]:text-[#D4AF37]">
  {formatDisplayDate(date)}
  </span>
  </div>
  <div className="h-px flex-1 bg-gradient-to-r from-/50 to-transparent" />
  <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-lg ">
- <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+ <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest">
  {expenses.length} {expenses.length === 1 ? 'Entry' : 'Entries'}
  </span>
  </div>
@@ -3729,30 +3573,30 @@ export const ExpenseListPage: React.FC = () => {
  onClick={() => setSelectedExpense(e)}
  
  key={e.id} 
- className="group bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 flex items-center justify-between hover: hover:-primary/30 transition-all relative overflow-hidden cursor-pointer [.midnight_&]:bg-[#221C18] [.midnight_&]:-[#3D322C] [.midnight_&]:hover:-[#D4AF37]/50"
+ className="group bg-card border border-border rounded-2xl p-4 flex items-center justify-between hover: hover:border-primary/30 transition-all relative overflow-hidden cursor-pointer [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C] [.midnight_&]:hover:-[#D4AF37]/50"
  >
- <div className="absolute top-0 left-0 w-1 h-full bg-amber-200/50 dark:bg-amber-900/40 group-hover:bg-primary transition-colors [.midnight_&]:bg-[#D4AF37]/20 [.midnight_&]:group-hover:bg-[#D4AF37]" />
+ <div className="absolute top-0 left-0 w-1 h-full bg-primary/20 group-hover:bg-primary transition-colors [.midnight_&]:bg-[#D4AF37]/20 [.midnight_&]:group-hover:bg-[#D4AF37]" />
  <div className="flex items-start gap-4 flex-1 min-w-0">
- <div className="w-10 h-10 rounded-full bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform shrink-0 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:text-[#D4AF37]">
+ <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform shrink-0 [.midnight_&]:bg-[#D4AF37]/10 [.midnight_&]:text-[#D4AF37]">
  <Receipt size={20} />
  </div>
  <div className="space-y-1 flex-1 min-w-0">
  <div className="flex items-center gap-2 flex-wrap">
- <span className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-widest [.midnight_&]:text-[#E6DFD9]">
+ <span className="text-sm font-bold text-foreground uppercase tracking-widest [.midnight_&]:text-[#E6DFD9]">
  {e.assignedStaff ? `${e.category || 'General'} - ${e.assignedStaff}` : (e.category || 'General')}
  </span>
  </div>
  {e.desc && (
- <p className="text-sm text-slate-700 dark:text-slate-300 font-medium leading-tight max-w-[200px] sm:max-w-xs truncate [.midnight_&]:text-[#9C9086]">
+ <p className="text-sm text-muted-foreground font-medium leading-tight max-w-[200px] sm:max-w-xs truncate [.midnight_&]:text-[#9C9086]">
  {e.desc}
  </p>
  )}
  <div className="flex items-center gap-3 mt-2">
- <span className="text-[10px] text-slate-700 dark:text-slate-300/60 font-mono uppercase tracking-wider flex items-center gap-1">
+ <span className="text-[10px] text-muted-foreground/60 font-mono uppercase tracking-wider flex items-center gap-1">
  <Clock size={10} /> {new Date(e.dateTime || e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
  </span>
  {e.createdBy && (
- <span className="text-[9px] text-slate-700 dark:text-slate-300/50 uppercase tracking-widest flex items-center gap-1 [.midnight_&]:text-[#9C9086]/70">
+ <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest flex items-center gap-1 [.midnight_&]:text-[#9C9086]/70">
  Maker: {e.createdBy}
  </span>
  )}
@@ -3783,49 +3627,49 @@ export const ExpenseListPage: React.FC = () => {
  >
  {selectedExpense && (
  <div className="space-y-3">
- <div className="bg-muted/30 p-4 rounded-2xl space-y-3 [.midnight_&]:bg-[#221C18]/50 [.midnight_&]:-[#D4AF37]/10">
- <div className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 p-4 rounded-2xl grid grid-cols-2 gap-3 md:gap-5 [.midnight_&]:bg-[#1A1613] [.midnight_&]:-[#3D322C]">
+ <div className="bg-muted/30 p-4 rounded-2xl space-y-3 [.midnight_&]:bg-[#221C18]/50 [.midnight_&]:border-[#D4AF37]/10">
+ <div className="bg-background p-4 rounded-2xl grid grid-cols-2 gap-3 md:gap-5 [.midnight_&]:bg-[#1A1613] [.midnight_&]:border-[#3D322C]">
  <div className="space-y-1 col-span-2">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Transaction ID (Txn ID)</span>
- <span className="text-[10px] font-mono text-slate-700 dark:text-slate-300 [.midnight_&]:text-[#9C9086] truncate block">{selectedExpense.id}</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Transaction ID (Txn ID)</span>
+ <span className="text-[10px] font-mono text-muted-foreground [.midnight_&]:text-[#9C9086] truncate block">{selectedExpense.id}</span>
  </div>
 
  <div className="space-y-1">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Category</span>
- <span className="text-sm font-medium text-slate-900 dark:text-slate-100 [.midnight_&]:text-[#E6DFD9]">{selectedExpense.category || 'General'}</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Category</span>
+ <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#E6DFD9]">{selectedExpense.category || 'General'}</span>
  </div>
  {selectedExpense.assignedStaff && (
  <div className="space-y-1">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Paid To</span>
- <span className="text-sm font-medium text-slate-900 dark:text-slate-100 [.midnight_&]:text-[#D4AF37]">{selectedExpense.assignedStaff}</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Paid To</span>
+ <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#D4AF37]">{selectedExpense.assignedStaff}</span>
  </div>
  )}
  <div className="space-y-1">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Maker</span>
- <span className="text-sm font-medium text-slate-900 dark:text-slate-100 [.midnight_&]:text-[#9C9086]">{selectedExpense.createdBy || 'Unknown'}</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Maker</span>
+ <span className="text-sm font-medium text-foreground [.midnight_&]:text-[#9C9086]">{selectedExpense.createdBy || 'Unknown'}</span>
  </div>
  <div className="space-y-1">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Date & Time</span>
- <span className="text-[11px] font-mono text-slate-700 dark:text-slate-300 [.midnight_&]:text-[#9C9086]">
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Date & Time</span>
+ <span className="text-[11px] font-mono text-muted-foreground [.midnight_&]:text-[#9C9086]">
  {formatDisplayDate(selectedExpense.date)} {new Date(selectedExpense.dateTime || selectedExpense.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
  </span>
  </div>
  </div>
  
  <div className="space-y-2">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block flex items-center gap-2">
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block flex items-center gap-2">
  <div className="w-1.5 h-1.5 rounded-full bg-primary [.midnight_&]:bg-[#D4AF37]" />
  Note / Description
  </span>
- <div className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 p-4 rounded-xl min-h-[80px] [.midnight_&]:bg-[#1A1613] [.midnight_&]:-[#3D322C]">
- <span className="text-sm font-medium text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-wrap [.midnight_&]:text-[#E6DFD9]">
+ <div className="bg-background p-4 rounded-xl min-h-[80px] [.midnight_&]:bg-[#1A1613] [.midnight_&]:border-[#3D322C]">
+ <span className="text-sm font-medium text-foreground leading-relaxed whitespace-pre-wrap [.midnight_&]:text-[#E6DFD9]">
  {selectedExpense.desc || 'No description provided.'}
  </span>
  </div>
  </div>
 
- <div className="pt-4 flex justify-between items-end [.midnight_&]:-[#3D322C]">
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Total Amount</span>
+ <div className="pt-4 flex justify-between items-end [.midnight_&]:border-[#3D322C]">
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Total Amount</span>
  <span className="text-3xl font-mono font-bold text-red-500 [.midnight_&]:text-[#F3C853] tracking-tighter drop-">
  {selectedExpense.amount.toLocaleString()} <span className="text-sm font-sans font-normal opacity-50">Ks</span>
  </span>
@@ -3838,7 +3682,7 @@ export const ExpenseListPage: React.FC = () => {
  setSelectedExpense(null);
  setShowConfirm({ coll: 'expenses', id: selectedExpense.id! });
  }}
- className="py-4 px-4 md:px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors -red-500/20 flex items-center justify-center"
+ className="py-4 px-4 md:px-6 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors border-red-500/20 flex items-center justify-center"
  title="Delete Expense"
  >
  <Trash2 size={18} />
@@ -3846,7 +3690,7 @@ export const ExpenseListPage: React.FC = () => {
  )}
  <button 
  onClick={() => setSelectedExpense(null)}
- className="flex-1 py-4 bg-muted hover:bg-muted/80 text-slate-900 dark:text-slate-100 font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors [.midnight_&]:bg-[#2E2520] [.midnight_&]:hover:bg-[#3A2F28] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:-[#D4AF37]/30"
+ className="flex-1 py-4 bg-muted hover:bg-muted/80 text-foreground font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors [.midnight_&]:bg-[#2E2520] [.midnight_&]:hover:bg-[#3A2F28] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:border-[#D4AF37]/30"
  >
  Close Details
  </button>
@@ -4111,11 +3955,11 @@ export const HistoryPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
  <div className="space-y-1">
- <h3 className="text-3xl font-light tracking-tight text-slate-900 dark:text-slate-100">Daily <span className="italic font-serif">Sales List</span></h3>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
+ <h3 className="text-3xl font-light tracking-tight text-foreground">Daily <span className="italic font-serif">Sales List</span></h3>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
  </div>
  
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full z-50 relative">
+ <div className="bg-card border border-border rounded-2xl w-full z-50 relative">
  <div className="flex flex-col md:flex-row md:items-center">
  <CustomDatePicker 
  label="FROM" 
@@ -4130,8 +3974,8 @@ export const HistoryPage: React.FC = () => {
  className=" md:-0 md: flex-1"
  />
  <div className="flex flex-col p-4 md:-0 md: flex-1">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <UserIcon size={12} className="text-amber-600 dark:text-amber-400" /> STAFF
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <UserIcon size={12} className="text-primary" /> STAFF
  </label>
  <CustomSelect
  value={staffFilter} 
@@ -4144,8 +3988,8 @@ export const HistoryPage: React.FC = () => {
  />
  </div>
  <div className="flex flex-col p-4 flex-1">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <CreditCard size={12} className="text-amber-600 dark:text-amber-400" /> PAYMENT
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <CreditCard size={12} className="text-primary" /> PAYMENT
  </label>
  <CustomSelect
  value={paymentFilter} 
@@ -4168,22 +4012,22 @@ export const HistoryPage: React.FC = () => {
  </div>
 
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl text-center space-y-4 relative overflow-hidden group">
+ <div className="bg-card border border-border p-4 rounded-2xl text-center space-y-4 relative overflow-hidden group">
  <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
  <div className="relative z-10 space-y-1">
- <span className="text-slate-700 dark:text-slate-300 text-[11px] font-bold uppercase tracking-[0.3em]">Gross Revenue</span>
- <h1 className="text-5xl font-mono tracking-tighter text-amber-600 dark:text-amber-400 drop-">
+ <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Gross Revenue</span>
+ <h1 className="text-5xl font-mono tracking-tighter text-primary drop-">
  {totalIncome.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span>
  </h1>
  </div>
  <div className="relative z-10 flex items-center justify-center gap-3 pt-2 max-w-xs mx-auto">
  <div className="text-center">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block mb-0.5">Total Cash</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Total Cash</span>
  <span className="text-sm font-mono font-bold text-green-600">{totalCash.toLocaleString()} Ks</span>
  </div>
  <div className="w-px h-6 bg-/50"></div>
  <div className="text-center">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block mb-0.5">Total KPay/Digital</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Total KPay/Digital</span>
  <span className="text-sm font-mono font-bold text-blue-600">{totalDigital.toLocaleString()} Ks</span>
  </div>
  </div>
@@ -4198,7 +4042,7 @@ export const HistoryPage: React.FC = () => {
  >
  {isExporting ? (
  <>
- <div className="w-4 h-4 -2 -primary-foreground/30 -primary-foreground rounded-full animate-spin" />
+ <div className="w-4 h-4 border-2 border-primary-foreground/30 border-primary-foreground rounded-full animate-spin" />
  <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
  </>
  ) : (
@@ -4211,7 +4055,7 @@ export const HistoryPage: React.FC = () => {
  )}
  <button 
  onClick={handlePrintAll}
- className="px-4 md:px-6 py-2.5 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-semibold rounded-full -primary/20 hover:bg-primary hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
+ className="px-4 md:px-6 py-2.5 bg-primary/20 text-primary font-semibold rounded-full border-primary/20 hover:bg-primary hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
  title="Print Consolidated Report"
  >
  <Printer size={18} />
@@ -4222,10 +4066,10 @@ export const HistoryPage: React.FC = () => {
  </div>
 
  {staffFilter ? (
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl text-center space-y-2 relative overflow-hidden group">
+ <div className="bg-card border border-border p-4 rounded-2xl text-center space-y-2 relative overflow-hidden group">
  <div className="absolute inset-0 bg-green-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
  <div className="relative z-10 space-y-1">
- <span className="text-slate-700 dark:text-slate-300 text-[11px] font-bold uppercase tracking-[0.3em]">Staff Commission</span>
+ <span className="text-muted-foreground text-[11px] font-bold uppercase tracking-[0.3em]">Staff Commission</span>
  <h1 className="text-5xl font-mono tracking-tighter text-green-500 drop-">
  {totalComm.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span>
  </h1>
@@ -4233,7 +4077,7 @@ export const HistoryPage: React.FC = () => {
  </div>
  </div>
  ) : (
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex items-center justify-center text-center">
+ <div className="bg-card border border-border p-4 rounded-2xl flex items-center justify-center text-center">
  <div className="space-y-2 opacity-30">
  <UsersIcon size={32} className="mx-auto" />
  <p className="text-[10px] font-bold uppercase tracking-widest">Select staff to view commission</p>
@@ -4244,13 +4088,13 @@ export const HistoryPage: React.FC = () => {
 
  <div className="space-y-4">
  <div className="flex items-center justify-between px-2">
- <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300">Transaction History</h4>
- <span className="text-[10px] font-mono text-slate-700 dark:text-slate-300">{filteredSales.length} Records</span>
+ <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Transaction History</h4>
+ <span className="text-[10px] font-mono text-muted-foreground">{filteredSales.length} Records</span>
  </div>
 
  <div className="space-y-12">
  {groupedSales.length === 0 ? (
- <div className="text-center py-24 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed ">
+ <div className="text-center py-24 bg-card border border-border rounded-2xl border-dashed ">
  <div className="flex flex-col items-center gap-4 opacity-20">
  <HistoryIcon size={64} />
  <p className="text-base font-medium italic">No transaction history found for this period.</p>
@@ -4259,16 +4103,16 @@ export const HistoryPage: React.FC = () => {
  ) : (
  groupedSales.map(([date, sales]) => (
  <div key={date} className="space-y-4">
- <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/90 ">
- <div className="flex items-center gap-3 px-3 md:px-5 py-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-2xl shadow-primary/5">
- <CalendarIcon size={14} className="text-amber-600 dark:text-amber-400" />
- <span className="text-xs font-black uppercase tracking-[0.15em] text-amber-600 dark:text-amber-400">
+ <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background ">
+ <div className="flex items-center gap-3 px-3 md:px-5 py-2 bg-primary/20 rounded-2xl shadow-primary/5">
+ <CalendarIcon size={14} className="text-primary" />
+ <span className="text-xs font-black uppercase tracking-[0.15em] text-primary">
  {formatDisplayDate(date)}
  </span>
  </div>
  <div className="h-px flex-1 bg-gradient-to-r from-/50 to-transparent" />
  <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-lg ">
- <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">
+ <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest">
  {sales.length} {sales.length === 1 ? 'Sale' : 'Sales'}
  </span>
  </div>
@@ -4280,30 +4124,30 @@ export const HistoryPage: React.FC = () => {
  key={s.id} 
  onClick={() => setExpandedSaleId(expandedSaleId === s.id ? null : s.id)}
  className={cn(
- "group bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover: hover:-primary/30",
- expandedSaleId === s.id ? "ring-2 ring-primary/20 -primary/30" : ""
+ "group bg-card border border-border rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover: hover:border-primary/30",
+ expandedSaleId === s.id ? "ring-2 ring-primary/20 border-primary/30" : ""
  )}
  >
  <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
  <div className="flex items-center gap-3 md:gap-5">
  <div className={cn(
  "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
- s.method === 'Cash' ? "bg-green-500/10 text-green-500" : "bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+ s.method === 'Cash' ? "bg-green-500/10 text-green-500" : "bg-primary/20 text-primary"
  )}>
  {s.method === 'Cash' ? <DollarSign size={28} /> : <CreditCard size={28} />}
  </div>
  <div className="space-y-0.5">
  <div className="flex items-center gap-2">
- <span className="text-xl font-serif italic text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:text-amber-400 transition-colors">
+ <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">
  {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
  </span>
- <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
+ <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
  {s.payments && s.payments.length > 1 
  ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
  : (s.method || 'Cash')}
  </span>
  </div>
- <div className="flex items-center gap-3 text-[10px] text-slate-700 dark:text-slate-300 font-mono uppercase tracking-wider">
+ <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
  <span>{formatDisplayDate(s.dateTime)}</span>
  <span className="w-1 h-1 rounded-full bg-" />
  <span>{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
@@ -4313,16 +4157,16 @@ export const HistoryPage: React.FC = () => {
 
  <div className="flex items-center justify-between md:justify-end gap-3 md:-0 pt-4 md:pt-0 ">
  <div className="text-right space-y-0.5">
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Total Amount</span>
- <span className="text-2xl font-mono font-bold text-amber-600 dark:text-amber-400">{s.total.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block">Total Amount</span>
+ <span className="text-2xl font-mono font-bold text-primary">{s.total.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
  </div>
  <div className="text-right space-y-0.5">
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Commission</span>
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block">Commission</span>
  <span className="text-lg font-mono font-bold text-green-500">{s.commission.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
  </div>
  <div className={cn(
- "w-8 h-8 rounded-full flex items-center justify-center bg-muted text-slate-700 dark:text-slate-300 transition-transform duration-300",
- expandedSaleId === s.id ? "rotate-180 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" : "group-hover:bg-amber-50/50 dark:bg-amber-900/20"
+ "w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground transition-transform duration-300",
+ expandedSaleId === s.id ? "rotate-180 bg-primary/20 text-primary" : "group-hover:bg-primary/20"
  )}>
  <ChevronDown size={18} />
  </div>
@@ -4333,7 +4177,7 @@ export const HistoryPage: React.FC = () => {
  <div className="px-4 md:px-6 pb-6 animate-in slide-in-from-top-4 duration-300">
  <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
  <div className="space-y-3">
- <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2">
+ <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
  Purchased Items
  </h5>
@@ -4341,24 +4185,24 @@ export const HistoryPage: React.FC = () => {
  {s.items.map((item, idx) => (
  <div key={idx} className="bg-muted/30 p-4 rounded-2xl flex items-center justify-between group/item hover:bg-muted/50 transition-colors">
  <div className="space-y-0.5">
- <span className="text-sm font-bold text-slate-900 dark:text-slate-100 group-hover/item:text-amber-600 dark:text-amber-400 transition-colors">{item.name}</span>
- <div className="text-[10px] text-slate-700 dark:text-slate-300 font-mono">
+ <span className="text-sm font-bold text-foreground group-hover/item:text-primary transition-colors">{item.name}</span>
+ <div className="text-[10px] text-muted-foreground font-mono">
  {item.qty} × {item.price.toLocaleString()} Ks
  </div>
  {(item.staffAssignments && item.staffAssignments.length > 0) ? (
  <div className="flex flex-wrap gap-1 mt-1">
  {item.staffAssignments.map((a: any, i: number) => (
- <span key={i} className="text-[8px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{a.name} ({a.qty})</span>
+ <span key={i} className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{a.name} ({a.qty})</span>
  ))}
  </div>
  ) : item.staffName ? (
  <div className="flex flex-wrap gap-1 mt-1">
- <span className="text-[8px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{item.staffName}</span>
+ <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{item.staffName}</span>
  </div>
  ) : null}
  </div>
  <div className="text-right space-y-0.5">
- <span className="text-sm font-mono font-bold text-slate-900 dark:text-slate-100">{(item.qty * item.price).toLocaleString()} Ks</span>
+ <span className="text-sm font-mono font-bold text-foreground">{(item.qty * item.price).toLocaleString()} Ks</span>
  {item.disP > 0 && (
  <span className="block text-[9px] font-bold text-red-500 uppercase tracking-tighter">
  Disc: -{item.disP}% (-{((item.qty * item.price) * item.disP / 100).toLocaleString()} Ks)
@@ -4371,36 +4215,36 @@ export const HistoryPage: React.FC = () => {
  </div>
 
  <div className="space-y-3">
- <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2">
+ <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
  <div className="w-1.5 h-1.5 rounded-full bg-primary" />
  Transaction Metadata
  </h5>
  <div className="bg-muted/30 p-4 rounded-2xl space-y-4">
- <div className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 p-4 rounded-xl grid grid-cols-2 gap-4">
+ <div className="bg-background p-4 rounded-xl grid grid-cols-2 gap-4">
  <div className="space-y-1">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Customer</span>
- <span className="text-sm font-medium text-slate-900 dark:text-slate-100">{s.customerName || 'Walk-in Customer'}</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Customer</span>
+ <span className="text-sm font-medium text-foreground">{s.customerName || 'Walk-in Customer'}</span>
  </div>
  <div className="text-right space-y-1">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Payment Method</span>
- <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Payment Method</span>
+ <span className="text-sm font-medium text-foreground">
  {s.payments && s.payments.length > 1 
  ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
  : (s.method || 'Cash')}
  </span>
  </div>
  <div className="space-y-1">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Transaction ID</span>
- <span className="text-[10px] font-mono text-slate-700 dark:text-slate-300 truncate max-w-[120px] block">{s.id}</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Transaction ID</span>
+ <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px] block">{s.id}</span>
  </div>
  <div className="text-right space-y-1">
- <span className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block">Points Redeemed</span>
- <span className="text-sm font-mono font-bold text-amber-600 dark:text-amber-400">-{s.pointsRedeemed || 0}</span>
+ <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Points Redeemed</span>
+ <span className="text-sm font-mono font-bold text-primary">-{s.pointsRedeemed || 0}</span>
  </div>
  </div>
  <div className="pt-4 flex justify-between items-center">
- <span className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">Net Total</span>
- <span className="text-2xl font-mono font-bold text-amber-600 dark:text-amber-400">{s.total.toLocaleString()} Ks</span>
+ <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Net Total</span>
+ <span className="text-2xl font-mono font-bold text-primary">{s.total.toLocaleString()} Ks</span>
  </div>
  </div>
  </div>
@@ -4565,9 +4409,9 @@ export const StaffCommissionsPage: React.FC = () => {
 
  return (
  <div className="w-full px-3 py-4 md:p-6 space-y-3">
- <h3 className="text-amber-600 dark:text-amber-400 text-2xl font-bold tracking-tight">Staff Commissions</h3>
+ <h3 className="text-primary text-2xl font-bold tracking-tight">Staff Commissions</h3>
  
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
+ <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
  <div className="flex flex-col md:flex-row md:items-center">
  <CustomDatePicker 
  label="FROM" 
@@ -4583,8 +4427,8 @@ export const StaffCommissionsPage: React.FC = () => {
  />
  {!isStaff && (
  <div className="flex flex-col p-4 flex-1">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <UserIcon size={12} className="text-amber-600 dark:text-amber-400" /> STAFF
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <UserIcon size={12} className="text-primary" /> STAFF
  </label>
  <CustomSelect
  value={staffFilter} 
@@ -4600,10 +4444,10 @@ export const StaffCommissionsPage: React.FC = () => {
  </div>
  </div>
 
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl -green-500/20 text-center group relative overflow-hidden space-y-4">
+ <div className="bg-card border border-border p-4 rounded-2xl border-green-500/20 text-center group relative overflow-hidden space-y-4">
  <div className="absolute inset-0 bg-green-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
  <div className="relative z-10 space-y-1">
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.3em] block mb-1">Total Commissions (Period)</span>
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.3em] block mb-1">Total Commissions (Period)</span>
  <b className="text-green-500 text-5xl font-mono tracking-tighter drop- block">{grandTotalComm.toLocaleString()} <span className="text-xl font-sans font-normal opacity-50">Ks</span></b>
  </div>
  {staffAggregates.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
@@ -4616,7 +4460,7 @@ export const StaffCommissionsPage: React.FC = () => {
  >
  {isExporting ? (
  <>
- <div className="w-4 h-4 -2 -white/30 -white rounded-full animate-spin" />
+ <div className="w-4 h-4 border-2 border-white/30 border-white rounded-full animate-spin" />
  <span className="text-xs uppercase tracking-widest font-bold">Generating...</span>
  </>
  ) : (
@@ -4631,24 +4475,24 @@ export const StaffCommissionsPage: React.FC = () => {
  </div>
 
  <div className="space-y-4">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold px-1 flex items-center gap-2 uppercase tracking-widest text-xs">
+ <h4 className="text-primary font-bold px-1 flex items-center gap-2 uppercase tracking-widest text-xs">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Staff Summary
  </h4>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
  {staffAggregates.length === 0 ? (
- <div className="col-span-full text-center py-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed transition-colors duration-300">
- <p className="text-slate-700 dark:text-slate-300 text-sm font-medium italic">No data found for this period.</p>
+ <div className="col-span-full text-center py-12 bg-card border border-border rounded-2xl border-dashed transition-colors duration-300">
+ <p className="text-muted-foreground text-sm font-medium italic">No data found for this period.</p>
  </div>
  ) : (
  staffAggregates.map(a => (
- <div key={a.name} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 -l-4 -green-500 rounded-xl p-4 flex justify-between items-center hover:translate-x-1 transition-all group">
+ <div key={a.name} className="bg-card border border-border -l-4 border-green-500 rounded-xl p-4 flex justify-between items-center hover:translate-x-1 transition-all group">
  <div className="flex-1">
- <span className="font-bold text-slate-900 dark:text-slate-100 block text-lg group-hover:text-amber-600 dark:text-amber-400 transition-colors">{a.name}</span>
- <span className="text-slate-700 dark:text-slate-300 text-[11px] font-medium uppercase tracking-wider">{a.count} Sales | Total: {a.totalSales.toLocaleString()} Ks</span>
+ <span className="font-bold text-foreground block text-lg group-hover:text-primary transition-colors">{a.name}</span>
+ <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wider">{a.count} Sales | Total: {a.totalSales.toLocaleString()} Ks</span>
  </div>
  <div className="text-right">
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest block mb-0.5">Commission</span>
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Commission</span>
  <span className="font-bold text-green-500 text-xl">{a.totalComm.toLocaleString()} Ks</span>
  </div>
  </div>
@@ -4658,33 +4502,33 @@ export const StaffCommissionsPage: React.FC = () => {
  </div>
 
  <div className="space-y-4">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold px-1 flex items-center gap-2 uppercase tracking-widest text-xs">
+ <h4 className="text-primary font-bold px-1 flex items-center gap-2 uppercase tracking-widest text-xs">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Sales Details
  </h4>
  <div className="space-y-2">
  {displaySalesDetails.length === 0 ? (
- <div className="text-center py-12 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed ">
- <p className="text-slate-700 dark:text-slate-300 text-sm font-medium italic">No detailed sales found.</p>
+ <div className="text-center py-12 bg-card border border-border rounded-2xl border-dashed ">
+ <p className="text-muted-foreground text-sm font-medium italic">No detailed sales found.</p>
  </div>
  ) : (
  displaySalesDetails.map(s => (
- <div key={s.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-3.5 rounded-2xl flex justify-between items-center hover:-primary/30 transition-all group">
+ <div key={s.id} className="bg-card border border-border p-3.5 rounded-2xl flex justify-between items-center hover:border-primary/30 transition-all group">
  <div className="space-y-1">
  <div className="flex items-center gap-2">
- <span className="text-slate-900 dark:text-slate-100 font-bold text-sm group-hover:text-amber-600 dark:text-amber-400 transition-colors">
+ <span className="text-foreground font-bold text-sm group-hover:text-primary transition-colors">
  {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
  </span>
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
  </div>
- <div className="text-[10px] text-slate-700 dark:text-slate-300 font-medium uppercase tracking-widest">
+ <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
  {s.payments && s.payments.length > 1 
  ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
  : (s.method || 'Cash')}
  </div>
  </div>
  <div className="text-right">
- <div className="text-slate-900 dark:text-slate-100 font-bold text-sm">{s.total.toLocaleString()} Ks</div>
+ <div className="text-foreground font-bold text-sm">{s.total.toLocaleString()} Ks</div>
  <div className="text-green-500 text-[10px] font-bold uppercase tracking-tighter">Comm: {s.commission.toLocaleString()} Ks</div>
  </div>
  </div>
@@ -4735,14 +4579,14 @@ export const SalesReportPage: React.FC = () => {
 
  return (
  <div className="w-full px-3 py-4 md:p-6 space-y-3 relative">
- <h3 className="text-amber-600 dark:text-amber-400 text-2xl font-bold tracking-tight">Sales Report</h3>
+ <h3 className="text-primary text-2xl font-bold tracking-tight">Sales Report</h3>
  
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full mb-3 md:mb-6 z-50 relative group">
+ <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative group">
  <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
  <div className="flex flex-col p-4 space-y-4">
  <div className="flex flex-col max-w-[200px]">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <Settings size={12} className="text-amber-600 dark:text-amber-400" /> YEAR
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <Settings size={12} className="text-primary" /> YEAR
  </label>
  <CustomSelect
  value={year}
@@ -4753,9 +4597,9 @@ export const SalesReportPage: React.FC = () => {
  </div>
  </div>
 
- <div className="overflow-hidden rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 ">
+ <div className="overflow-hidden rounded-2xl bg-card border border-border ">
  <table className="w-full text-sm">
- <thead className="bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+ <thead className="bg-primary/20 text-primary">
  <tr>
  <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Month</th>
  <th className="px-4 py-4 text-left font-bold uppercase tracking-wider text-[10px]">Count</th>
@@ -4765,15 +4609,15 @@ export const SalesReportPage: React.FC = () => {
  </thead>
  <tbody className="divide-y divide-">
  {reportData.map((d, i) => (
- <tr key={i} className={cn("hover:bg-amber-50/50 dark:bg-amber-900/20 transition-colors", d.count > 0 ? "" : "opacity-30")}>
- <td className="px-4 py-4 font-bold text-slate-900 dark:text-slate-100">{d.mName}</td>
- <td className="px-4 py-4 text-slate-900 dark:text-slate-100">{d.count}</td>
- <td className="px-4 py-4 text-slate-900 dark:text-slate-100">{d.totalSales.toLocaleString()}</td>
+ <tr key={i} className={cn("hover:bg-primary/20 transition-colors", d.count > 0 ? "" : "opacity-30")}>
+ <td className="px-4 py-4 font-bold text-foreground">{d.mName}</td>
+ <td className="px-4 py-4 text-foreground">{d.count}</td>
+ <td className="px-4 py-4 text-foreground">{d.totalSales.toLocaleString()}</td>
  <td className="px-4 py-4 text-green-500 font-bold">{d.totalComm.toLocaleString()}</td>
  </tr>
  ))}
  </tbody>
- <tfoot className="bg-muted/10 text-slate-900 dark:text-slate-100 -2 -primary">
+ <tfoot className="bg-muted/10 text-foreground border-2 border-primary">
  <tr className="font-bold">
  <td className="px-4 py-4 uppercase tracking-tighter">Total</td>
  <td className="px-4 py-4">{totalCount}</td>
@@ -4814,15 +4658,15 @@ const FloatingInput: React.FC<{
  }}
  onBlur={() => setIsFocused(false)}
  placeholder=" "
- className="peer w-full bg-input rounded-xl p-3 text-slate-900 dark:text-slate-100 placeholder-transparent focus:outline-none focus:-primary transition-all"
+ className="peer w-full bg-input border border-border rounded-xl p-3 text-foreground placeholder-transparent focus:outline-none focus:border-primary transition-all"
  />
  <label
  htmlFor={id}
  className={cn(
  "absolute left-3 transition-all pointer-events-none",
  (isFocused || value !== "") 
- ? "-top-2.5 left-2 text-[10px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 px-1 text-amber-600 dark:text-amber-400 font-bold" 
- : "top-3 text-sm text-slate-700 dark:text-slate-300"
+ ? "-top-2.5 left-2 text-[10px] bg-card border border-border px-1 text-primary font-bold" 
+ : "top-3 text-sm text-muted-foreground"
  )}
  >
  {label} {required && <span className="text-red-500">*</span>}
@@ -5481,7 +5325,7 @@ export const AppointmentsPage: React.FC = () => {
  <div className="p-1.5 h-full flex flex-col justify-between overflow-hidden text-[11px] font-medium leading-tight">
  <div>
  <div className="flex items-center justify-between gap-1 mb-0.5">
- <span className="font-extrabold truncate text-slate-900 dark:text-slate-100/90">{appt.serviceName}</span>
+ <span className="font-extrabold truncate text-foreground/90">{appt.serviceName}</span>
  <span className={cn("px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded-md text-white shrink-0 ", statusBg)}>
  {appt.status}
  </span>
@@ -5539,7 +5383,7 @@ export const AppointmentsPage: React.FC = () => {
  <button
  type="button"
  onClick={goToBack}
- className="p-2 hover:bg-muted rounded-xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-95 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] shadow-xs"
+ className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-95 bg-background shadow-xs"
  title="Previous"
  >
  <ChevronLeft size={18} />
@@ -5547,26 +5391,26 @@ export const AppointmentsPage: React.FC = () => {
  <button
  type="button"
  onClick={goToToday}
- className="px-3.5 py-2 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 hover:bg-amber-200/50 dark:bg-amber-900/40 rounded-xl font-black text-xs uppercase tracking-wider transition-all -primary/20 active:scale-95 shadow-xs"
+ className="px-3.5 py-2 bg-primary/20 text-primary [.midnight_&]:text-amber-400 hover:bg-primary/20 rounded-xl font-black text-xs uppercase tracking-wider transition-all border-primary/20 active:scale-95 shadow-xs"
  >
  Today
  </button>
  <button
  type="button"
  onClick={goToNext}
- className="p-2 hover:bg-muted rounded-xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-95 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] shadow-xs"
+ className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-95 bg-background shadow-xs"
  title="Next"
  >
  <ChevronRight size={18} />
  </button>
  </div>
 
- <div className="sm:hidden text-xs font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase">
+ <div className="sm:hidden text-xs font-black tracking-tight text-foreground uppercase">
  {toolbar.label}
  </div>
  </div>
 
- <div className="hidden sm:block text-sm md:text-base font-black tracking-tight text-slate-900 dark:text-slate-100 uppercase">
+ <div className="hidden sm:block text-sm md:text-base font-black tracking-tight text-foreground uppercase">
  {toolbar.label}
  </div>
 
@@ -5582,8 +5426,8 @@ export const AppointmentsPage: React.FC = () => {
  className={cn(
  "flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all",
  toolbar.view === view 
- ? "bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20 scale-[1.02]" 
- : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100"
+ ? "bg-primary text-primary-foreground shadow-primary/20 scale-[1.02]" 
+ : "text-muted-foreground hover:text-foreground"
  )}
  >
  {view}
@@ -5598,12 +5442,12 @@ export const AppointmentsPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
  <div className="flex flex-col gap-1">
- <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 leading-none">
+ <h1 className="text-2xl md:text-3xl font-black tracking-tighter text-foreground [.midnight_&]:text-slate-200 leading-none">
  {isCustomer ? 'My Appointments' : 'Customer Appointments'}
  </h1>
  {isCustomer && profile.points !== undefined && (
  <div className="flex items-center gap-2 mt-1">
- <span className="text-xs font-bold bg-amber-200/50 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 px-3 py-1 rounded-full -primary/30 ">
+ <span className="text-xs font-bold bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full border-primary/30 ">
  {profile.points.toLocaleString()} Points Available
  </span>
  </div>
@@ -5617,8 +5461,8 @@ export const AppointmentsPage: React.FC = () => {
  className={cn(
  "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
  viewMode === 'list' 
- ? "bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20" 
- : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100"
+ ? "bg-primary text-primary-foreground shadow-primary/20" 
+ : "text-muted-foreground hover:text-foreground"
  )}
  >
  List
@@ -5628,8 +5472,8 @@ export const AppointmentsPage: React.FC = () => {
  className={cn(
  "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
  viewMode === 'calendar' 
- ? "bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20" 
- : "text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100"
+ ? "bg-primary text-primary-foreground shadow-primary/20" 
+ : "text-muted-foreground hover:text-foreground"
  )}
  >
  <CalendarIcon size={16} />
@@ -5658,7 +5502,7 @@ export const AppointmentsPage: React.FC = () => {
  animate={{ opacity: 1, y: 0 }}
  className={cn(
  "p-4 rounded-2xl flex items-center justify-between ",
- statusMsg.type === 'success' ? "bg-green-500/10 text-green-600 -green-500/20" : "bg-red-500/10 text-red-600 -red-500/20"
+ statusMsg.type === 'success' ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-red-500/10 text-red-600 border-red-500/20"
  )}
  >
  <div className="flex items-center gap-3">
@@ -5672,16 +5516,16 @@ export const AppointmentsPage: React.FC = () => {
  {activeTab === 'appointments' ? (
  <div className="space-y-4">
  {/* Filter Card */}
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
+ <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
  <div className="p-4 relative group">
  <input
  type="text"
  placeholder="Search customer or service..."
  value={apptSearch}
  onChange={(e) => setApptSearch(e.target.value)}
- className="w-full p-2 pl-10 -none outline-none bg-transparent text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm transition-all placeholder:text-slate-700 dark:text-slate-300 [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300/50"
+ className="w-full p-2 pl-10 border-none outline-none bg-transparent text-foreground [.midnight_&]:text-slate-200 font-bold text-sm transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300/50"
  />
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" size={16} />
+ <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400" size={16} />
  </div>
  <div className="flex flex-col md:flex-row md:items-center">
  <CustomDatePicker 
@@ -5700,8 +5544,8 @@ export const AppointmentsPage: React.FC = () => {
  />
  {profile?.role !== 'customer' && (
  <div className="flex flex-col p-4 md:-0 md: flex-1">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <UserIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" /> STAFF
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" /> STAFF
  </label>
  <CustomSelect
  value={selectedStaffFilter} 
@@ -5715,8 +5559,8 @@ export const AppointmentsPage: React.FC = () => {
  </div>
  )}
  <div className="flex flex-col p-4 md:-0 md: flex-1">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <Activity size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" /> STATUS
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <Activity size={12} className="text-primary [.midnight_&]:text-amber-400" /> STATUS
  </label>
  <CustomSelect
  value={statusFilter} 
@@ -5732,19 +5576,19 @@ export const AppointmentsPage: React.FC = () => {
  />
  </div>
  <div className="flex flex-col p-4 flex-1">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-2">
- <Settings size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" /> OPTIONS
+ <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
+ <Settings size={12} className="text-primary [.midnight_&]:text-amber-400" /> OPTIONS
  </label>
  <div className="flex items-center gap-2">
  <button
  onClick={() => setShowAllDates(!showAllDates)}
- className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-amber-600 dark:text-amber-400-foreground shadow-primary/20" : "bg-muted text-slate-700 dark:text-slate-300 hover:bg-muted/80 hover:text-slate-900 dark:text-slate-100")}
+ className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-primary-foreground shadow-primary/20" : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground")}
  >
  {showAllDates ? 'All Dates' : 'Show All'}
  </button>
  <button
  onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
- className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-slate-700 dark:text-slate-300 hover:bg-muted/80 hover:text-slate-900 dark:text-slate-100"
+ className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
  >
  Sort: {sortBy}
  </button>
@@ -5757,20 +5601,20 @@ export const AppointmentsPage: React.FC = () => {
  {loadingAppts ? (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
  {Array.from({ length: 6 }).map((_, i) => (
- <div key={i} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 transition-all group relative overflow-hidden animate-pulse h-[160px]">
+ <div key={i} className="bg-card border border-border rounded-2xl p-4 transition-all group relative overflow-hidden animate-pulse h-[160px]">
  <div className="flex justify-between items-start mb-3 md:mb-6">
- <div className="w-16 h-10 bg-amber-200/50 dark:bg-amber-900/40 rounded-xl"></div>
- <div className="w-20 h-6 bg-amber-100/50 dark:bg-amber-900/30 rounded-full"></div>
+ <div className="w-16 h-10 bg-primary/20 rounded-xl"></div>
+ <div className="w-20 h-6 bg-primary/20 rounded-full"></div>
  </div>
  <div className="space-y-3">
- <div className="w-1/2 h-5 bg-amber-200/50 dark:bg-amber-900/40 rounded-md"></div>
- <div className="w-3/4 h-4 bg-amber-100/50 dark:bg-amber-900/30 rounded-md"></div>
+ <div className="w-1/2 h-5 bg-primary/20 rounded-md"></div>
+ <div className="w-3/4 h-4 bg-primary/20 rounded-md"></div>
  </div>
  </div>
  ))}
  </div>
  ) : viewMode === 'calendar' ? (
- <div className="h-[750px] md:h-[800px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-3 sm:p-4 flex flex-col overflow-hidden w-full max-w-full">
+ <div className="h-[750px] md:h-[800px] bg-card border border-border rounded-2xl p-3 sm:p-4 flex flex-col overflow-hidden w-full max-w-full">
  <style>{`
  .rbc-calendar { font-family: inherit; font-size: 12px; display: flex !important; flex-direction: column !important; height: 100% !important; width: 100% !important; min-height: 0 !important; overflow: hidden !important; }
  .rbc-month-view, .rbc-time-view { : 1px solid var(--) !important; -radius: 20px; overflow: hidden; background: var(--card); display: flex !important; flex-direction: column !important; flex: 1 1 0% !important; min-height: 0 !important; width: 100% !important; }
@@ -5826,14 +5670,14 @@ export const AppointmentsPage: React.FC = () => {
  />
  </div>
  ) : filteredAppts.length === 0 ? (
- <div className="text-center py-32 bg-muted/5 rounded-[3rem] -2 -dashed ">
+ <div className="text-center py-32 bg-muted/5 rounded-[3rem] border-2 border-dashed ">
  <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-6">
- <CalendarIcon className="text-slate-700 dark:text-slate-300/30" size={48} />
+ <CalendarIcon className="text-muted-foreground/30" size={48} />
  </div>
- <p className="text-slate-700 dark:text-slate-300 text-lg font-bold italic">No appointments found matching your criteria.</p>
+ <p className="text-muted-foreground text-lg font-bold italic">No appointments found matching your criteria.</p>
  <button 
  onClick={() => { resetForm(); setIsAdding(true); }}
- className="mt-6 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
+ className="mt-6 text-primary [.midnight_&]:text-amber-400 font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
  >
  <Plus size={16} />
  Book New Appointment
@@ -5853,27 +5697,27 @@ export const AppointmentsPage: React.FC = () => {
  }
  }}
  className={cn(
- "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 transition-all group relative overflow-hidden",
- (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) ? "hover: hover:-primary/30 cursor-pointer" : "opacity-90"
+ "bg-card border border-border rounded-2xl p-4 transition-all group relative overflow-hidden",
+ (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) ? "hover: hover:border-primary/30 cursor-pointer" : "opacity-90"
  )}
  >
- <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/50 dark:bg-amber-900/20 rounded-bl-[3rem] -mr-8 -mt-8 transition-all group-hover:scale-110 group-hover:bg-amber-100/50 dark:bg-amber-900/30"></div>
+ <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-bl-[3rem] -mr-8 -mt-8 transition-all group-hover:scale-110 group-hover:bg-primary/20"></div>
  
  <div className="flex justify-between items-start relative z-10 mb-3 md:mb-6">
  <div className="flex flex-col">
- <div className="bg-amber-50/50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 px-4 py-2 rounded-xl font-black text-xl tracking-tighter -primary/10">
+ <div className="bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-4 py-2 rounded-xl font-black text-xl tracking-tighter border-primary/10">
  {appt.time}
  </div>
- <div className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] mt-1.5 ml-1">
+ <div className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] mt-1.5 ml-1">
  {formatDisplayDate(appt.date)}
  </div>
  </div>
  <div className={cn(
  "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all",
- appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 -yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
- appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 -blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
- appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 -transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
- appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 -red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+ appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+ appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+ appt.status === 'completed' && "bg-gradient-to-r from-green-500 to-emerald-600 text-foreground [.midnight_&]:text-slate-200 border-transparent shadow-[0_0_15px_rgba(34,197,94,0.4)]",
+ appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
  )}>
  {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
  {appt.status === 'confirmed' && <Check size={12} strokeWidth={3} />}
@@ -5886,14 +5730,14 @@ export const AppointmentsPage: React.FC = () => {
  <div className="space-y-3 relative z-10">
  <div className="flex justify-between items-start">
  <div className="flex-1">
- <h3 className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-xl group-hover:text-amber-600 dark:text-amber-400 [.midnight_&]:group-hover:text-amber-400 transition-colors truncate tracking-tight leading-tight">{appt.customerName}</h3>
- <div className="flex flex-wrap items-center gap-3 text-slate-700 dark:text-slate-300 text-xs mt-3 font-bold">
+ <h3 className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors truncate tracking-tight leading-tight">{appt.customerName}</h3>
+ <div className="flex flex-wrap items-center gap-3 text-muted-foreground text-xs mt-3 font-bold">
  <div className="flex items-center gap-1.5 bg-muted/5 px-2.5 py-1 rounded-lg ">
- <Phone size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <Phone size={14} className="text-primary [.midnight_&]:text-amber-400" />
  <span className="text-xs tracking-tight">{appt.customerPhone}</span>
  </div>
  {customer && (
- <span className="bg-amber-50/50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 px-3 py-1 rounded-full text-[9px] font-black -primary/10 tracking-widest ">
+ <span className="bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full text-[9px] font-black border-primary/10 tracking-widest ">
  {customer.points} PTS
  </span>
  )}
@@ -5901,7 +5745,7 @@ export const AppointmentsPage: React.FC = () => {
  </div>
  <div className="flex flex-col gap-2">
  {appt.isHomeService && (
- <div className="p-2.5 bg-green-600 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 rounded-xl shadow-green-900/10 transition-transform group-hover:scale-110" title="At Home Service">
+ <div className="p-2.5 bg-green-600 text-foreground [.midnight_&]:text-slate-200 rounded-xl shadow-green-900/10 transition-transform group-hover:scale-110" title="At Home Service">
  <Car size={18} strokeWidth={2.5} />
  </div>
  )}
@@ -5915,7 +5759,7 @@ Thank you for choosing Nail Pro!')}`}
  target="_blank"
  rel="noopener noreferrer"
  onClick={(e) => e.stopPropagation()}
- className="p-2.5 bg-green-500/5 text-green-600 hover:bg-green-600 hover:text-slate-900 dark:text-slate-100 [.midnight_&]:hover:text-slate-200 rounded-xl transition-all -green-500/10 active:scale-90"
+ className="p-2.5 bg-green-500/5 text-green-600 hover:bg-green-600 hover:text-foreground [.midnight_&]:hover:text-slate-200 rounded-xl transition-all border-green-500/10 active:scale-90"
  title="WhatsApp"
  >
  <MessageCircle size={16} strokeWidth={2.5} />
@@ -5927,48 +5771,48 @@ Thank you for choosing Nail Pro!')}`}
  <div className="bg-muted/5 rounded-2xl p-4 space-y-3 group-hover:bg-muted/10 transition-colors">
  <div className="flex items-center justify-between">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 -primary/5">
+ <div className="p-2.5 bg-primary/20 rounded-xl text-primary [.midnight_&]:text-amber-400 border-primary/5">
  <Briefcase size={18} strokeWidth={2.5} />
  </div>
  <div className="flex flex-col">
- <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Service</span>
- <span className="text-lg font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 tracking-tight">{appt.serviceName}</span>
+ <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Service</span>
+ <span className="text-lg font-black text-foreground [.midnight_&]:text-slate-200 tracking-tight">{appt.serviceName}</span>
  </div>
  </div>
  {appt.willEarnPoints && appt.willEarnPoints > 0 && (
- <span className="text-[9px] font-black text-green-600 bg-green-500/5 px-2.5 py-1 rounded-lg -green-500/10 ">+{appt.willEarnPoints} PTS</span>
+ <span className="text-[9px] font-black text-green-600 bg-green-500/5 px-2.5 py-1 rounded-lg border-green-500/10 ">+{appt.willEarnPoints} PTS</span>
  )}
  </div>
  
  <div className="flex items-center justify-between pt-2 ">
  {appt.staffName ? (
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-muted/5 rounded-xl text-slate-700 dark:text-slate-300 ">
+ <div className="p-2.5 bg-muted/5 rounded-xl text-muted-foreground ">
  <UserIcon size={18} strokeWidth={2.5} />
  </div>
  <div className="flex flex-col">
- <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Staff</span>
- <span className="text-xs text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold">{appt.staffName}</span>
+ <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Staff</span>
+ <span className="text-xs text-foreground [.midnight_&]:text-slate-200 font-bold">{appt.staffName}</span>
  </div>
  </div>
  ) : <div />}
  {appt.pointsToRedeem && appt.pointsToRedeem > 0 && (
- <span className="text-[9px] font-black text-red-600 bg-red-500/5 px-2.5 py-1 rounded-lg -red-500/10 ">-{appt.pointsToRedeem} PTS</span>
+ <span className="text-[9px] font-black text-red-600 bg-red-500/5 px-2.5 py-1 rounded-lg border-red-500/10 ">-{appt.pointsToRedeem} PTS</span>
  )}
  </div>
  </div>
 
  {appt.notes && (
- <div className="text-xs text-slate-700 dark:text-slate-300 italic line-clamp-2 bg-amber-50/50 dark:bg-amber-900/20 p-3 rounded-xl -primary/5 font-medium leading-relaxed ">
- <span className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black not-italic mr-1.5">Notes:</span>
+ <div className="text-xs text-muted-foreground italic line-clamp-2 bg-primary/20 p-3 rounded-xl border-primary/5 font-medium leading-relaxed ">
+ <span className="text-primary [.midnight_&]:text-amber-400 font-black not-italic mr-1.5">Notes:</span>
  "{appt.notes}"
  </div>
  )}
 
  <div className="pt-4 flex items-center justify-between ">
  <div className="flex flex-col">
- <span className="text-[8px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] font-black">Booked By</span>
- <span className="text-[9px] font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">{appt.creatorName || 'SYSTEM'}</span>
+ <span className="text-[8px] text-primary [.midnight_&]:text-amber-400 uppercase tracking-[0.2em] font-black">Booked By</span>
+ <span className="text-[9px] font-bold text-foreground [.midnight_&]:text-slate-200">{appt.creatorName || 'SYSTEM'}</span>
  </div>
  <div className="flex gap-2">
  {profile?.role !== 'customer' && (
@@ -5985,13 +5829,13 @@ Thank you for choosing Nail Pro!')}`}
  ]}
  buttonClassName={cn(
  "text-[9px] font-black uppercase tracking-widest rounded-xl px-4 py-2 pr-8 ",
- appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 -yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
- appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 -blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
- appt.status === 'completed' && "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600 -green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
- appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 -red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
+ appt.status === 'pending' && "bg-gradient-to-r from-yellow-500/10 to-amber-500/10 text-yellow-600 border-yellow-500/30 shadow-[0_0_10px_rgba(234,179,8,0.2)]",
+ appt.status === 'confirmed' && "bg-gradient-to-r from-blue-500/10 to-indigo-500/10 text-blue-600 border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.2)]",
+ appt.status === 'completed' && "bg-gradient-to-r from-green-500/10 to-emerald-500/10 text-green-600 border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.2)]",
+ appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]"
  )}
  />
- <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 pointer-events-none" size={12} />
+ <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={12} />
  </div>
  )}
  {(isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) && (
@@ -6005,7 +5849,7 @@ Thank you for choosing Nail Pro!')}`}
  </button>
  <button
  onClick={(e) => { e.stopPropagation(); setConfirmDeleteAppt(appt); }}
- className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-slate-900 dark:text-slate-100 [.midnight_&]:hover:text-slate-200 rounded-xl transition-all -red-500/10 active:scale-90"
+ className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-foreground [.midnight_&]:hover:text-slate-200 rounded-xl transition-all border-red-500/10 active:scale-90"
  title="Delete"
  >
  <Trash2 size={16} strokeWidth={2.5} />
@@ -6024,20 +5868,20 @@ Thank you for choosing Nail Pro!')}`}
  </div>
  ) : (
  <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 transition-colors duration-300">
+ <div className="bg-card border border-border rounded-2xl p-4 transition-colors duration-300">
  <div className="flex items-center justify-between mb-4 md:mb-8">
  <div>
- <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">Points Summary</h2>
- <p className="text-sm text-slate-700 dark:text-slate-300">Track your loyalty rewards and redemptions.</p>
+ <h2 className="text-xl font-bold text-foreground [.midnight_&]:text-slate-200">Points Summary</h2>
+ <p className="text-sm text-muted-foreground">Track your loyalty rewards and redemptions.</p>
  </div>
  <div className="text-right">
- <div className="text-4xl font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 tracking-tighter">{profile?.points?.toLocaleString() || 0}</div>
- <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</div>
+ <div className="text-4xl font-black text-primary [.midnight_&]:text-amber-400 tracking-tighter">{profile?.points?.toLocaleString() || 0}</div>
+ <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</div>
  </div>
  </div>
 
  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 md:mb-8">
- <div className="bg-green-500/10 p-4 rounded-2xl -green-500/20">
+ <div className="bg-green-500/10 p-4 rounded-2xl border-green-500/20">
  <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Total Earned</div>
  <div className="text-2xl font-bold text-green-700 ">
  +{
@@ -6046,7 +5890,7 @@ Thank you for choosing Nail Pro!')}`}
  }
  </div>
  </div>
- <div className="bg-red-500/10 p-4 rounded-2xl -red-500/20">
+ <div className="bg-red-500/10 p-4 rounded-2xl border-red-500/20">
  <div className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Total Redeemed</div>
  <div className="text-2xl font-bold text-red-700 ">
  -{
@@ -6055,24 +5899,24 @@ Thank you for choosing Nail Pro!')}`}
  }
  </div>
  </div>
- <div className="bg-amber-100/50 dark:bg-amber-900/30 p-4 rounded-2xl ">
- <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest mb-1">Next Reward</div>
- <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400">500 pts</div>
+ <div className="bg-primary/20 p-4 rounded-2xl ">
+ <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest mb-1">Next Reward</div>
+ <div className="text-2xl font-bold text-primary [.midnight_&]:text-amber-400">500 pts</div>
  </div>
  </div>
 
  <div className="space-y-4">
- <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-widest flex items-center gap-2">
- <HistoryIcon size={16} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <h3 className="text-sm font-bold text-foreground [.midnight_&]:text-slate-200 uppercase tracking-widest flex items-center gap-2">
+ <HistoryIcon size={16} className="text-primary [.midnight_&]:text-amber-400" />
  Recent Activity
  </h3>
  <div className="overflow-hidden rounded-2xl ">
- <table className="w-full text-left -collapse">
+ <table className="w-full text-left border-collapse">
  <thead>
  <tr className="bg-muted/10">
- <th className="px-4 py-3 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Date</th>
- <th className="px-4 py-3 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest">Activity</th>
- <th className="px-4 py-3 text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest text-right">Points</th>
+ <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Date</th>
+ <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Activity</th>
+ <th className="px-4 py-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest text-right">Points</th>
  </tr>
  </thead>
  <tbody className="divide-y divide-">
@@ -6119,17 +5963,17 @@ Thank you for choosing Nail Pro!')}`}
  if (history.length === 0) {
  return (
  <tr>
- <td colSpan={3} className="px-4 py-10 text-center text-xs text-slate-700 dark:text-slate-300 italic">No point activity recorded yet.</td>
+ <td colSpan={3} className="px-4 py-10 text-center text-xs text-muted-foreground italic">No point activity recorded yet.</td>
  </tr>
  );
  }
 
  return history.map(item => (
  <tr key={item.id} className="hover:bg-muted/5 transition-colors">
- <td className="px-4 py-3 text-xs text-slate-700 dark:text-slate-300">{format(new Date(item.date), 'MMM d, yyyy')}</td>
+ <td className="px-4 py-3 text-xs text-muted-foreground">{format(new Date(item.date), 'MMM d, yyyy')}</td>
  <td className="px-4 py-3">
- <div className="text-xs font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">{item.title}</div>
- <div className="text-[10px] text-slate-700 dark:text-slate-300">{item.details}</div>
+ <div className="text-xs font-bold text-foreground [.midnight_&]:text-slate-200">{item.title}</div>
+ <div className="text-[10px] text-muted-foreground">{item.details}</div>
  </td>
  <td className={cn(
  "px-4 py-3 text-right text-xs font-bold",
@@ -6149,16 +5993,16 @@ Thank you for choosing Nail Pro!')}`}
  )}
 
  {viewingCustomerHistory && (
- <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-4 sm:pt-[90px] ">
+ <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]">
  <motion.div 
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
- className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full max-w-4xl max-h-[calc(100dvh-110px)] overflow-hidden transition-colors duration-300"
+ className="bg-card border border-border rounded-2xl w-full max-w-4xl max-h-[calc(100dvh-140px)] overflow-hidden transition-colors duration-300"
  >
  <div className="p-4 bg-muted/5 flex justify-between items-center">
  <div>
  <div className="flex items-center gap-4">
- <h3 className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black text-3xl tracking-tighter">{viewingCustomerHistory.name}</h3>
+ <h3 className="text-primary [.midnight_&]:text-amber-400 font-black text-3xl tracking-tighter">{viewingCustomerHistory.name}</h3>
  {isAdmin && (
  <button 
  onClick={() => {
@@ -6173,13 +6017,13 @@ Thank you for choosing Nail Pro!')}`}
  )}
  </div>
  <div className="flex items-center gap-3 mt-1">
- <p className="text-slate-700 dark:text-slate-300 text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
- <span className="text-[10px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 px-3 py-1 rounded-full font-bold uppercase tracking-widest ">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
+ <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
+ <span className="text-[10px] bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full font-bold uppercase tracking-widest ">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
  </div>
  </div>
  <button 
  onClick={() => setViewingCustomerHistory(null)}
- className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-90"
+ className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
  >
  <X size={24} />
  </button>
@@ -6188,7 +6032,7 @@ Thank you for choosing Nail Pro!')}`}
  <div className="space-y-10">
  {/* Points Summary for Admin */}
  <div className="grid grid-cols-2 gap-4">
- <div className="bg-green-500/5 p-4 rounded-2xl -green-500/10">
+ <div className="bg-green-500/5 p-4 rounded-2xl border-green-500/10">
  <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Total Earned</div>
  <div className="text-xl font-bold text-green-700 ">
  +{
@@ -6197,7 +6041,7 @@ Thank you for choosing Nail Pro!')}`}
  }
  </div>
  </div>
- <div className="bg-red-500/5 p-4 rounded-2xl -red-500/10">
+ <div className="bg-red-500/5 p-4 rounded-2xl border-red-500/10">
  <div className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Total Redeemed</div>
  <div className="text-xl font-bold text-red-700 ">
  -{
@@ -6209,24 +6053,24 @@ Thank you for choosing Nail Pro!')}`}
  </div>
 
  <div>
- <h4 className="font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
- <HistoryIcon className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" size={16} />
+ <h4 className="font-bold text-foreground [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
+ <HistoryIcon className="text-primary [.midnight_&]:text-amber-400" size={16} />
  Sales History
  </h4>
  <div className="space-y-3">
  {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
- <p className="text-slate-700 dark:text-slate-300 text-xs italic bg-muted/5 p-4 rounded-2xl -dashed text-center">No sales history found.</p>
+ <p className="text-muted-foreground text-xs italic bg-muted/5 p-4 rounded-2xl border-dashed text-center">No sales history found.</p>
  ) : (
  sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name)
  .sort((a, b) => b.dateTime.localeCompare(a.dateTime))
  .map(s => (
- <div key={s.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex justify-between items-center hover:-primary/50 transition-all group">
+ <div key={s.id} className="bg-card border border-border p-4 rounded-2xl flex justify-between items-center hover:border-primary/50 transition-all group">
  <div>
- <div className="font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 group-hover:text-amber-600 dark:text-amber-400 [.midnight_&]:group-hover:text-amber-400 transition-colors">{s.items.map(i => i.name).join(', ')}</div>
- <div className="text-[10px] text-slate-700 dark:text-slate-300 mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
+ <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{s.items.map(i => i.name).join(', ')}</div>
+ <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
  </div>
  <div className="text-right">
- <div className="font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
+ <div className="font-black text-primary [.midnight_&]:text-amber-400 text-lg tracking-tighter">{s.total.toLocaleString()} Ks</div>
  {s.pointsEarned > 0 && <div className="text-[10px] text-green-600 font-bold uppercase tracking-widest">+{s.pointsEarned} pts</div>}
  {s.pointsRedeemed > 0 && <div className="text-[10px] text-red-500 font-bold uppercase tracking-widest">-{s.pointsRedeemed} pts</div>}
  </div>
@@ -6237,34 +6081,34 @@ Thank you for choosing Nail Pro!')}`}
  </div>
 
  <div>
- <h4 className="font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
- <Calendar className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" size={16} />
+ <h4 className="font-bold text-foreground [.midnight_&]:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-widest text-xs">
+ <Calendar className="text-primary [.midnight_&]:text-amber-400" size={16} />
  Appointment History
  </h4>
  <div className="space-y-3">
  {appointments.filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone).length === 0 ? (
- <p className="text-slate-700 dark:text-slate-300 text-xs italic bg-muted/5 p-4 rounded-2xl -dashed text-center">No appointment history found.</p>
+ <p className="text-muted-foreground text-xs italic bg-muted/5 p-4 rounded-2xl border-dashed text-center">No appointment history found.</p>
  ) : (
  appointments
  .filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone)
  .sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime())
  .map(a => (
- <div key={a.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl flex justify-between items-center hover:-primary/50 transition-all group">
+ <div key={a.id} className="bg-card border border-border p-4 rounded-2xl flex justify-between items-center hover:border-primary/50 transition-all group">
  <div>
- <div className="font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 group-hover:text-amber-600 dark:text-amber-400 [.midnight_&]:group-hover:text-amber-400 transition-colors">{a.serviceName}</div>
- <div className="text-[10px] text-slate-700 dark:text-slate-300 mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
+ <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{a.serviceName}</div>
+ <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
  </div>
  <div className="flex flex-col items-end gap-2">
  <div className={cn(
  "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest ",
- a.status === 'completed' ? "bg-green-500/10 text-green-600 -green-500/20" : 
- a.status === 'cancelled' ? "bg-red-500/10 text-red-600 -red-500/20" :
- "bg-muted/10 text-slate-700 dark:text-slate-300 "
+ a.status === 'completed' ? "bg-green-500/10 text-green-600 border-green-500/20" : 
+ a.status === 'cancelled' ? "bg-red-500/10 text-red-600 border-red-500/20" :
+ "bg-muted/10 text-muted-foreground "
  )}>
  {a.status}
  </div>
  {a.pointsProcessed && (
- <div className="text-[10px] font-bold text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">
+ <div className="text-[10px] font-bold text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">
  {a.willEarnPoints > 0 && `+${a.willEarnPoints} pts`}
  {a.pointsToRedeem > 0 && ` -${a.pointsToRedeem} pts`}
  </div>
@@ -6282,24 +6126,24 @@ Thank you for choosing Nail Pro!')}`}
  )}
 
  {isAdding && (
- <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-4 sm:pt-[90px] ">
+ <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]">
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
- className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl w-full max-w-4xl flex flex-col max-h-[calc(100dvh-110px)] overflow-hidden"
+ className="bg-card border border-border rounded-2xl w-full max-w-4xl flex flex-col max-h-[calc(100dvh-140px)] overflow-hidden"
  >
  <div className="p-4 bg-muted/5 flex justify-between items-center shrink-0">
  <div>
- <h3 className="text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black text-2xl sm:text-3xl tracking-tighter">
+ <h3 className="text-foreground [.midnight_&]:text-slate-200 font-black text-2xl sm:text-3xl tracking-tighter">
  {editingAppointment ? 'Edit Appointment' : 'Book Appointment'}
  </h3>
- <p className="text-slate-700 dark:text-slate-300 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+ <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-1">
  {editingAppointment ? 'Update existing booking details' : 'Schedule a new customer visit'}
  </p>
  </div>
  <button 
  onClick={resetForm}
- className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-90"
+ className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
  >
  <X size={24} />
  </button>
@@ -6319,8 +6163,8 @@ Thank you for choosing Nail Pro!')}`}
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {/* Customer Section */}
  <div className="space-y-4">
- <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
- <UserIcon size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <UserIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
  Customer Information
  </label>
  
@@ -6345,7 +6189,7 @@ Thank you for choosing Nail Pro!')}`}
  ...customers.map(c => ({ value: c.id, label: `${c.name} (${c.phone})` }))
  ]}
  icon={<Search size={18} />}
- buttonClassName="w-full p-3 rounded-xl bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm"
+ buttonClassName="w-full p-3 rounded-xl bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold text-sm"
  />
 
  {selectedCustId === 'manual' && (
@@ -6367,17 +6211,17 @@ Thank you for choosing Nail Pro!')}`}
  )}
  </div>
  ) : (
- <div className="bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-xl -primary/10 ">
- <div className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-lg tracking-tight">{profile.name}</div>
- <div className="text-xs text-slate-700 dark:text-slate-300 font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
+ <div className="bg-primary/20 p-4 rounded-xl border-primary/10 ">
+ <div className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{profile.name}</div>
+ <div className="text-xs text-muted-foreground font-bold mt-1 uppercase tracking-wider">{profile.phone || profile.email}</div>
  </div>
  )}
  </div>
 
  {/* Service & Staff Section */}
  <div className="space-y-4">
- <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
- <Briefcase size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <Briefcase size={14} className="text-primary [.midnight_&]:text-amber-400" />
  Service & Staff
  </label>
  
@@ -6397,7 +6241,7 @@ Thank you for choosing Nail Pro!')}`}
  { value: 'manual', label: 'Other Service (Manual Entry)' },
  ...services.map(s => ({ value: s.id, label: s.name }))
  ]}
- buttonClassName="w-full p-3 rounded-xl bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm"
+ buttonClassName="w-full p-3 rounded-xl bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold text-sm"
  />
 
  {selectedSvcId === 'manual' && (
@@ -6422,15 +6266,15 @@ Thank you for choosing Nail Pro!')}`}
  return (!s.workingDays || s.workingDays.includes(apptDayName)) && s.role !== 'super_admin';
  }).map(s => ({ value: s.email, label: s.name }))
  ]}
- buttonClassName="w-full p-3 rounded-xl bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm"
+ buttonClassName="w-full p-3 rounded-xl bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold text-sm"
  />
  </div>
  </div>
 
  {/* Date & Time Section */}
  <div className="space-y-4">
- <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
- <CalendarIcon size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <CalendarIcon size={14} className="text-primary [.midnight_&]:text-amber-400" />
  Schedule
  </label>
  
@@ -6441,11 +6285,11 @@ Thank you for choosing Nail Pro!')}`}
  onChange={setApptDate} 
  className="rounded-xl "
  />
- <div className="relative group flex items-center gap-3 px-4 py-2 bg-input rounded-xl hover:-primary/30 transition-all">
- <Clock size={18} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <div className="relative group flex items-center gap-3 px-4 py-2 bg-input border border-border rounded-xl hover:border-primary/30 transition-all">
+ <Clock size={18} className="text-primary [.midnight_&]:text-amber-400" />
  <div className="flex flex-col flex-1">
- <label className="text-[8px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black uppercase tracking-widest leading-none mb-1">TIME</label>
- <span className="text-sm font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">{apptTime}</span>
+ <label className="text-[8px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest leading-none mb-1">TIME</label>
+ <span className="text-sm font-bold text-foreground [.midnight_&]:text-slate-200">{apptTime}</span>
  </div>
  <input
  type="time"
@@ -6458,12 +6302,12 @@ Thank you for choosing Nail Pro!')}`}
  </div>
  <div className="flex items-center justify-between p-4 bg-muted/5 rounded-2xl ">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-amber-50/50 dark:bg-amber-900/20 rounded-xl text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 ">
+ <div className="p-2.5 bg-primary/20 rounded-xl text-primary [.midnight_&]:text-amber-400 ">
  <HistoryIcon size={18} />
  </div>
  <div className="flex flex-col">
- <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Duration</span>
- <span className="text-xs text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold">Ends at {apptEndTime}</span>
+ <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Duration</span>
+ <span className="text-xs text-foreground [.midnight_&]:text-slate-200 font-bold">Ends at {apptEndTime}</span>
  </div>
  </div>
  <div className="flex items-center gap-2">
@@ -6471,17 +6315,17 @@ Thank you for choosing Nail Pro!')}`}
  type="number"
  value={apptDuration}
  onChange={(e) => setApptDuration(parseInt(e.target.value) || 0)}
- className="w-20 p-2 text-sm rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black text-center"
+ className="w-20 p-2 text-sm rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-black text-center"
  />
- <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Mins</span>
+ <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Mins</span>
  </div>
  </div>
  </div>
 
  {/* Status & Points Section */}
  <div className="space-y-4">
- <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
- <Star size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <Star size={14} className="text-primary [.midnight_&]:text-amber-400" />
  Status & Rewards
  </label>
  
@@ -6496,18 +6340,18 @@ Thank you for choosing Nail Pro!')}`}
  { value: 'completed', label: 'Completed' },
  { value: 'cancelled', label: 'Cancelled' }
  ]}
- buttonClassName="w-full p-3 rounded-xl bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold text-sm"
+ buttonClassName="w-full p-3 rounded-xl bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold text-sm"
  />
  )}
 
- <div className="flex items-center justify-between p-4 bg-green-500/5 rounded-2xl -green-500/10 ">
+ <div className="flex items-center justify-between p-4 bg-green-500/5 rounded-2xl border-green-500/10 ">
  <div className="flex items-center gap-3">
  <div className="p-2.5 bg-green-500/10 rounded-xl text-green-600 ">
  <Home size={18} />
  </div>
  <div className="flex flex-col">
  <span className="text-[9px] font-black text-green-600 uppercase tracking-widest">Service Type</span>
- <span className="text-xs font-bold text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">At Home Service</span>
+ <span className="text-xs font-bold text-foreground [.midnight_&]:text-slate-200">At Home Service</span>
  </div>
  </div>
  <button
@@ -6525,17 +6369,17 @@ Thank you for choosing Nail Pro!')}`}
  </button>
  </div>
 
- <div className="bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-2xl -primary/10 space-y-3 ">
+ <div className="bg-primary/20 p-4 rounded-2xl border-primary/10 space-y-3 ">
  <div className="flex items-center justify-between">
- <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Points to Earn</span>
+ <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Points to Earn</span>
  <span className="text-sm font-black text-green-600">+{willEarnPoints} PTS</span>
  </div>
  
  {selectedCustId && selectedCustId !== 'manual' && (
- <div className="space-y-2 pt-3 -primary/10">
+ <div className="space-y-2 pt-3 border-primary/10">
  <div className="flex items-center justify-between">
- <span className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</span>
- <span className="text-sm font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400">
+ <span className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest">Available Points</span>
+ <span className="text-sm font-black text-primary [.midnight_&]:text-amber-400">
  {customers.find(c => c.id === selectedCustId)?.points || 0} PTS
  </span>
  </div>
@@ -6548,12 +6392,12 @@ Thank you for choosing Nail Pro!')}`}
  const val = Math.min(Number(e.target.value), (customers.find(c => c.id === selectedCustId)?.points || 0));
  setPointsToRedeem(Math.max(0, val));
  }}
- className="w-full p-2 text-xs rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-bold"
+ className="w-full p-2 text-xs rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold"
  />
  <button 
  type="button"
  onClick={() => setPointsToRedeem(customers.find(c => c.id === selectedCustId)?.points || 0)}
- className="text-[9px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 hover:underline whitespace-nowrap uppercase tracking-widest"
+ className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 hover:underline whitespace-nowrap uppercase tracking-widest"
  >
  Redeem All
  </button>
@@ -6566,42 +6410,42 @@ Thank you for choosing Nail Pro!')}`}
  </div>
 
  <div className="space-y-4">
- <label className="text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
- <FileText size={14} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
+ <FileText size={14} className="text-primary [.midnight_&]:text-amber-400" />
  Additional Notes
  </label>
  <textarea
  placeholder="Any special requests or details..."
  value={apptNotes}
  onChange={(e) => setApptNotes(e.target.value)}
- className="w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 bg-input text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-medium min-h-[100px] text-sm"
+ className="w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-medium min-h-[100px] text-sm"
  />
  </div>
  </div>
  ) : (
  <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
- <div className="bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-2xl -primary/10 space-y-3 ">
+ <div className="bg-primary/20 p-4 rounded-2xl border-primary/10 space-y-3 ">
  <div className="flex items-center gap-4">
- <div className="p-4 bg-amber-100/50 dark:bg-amber-900/30 rounded-2xl text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 ">
+ <div className="p-4 bg-primary/20 rounded-2xl text-primary [.midnight_&]:text-amber-400 ">
  <Check size={32} strokeWidth={3} />
  </div>
  <div>
- <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 tracking-tighter">
+ <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 tracking-tighter">
  Booking Confirmation
  </h3>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Review your appointment details</p>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Review your appointment details</p>
  </div>
  </div>
  
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
  <div className="space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <UserIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
  Customer
  </div>
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
- <p className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
- <p className="text-xs text-slate-700 dark:text-slate-300 font-bold mt-1.5 flex items-center gap-1.5">
+ <div className="bg-card border border-border p-4 rounded-xl ">
+ <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
+ <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
  <Phone size={12} />
  {manualCustPhone || 'N/A'}
  </p>
@@ -6609,13 +6453,13 @@ Thank you for choosing Nail Pro!')}`}
  </div>
 
  <div className="space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <Briefcase size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <Briefcase size={12} className="text-primary [.midnight_&]:text-amber-400" />
  Service
  </div>
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
- <p className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
- <p className="text-xs text-slate-700 dark:text-slate-300 font-bold mt-1.5 flex items-center gap-1.5">
+ <div className="bg-card border border-border p-4 rounded-xl ">
+ <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
+ <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
  <HistoryIcon size={12} />
  {apptDuration} mins ({apptTime} - {apptEndTime})
  </p>
@@ -6623,48 +6467,48 @@ Thank you for choosing Nail Pro!')}`}
  </div>
 
  <div className="space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <UserIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
  Staff Member
  </div>
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
- <p className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-lg tracking-tight">
+ <div className="bg-card border border-border p-4 rounded-xl ">
+ <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">
  {staff.find(s => s.email === selectedStaffEmail)?.name || 'Any Staff (Auto)'}
  </p>
- <p className="text-[9px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
+ <p className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
  </div>
  </div>
 
  <div className="space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <CalendarIcon size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <CalendarIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
  Scheduled Date
  </div>
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl ">
- <p className="font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
- <p className="text-[9px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
+ <div className="bg-card border border-border p-4 rounded-xl ">
+ <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
+ <p className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
  </div>
  </div>
 
  {isHomeService && (
- <div className="col-span-full bg-green-500/10 p-4 rounded-2xl -green-500/20 flex items-center gap-4 ">
- <div className="p-3 bg-green-600 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 rounded-xl ">
+ <div className="col-span-full bg-green-500/10 p-4 rounded-2xl border-green-500/20 flex items-center gap-4 ">
+ <div className="p-3 bg-green-600 text-foreground [.midnight_&]:text-slate-200 rounded-xl ">
  <Car size={20} strokeWidth={2.5} />
  </div>
  <div className="flex flex-col">
  <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Service Location</span>
- <span className="text-sm font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200">At Home Service Requested</span>
+ <span className="text-sm font-black text-foreground [.midnight_&]:text-slate-200">At Home Service Requested</span>
  </div>
  </div>
  )}
 
  {apptNotes && (
  <div className="col-span-full space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <FileText size={12} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
+ <FileText size={12} className="text-primary [.midnight_&]:text-amber-400" />
  Additional Notes
  </div>
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-xl italic text-slate-700 dark:text-slate-300 font-medium text-xs">
+ <div className="bg-card border border-border p-4 rounded-xl italic text-muted-foreground font-medium text-xs">
  "{apptNotes}"
  </div>
  </div>
@@ -6681,7 +6525,7 @@ Thank you for choosing Nail Pro!')}`}
  <button
  type="button"
  onClick={resetForm}
- className="px-4 md:px-6 py-2.5 text-xs font-black text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 transition-colors uppercase tracking-widest"
+ className="px-4 md:px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
  >
  Cancel
  </button>
@@ -6698,7 +6542,7 @@ Thank you for choosing Nail Pro!')}`}
  <button
  type="button"
  onClick={() => setFormStep(1)}
- className="px-4 md:px-6 py-2.5 text-xs font-black text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 transition-colors uppercase tracking-widest"
+ className="px-4 md:px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
  >
  Back
  </button>
@@ -6710,7 +6554,7 @@ Thank you for choosing Nail Pro!')}`}
  {isSubmittingAppt ? (
  <>
  Processing...
- <div className="w-4 h-4 -2 -white/30 -white rounded-full animate-spin" />
+ <div className="w-4 h-4 border-2 border-white/30 border-white rounded-full animate-spin" />
  </>
  ) : (
  <>
@@ -6728,29 +6572,29 @@ Thank you for choosing Nail Pro!')}`}
  )}
 
  {confirmDeleteAppt && (
- <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-4 sm:pt-[90px] ">
+ <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]">
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
- className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 max-w-md w-full max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
+ className="bg-card border border-border rounded-2xl p-4 max-w-md w-full max-h-[calc(100dvh-140px)] overflow-y-auto custom-scrollbar"
  >
- <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-3 md:mb-6 mx-auto -red-500/20">
+ <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-3 md:mb-6 mx-auto border-red-500/20">
  <Trash2 size={32} strokeWidth={2.5} />
  </div>
- <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Confirm Deletion</h3>
- <p className="text-slate-700 dark:text-slate-300 font-bold mb-4 md:mb-8 leading-relaxed text-center">
- Are you sure you want to delete the appointment for <span className="text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
+ <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Confirm Deletion</h3>
+ <p className="text-muted-foreground font-bold mb-4 md:mb-8 leading-relaxed text-center">
+ Are you sure you want to delete the appointment for <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
  </p>
  <div className="flex gap-4">
  <button
  onClick={() => setConfirmDeleteAppt(null)}
- className="flex-1 px-4 md:px-6 py-4 -2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
+ className="flex-1 px-4 md:px-6 py-4 border-2 text-muted-foreground hover:text-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
  >
  Cancel
  </button>
  <button
  onClick={handleDeleteAppointment}
- className="flex-1 px-4 md:px-6 py-4 bg-red-600 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-red-600/20 active:scale-95"
+ className="flex-1 px-4 md:px-6 py-4 bg-red-600 text-foreground [.midnight_&]:text-slate-200 font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-red-600/20 active:scale-95"
  >
  Delete
  </button>
@@ -6761,17 +6605,17 @@ Thank you for choosing Nail Pro!')}`}
 
  {/* Overlap Alert Popup */}
  {showOverlapPopup && (
- <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[20000] p-4 pt-[90px] sm:p-4 sm:pt-[90px] ">
+ <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]">
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
- className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 max-w-md w-full max-h-[calc(100dvh-110px)] overflow-y-auto custom-scrollbar"
+ className="bg-card border border-border rounded-2xl p-4 max-w-md w-full max-h-[calc(100dvh-140px)] overflow-y-auto custom-scrollbar"
  >
- <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-3 md:mb-6 mx-auto -red-500/20">
+ <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center text-red-600 mb-3 md:mb-6 mx-auto border-red-500/20">
  <AlertCircle size={32} strokeWidth={2.5} />
  </div>
- <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Time Slot Overlap</h3>
- <p className="text-slate-700 dark:text-slate-300 font-bold mb-4 md:mb-8 leading-relaxed text-center">
+ <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 mb-4 tracking-tighter text-center">Time Slot Overlap</h3>
+ <p className="text-muted-foreground font-bold mb-4 md:mb-8 leading-relaxed text-center">
  The selected time slot overlaps with an existing appointment for this staff member. Please select a different time or staff member.
  </p>
  <div className="flex gap-4">
@@ -6801,15 +6645,15 @@ const PrintPreviewModal: React.FC<{
 }> = ({ isOpen, onClose, text, onPrint, onSkipPrint, title = "Print Preview", printLabel = "Process & Print", skipLabel = "Complete Without Printing" }) => {
  if (!isOpen) return null;
  return (
- <div className="fixed inset-0 z-[30000] flex items-center justify-center p-4 bg-black/60 ">
+ <div className="fixed inset-0 z-[30000] flex items-start justify-center p-4 pt-[100px] sm:pt-[120px] bg-black/60 ">
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
- className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-md rounded-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-40px)]"
+ className="bg-card border border-border w-full max-w-md rounded-2xl flex flex-col overflow-hidden max-h-[calc(100dvh-140px)]"
  >
  <div className="p-4 flex justify-between items-center bg-muted/10 shrink-0">
  <h3 className="font-bold text-lg tracking-tight flex items-center gap-2">
- <Printer size={20} className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400" />
+ <Printer size={20} className="text-primary [.midnight_&]:text-amber-400" />
  {title}
  </h3>
  <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></button>
@@ -6821,10 +6665,10 @@ const PrintPreviewModal: React.FC<{
  </div>
  </div>
 
- <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 shrink-0 space-y-3">
+ <div className="p-4 bg-card border border-border shrink-0 space-y-3">
  <button
  onClick={() => { onPrint(); onClose(); }}
- className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-amber-600 dark:text-amber-400 [.midnight_&]: [.midnight_&]:-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-primary/20"
+ className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]: [.midnight_&]:-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-primary/20"
  >
  <Printer size={20} />
  {printLabel}
@@ -6833,7 +6677,7 @@ const PrintPreviewModal: React.FC<{
  {onSkipPrint && (
  <button
  onClick={() => { onSkipPrint(); onClose(); }}
- className="w-full bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-2xl font-bold transition-colors"
+ className="w-full bg-muted text-muted-foreground hover:text-foreground py-4 rounded-2xl font-bold transition-colors"
  >
  {skipLabel}
  </button>
@@ -6853,16 +6697,16 @@ const Modal: React.FC<{
 }> = ({ isOpen, onClose, title, children, maxWidth = "max-w-sm" }) => {
  if (!isOpen) return null;
  return (
- <div className="fixed inset-0 bg-black/60 z-[20000] flex items-center justify-center p-4 pt-[90px] sm:p-4 sm:pt-[90px]">
+ <div className="fixed inset-0 bg-black/60 z-[20000] flex items-start justify-center p-4 pt-[100px] sm:pt-[120px] ">
  <motion.div 
  initial={{ opacity: 0, scale: 0.9, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
- className={cn("bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full rounded-2xl -primary/30 flex flex-col relative max-h-[calc(100dvh-110px)] overflow-hidden", maxWidth)}
+ className={cn("bg-card border border-border w-full rounded-2xl border-primary/30 flex flex-col relative max-h-[calc(100dvh-140px)] overflow-hidden", maxWidth)}
  >
- <div className="absolute top-0 left-0 w-full h-1 bg-amber-200/50 dark:bg-amber-900/40"></div>
+ <div className="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
  <div className="flex justify-between items-center shrink-0 p-4 pb-4">
- <h3 className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-bold text-xl uppercase tracking-widest">{title}</h3>
- <button onClick={onClose} className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 active:scale-90"><X size={24} /></button>
+ <h3 className="text-primary [.midnight_&]:text-amber-400 font-bold text-xl uppercase tracking-widest">{title}</h3>
+ <button onClick={onClose} className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"><X size={24} /></button>
  </div>
  <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pt-4 space-y-4">
  {children}
@@ -7139,8 +6983,36 @@ export const ManagePage: React.FC = () => {
  }
  } else {
  try {
- await deleteDoc(doc(db, coll, id));
- } catch (err) {
+ if (coll === 'customers') {
+          const customer = customers.find(c => c.id === id);
+          if (customer) {
+            let targetEmail = customer.email;
+            if (!targetEmail && customer.phone) {
+              // Try to find the associated user in the staff list (which contains all users)
+              const userMatch = staff.find(s => s.phone === customer.phone || s.email === customer.email);
+              if (userMatch && userMatch.email) {
+                targetEmail = userMatch.email;
+              }
+            } else if (targetEmail && customer.phone) {
+              // Even if email is present, ensure we find the correct user account
+              const userMatch = staff.find(s => s.email === targetEmail || s.phone === customer.phone);
+              if (userMatch && userMatch.email) {
+                targetEmail = userMatch.email;
+              }
+            }
+            if (targetEmail) {
+              try {
+                const functions = getFunctions(app, 'asia-southeast1');
+                const deleteUserAccount = httpsCallable(functions, 'deleteUserAccount');
+                await deleteUserAccount({ targetEmail });
+              } catch (err) {
+                console.warn("Could not delete associated auth account. It may not exist.", err);
+              }
+            }
+          }
+        }
+        await deleteDoc(doc(db, coll, id));
+        } catch (err) {
  handleFirestoreError(err, OperationType.DELETE, `${coll}/${id}`);
  }
  }
@@ -7528,8 +7400,8 @@ export const ManagePage: React.FC = () => {
  className={cn(
  "flex items-center gap-2 px-3 md:px-5 py-3 rounded-xl text-xs font-bold whitespace-nowrap transition-all ",
  activeTab === tab.id 
- ? "bg-primary text-amber-600 dark:text-amber-400-foreground -primary shadow-primary/20" 
- : "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 text-slate-700 dark:text-slate-300 hover:-primary/50"
+ ? "bg-primary text-primary-foreground border-primary shadow-primary/20" 
+ : "bg-card border border-border text-muted-foreground hover:border-primary/50"
  )}
  >
  {tab.icon}
@@ -7538,14 +7410,14 @@ export const ManagePage: React.FC = () => {
  ))}
  </div>
 
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl p-4 space-y-3 transition-all duration-300">
+ <div className="bg-card border border-border rounded-2xl p-4 space-y-3 transition-all duration-300">
 {activeTab === 'shop' && (
  <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
  {isSuperAdmin && profile?.role !== 'super_admin' && (
- <div className="bg-amber-100/50 dark:bg-amber-900/30 p-4 rounded-2xl flex items-center justify-between gap-4">
+ <div className="bg-primary/20 p-4 rounded-2xl flex items-center justify-between gap-4">
  <div>
- <h4 className="text-amber-600 dark:text-amber-400 font-black text-sm uppercase tracking-widest">First Time Setup</h4>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold mt-1">Assign your account the Super Admin role in Firestore.</p>
+ <h4 className="text-primary font-black text-sm uppercase tracking-widest">First Time Setup</h4>
+ <p className="text-[10px] text-muted-foreground font-bold mt-1">Assign your account the Super Admin role in Firestore.</p>
  </div>
  <button 
  onClick={handleSetupSuperAdmin}
@@ -7556,7 +7428,7 @@ export const ManagePage: React.FC = () => {
  </div>
  )}
  <div className="flex items-center justify-between px-1">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Business Profile / Store Details
  </h4>
@@ -7607,8 +7479,8 @@ export const ManagePage: React.FC = () => {
  </div>
 
  <div className="space-y-4 pt-6 ">
- <h4 className="text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 flex items-center gap-2">
- <Printer size={14} className="text-amber-600 dark:text-amber-400" /> Receipt Customization
+ <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+ <Printer size={14} className="text-primary" /> Receipt Customization
  </h4>
  
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -7635,9 +7507,9 @@ export const ManagePage: React.FC = () => {
  </div>
 
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
- <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl ">
+ <div className="flex items-center justify-between p-4 bg-background rounded-2xl ">
  <div>
- <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">Hide Shop Name</span>
+ <span className="block text-sm font-bold text-foreground">Hide Shop Name</span>
  </div>
  <button 
  type="button"
@@ -7653,9 +7525,9 @@ export const ManagePage: React.FC = () => {
  )} />
  </button>
  </div>
- <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl ">
+ <div className="flex items-center justify-between p-4 bg-background rounded-2xl ">
  <div>
- <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">Hide Date & Time</span>
+ <span className="block text-sm font-bold text-foreground">Hide Date & Time</span>
  </div>
  <button 
  type="button"
@@ -7671,9 +7543,9 @@ export const ManagePage: React.FC = () => {
  )} />
  </button>
  </div>
- <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl ">
+ <div className="flex items-center justify-between p-4 bg-background rounded-2xl ">
  <div>
- <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">Hide Staff Name</span>
+ <span className="block text-sm font-bold text-foreground">Hide Staff Name</span>
  </div>
  <button 
  type="button"
@@ -7689,9 +7561,9 @@ export const ManagePage: React.FC = () => {
  )} />
  </button>
  </div>
- <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl ">
+ <div className="flex items-center justify-between p-4 bg-background rounded-2xl ">
  <div>
- <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">Hide Loyalty Points</span>
+ <span className="block text-sm font-bold text-foreground">Hide Loyalty Points</span>
  </div>
  <button 
  type="button"
@@ -7717,7 +7589,7 @@ export const ManagePage: React.FC = () => {
  {activeTab === 'financials' && (
  <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
  <div className="flex items-center justify-between px-1">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Tax & Financial Configuration
  </h4>
@@ -7725,40 +7597,40 @@ export const ManagePage: React.FC = () => {
  <div className="space-y-4">
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
  <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Tax Name (e.g., VAT, GST)</label>
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Tax Name (e.g., VAT, GST)</label>
  <input 
  type="text" 
  value={shopSettings.taxName || ''} 
  onChange={(e) => setShopSettings({ ...shopSettings, taxName: e.target.value })} 
- className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+ className="w-full p-4 rounded-2xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
  placeholder="VAT" 
  />
  </div>
  <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Default Tax Rate (%)</label>
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Default Tax Rate (%)</label>
  <input 
  type="number" 
  value={shopSettings.taxRate || ''} 
  onChange={(e) => setShopSettings({ ...shopSettings, taxRate: parseFloat(e.target.value) || 0 })} 
- className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+ className="w-full p-4 rounded-2xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
  placeholder="0.00" 
  />
  </div>
  <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Currency Symbol</label>
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Currency Symbol</label>
  <input 
  type="text" 
  value={shopSettings.currencySymbol || '$'} 
  onChange={(e) => setShopSettings({ ...shopSettings, currencySymbol: e.target.value })} 
- className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
+ className="w-full p-4 rounded-2xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm" 
  placeholder="$" 
  />
  </div>
  </div>
  <div className="p-4 bg-muted/20 rounded-2xl mt-4">
  <h3 className="text-sm font-bold mb-1">Financial Year</h3>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 uppercase tracking-widest font-medium mb-3">Define the start of your fiscal year for reporting purposes.</p>
- <select className="w-full md:w-1/2 p-3 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" defaultValue="jan">
+ <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium mb-3">Define the start of your fiscal year for reporting purposes.</p>
+ <select className="w-full md:w-1/2 p-3 rounded-xl bg-card border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" defaultValue="jan">
  <option value="jan">January - December</option>
  <option value="apr">April - March</option>
  <option value="jul">July - June</option>
@@ -7773,32 +7645,32 @@ export const ManagePage: React.FC = () => {
  {activeTab === 'data' && (
  <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
  <div className="flex items-center justify-between px-1">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Data Management & Export
  </h4>
  </div>
  
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
- <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col items-start gap-4 hover:-primary/50 transition-all group">
- <div className="w-12 h-12 rounded-full bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+ <div className="p-4 bg-card border border-border rounded-2xl flex flex-col items-start gap-4 hover:border-primary/50 transition-all group">
+ <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
  <Database className="w-6 h-6" />
  </div>
  <div>
  <h3 className="text-base font-black">Export All Sales Data</h3>
- <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mt-1">Download a complete backup of all transaction history in CSV format.</p>
+ <p className="text-xs text-muted-foreground font-medium mt-1">Download a complete backup of all transaction history in CSV format.</p>
  </div>
- <button onClick={handleExportSales} className="py-2 px-4 md:px-6 bg-primary text-amber-600 dark:text-amber-400-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
+ <button onClick={handleExportSales} className="py-2 px-4 md:px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
  </div>
- <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col items-start gap-4 hover:-primary/50 transition-all group">
- <div className="w-12 h-12 rounded-full bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+ <div className="p-4 bg-card border border-border rounded-2xl flex flex-col items-start gap-4 hover:border-primary/50 transition-all group">
+ <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
  <UsersIcon className="w-6 h-6" />
  </div>
  <div>
  <h3 className="text-base font-black">Export Customer List</h3>
- <p className="text-xs text-slate-700 dark:text-slate-300 font-medium mt-1">Download your complete customer database for marketing.</p>
+ <p className="text-xs text-muted-foreground font-medium mt-1">Download your complete customer database for marketing.</p>
  </div>
- <button onClick={handleExportCustomers} className="py-2 px-4 md:px-6 bg-primary text-amber-600 dark:text-amber-400-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
+ <button onClick={handleExportCustomers} className="py-2 px-4 md:px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
  </div>
  </div>
 
@@ -7808,10 +7680,10 @@ export const ManagePage: React.FC = () => {
  <div className="w-1.5 h-4 bg-red-500 rounded-full"></div>
  Danger Zone
  </h4>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
+ <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
  <button 
  onClick={() => setShowClearConfirm(true)}
- className="w-full bg-red-500/10 text-red-500 -red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-slate-900 dark:text-slate-100 transition-all active:scale-95"
+ className="w-full bg-red-500/10 text-red-500 border-red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-foreground transition-all active:scale-95"
  >
  CLEAR ALL SALES HISTORY
  </button>
@@ -7820,7 +7692,7 @@ export const ManagePage: React.FC = () => {
  <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
  Debug & Diagnostics
  </h4>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
+ <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
  <button
  onClick={async () => {
  try {
@@ -7832,7 +7704,7 @@ export const ManagePage: React.FC = () => {
  setStatusMsg({ type: 'error', text: `Functions Offline: ${err instanceof Error ? err.message : String(err)}` });
  }
  }}
- className="w-full bg-blue-500/10 text-blue-500 -blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-slate-900 dark:text-slate-100 transition-all active:scale-95 uppercase tracking-widest"
+ className="w-full bg-blue-500/10 text-blue-500 border-blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-foreground transition-all active:scale-95 uppercase tracking-widest"
  >
  Test Cloud Functions
  </button>
@@ -7844,7 +7716,7 @@ export const ManagePage: React.FC = () => {
 {activeTab === 'categories' && (
  <div className="space-y-3">
  <div className="flex items-center justify-between">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Category Management
  </h4>
@@ -7870,7 +7742,7 @@ export const ManagePage: React.FC = () => {
  />
  
  <div className="space-y-3">
- <label className="text-[10px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Select Icon</label>
+ <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-1">Select Icon</label>
  <div className="grid grid-cols-6 gap-2">
  {CATEGORY_ICONS.map((item) => {
  const IconComp = item.icon;
@@ -7882,8 +7754,8 @@ export const ManagePage: React.FC = () => {
  className={cn(
  "p-3 rounded-xl transition-all flex items-center justify-center",
  catIcon === item.name 
- ? "bg-primary -primary text-slate-900 dark:text-slate-100 shadow-primary/20 scale-105" 
- : "bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] text-slate-700 dark:text-slate-300 hover:-primary/50"
+ ? "bg-primary border-primary text-foreground shadow-primary/20 scale-105" 
+ : "bg-background text-muted-foreground hover:border-primary/50"
  )}
  >
  <IconComp size={20} />
@@ -7897,7 +7769,7 @@ export const ManagePage: React.FC = () => {
  <button 
  type="button" 
  onClick={() => { setShowCatForm(false); setEditingCategory(null); setCatName(''); setCatIcon('LayoutGrid'); }} 
- className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
  </button>
@@ -7909,27 +7781,27 @@ export const ManagePage: React.FC = () => {
  </div>
  </Modal>
  <div className="space-y-3 pt-4">
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest px-1">Existing Categories</p>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">Existing Categories</p>
  {categories.length === 0 ? (
- <div className="text-center py-4 md:py-8 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 rounded-2xl -dashed ">
- <p className="text-slate-700 dark:text-slate-300 text-xs italic">No categories added yet.</p>
+ <div className="text-center py-4 md:py-8 bg-background rounded-2xl border-dashed ">
+ <p className="text-muted-foreground text-xs italic">No categories added yet.</p>
  </div>
  ) : (
  categories.map(c => {
  const IconComp = CATEGORY_ICONS.find(i => i.name === c.icon)?.icon || LayoutGrid;
  return (
- <div key={c.id} className="flex justify-between items-center p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl group hover:-primary/50 transition-all ">
+ <div key={c.id} className="flex justify-between items-center p-4 bg-background rounded-2xl group hover:border-primary/50 transition-all ">
  <div className="flex items-center gap-3">
- <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg text-amber-600 dark:text-amber-400 group-hover:bg-primary group-hover:text-slate-900 dark:text-slate-100 transition-all">
+ <div className="p-2 bg-primary/20 rounded-lg text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
  <IconComp size={16} />
  </div>
- <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-amber-600 dark:text-amber-400 transition-colors">{c.name}</span>
+ <span className="font-bold text-foreground group-hover:text-primary transition-colors">{c.name}</span>
  </div>
  <div className="flex gap-2">
  {isAdmin && (
  <button 
  onClick={() => { setEditingCategory(c); setCatName(c.name); setCatIcon(c.icon || 'LayoutGrid'); setShowCatForm(true); }} 
- className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-100/50 dark:bg-amber-900/30 rounded-lg transition-colors"
+ className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors"
  title="Edit Category"
  >
  <Settings size={16} />
@@ -7956,7 +7828,7 @@ export const ManagePage: React.FC = () => {
  {activeTab === 'services' && (
  <div className="space-y-3">
  <div className="flex items-center justify-between">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Services Management
  </h4>
@@ -7995,7 +7867,7 @@ export const ManagePage: React.FC = () => {
  onFocusClear
  />
  <div className="space-y-1.5">
- <label className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest ml-1">Category</label>
+ <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
  <CustomSelect
  value={svcCategory}
  onChange={setSvcCategory}
@@ -8004,13 +7876,13 @@ export const ManagePage: React.FC = () => {
  { value: '', label: 'Select Category' },
  ...categories.map(c => ({ value: c.name, label: c.name }))
  ]}
- buttonClassName="w-full bg-input rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 text-sm focus:-primary"
+ buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary"
  />
  </div>
- <div className="flex items-center justify-between p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-xl mt-4">
+ <div className="flex items-center justify-between p-4 bg-background rounded-xl mt-4">
  <div className="flex flex-col">
- <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Enable Staff Commission</span>
- <span className="text-[10px] text-slate-700 dark:text-slate-300">Calculate commission for this service</span>
+ <span className="text-xs font-bold text-foreground">Enable Staff Commission</span>
+ <span className="text-[10px] text-muted-foreground">Calculate commission for this service</span>
  </div>
  <button
  type="button"
@@ -8030,7 +7902,7 @@ export const ManagePage: React.FC = () => {
  <button 
  type="button" 
  onClick={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true); }} 
- className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
  </button>
@@ -8042,21 +7914,21 @@ export const ManagePage: React.FC = () => {
  </div>
  </Modal>
  <div className="space-y-3 pt-6">
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest px-1">Service List</p>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest px-1">Service List</p>
  {services.length === 0 ? (
- <div className="text-center py-4 md:py-8 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 rounded-2xl -dashed ">
- <p className="text-slate-700 dark:text-slate-300 text-xs italic">No services added yet.</p>
+ <div className="text-center py-4 md:py-8 bg-background rounded-2xl border-dashed ">
+ <p className="text-muted-foreground text-xs italic">No services added yet.</p>
  </div>
  ) : (
  services.map(s => (
- <div key={s.id} className="flex justify-between items-center p-4 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl group hover:-primary/50 transition-all ">
+ <div key={s.id} className="flex justify-between items-center p-4 bg-background rounded-2xl group hover:border-primary/50 transition-all ">
  <div>
- <span className="font-bold text-slate-900 dark:text-slate-100 block group-hover:text-amber-600 dark:text-amber-400 transition-colors">{s.name}</span>
+ <span className="font-bold text-foreground block group-hover:text-primary transition-colors">{s.name}</span>
  <div className="flex gap-2 items-center mt-1">
- <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{s.price.toLocaleString()} Ks</span>
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">•</span>
- <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{s.duration || 30} mins</span>
- <span className="bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{s.category || 'General'}</span>
+ <span className="text-xs text-muted-foreground font-medium">{s.price.toLocaleString()} Ks</span>
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">•</span>
+ <span className="text-xs text-muted-foreground font-medium">{s.duration || 30} mins</span>
+ <span className="bg-primary/20 text-primary text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">{s.category || 'General'}</span>
  </div>
  </div>
  <div className="flex gap-2">
@@ -8071,7 +7943,7 @@ export const ManagePage: React.FC = () => {
  setSvcAllowCommission(s.allowCommission !== false);
  setShowSvcForm(true);
  }} 
- className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-100/50 dark:bg-amber-900/30 rounded-lg transition-colors"
+ className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors"
  title="Edit Service"
  >
  <Settings size={16} />
@@ -8097,7 +7969,7 @@ export const ManagePage: React.FC = () => {
  {activeTab === 'staff' && (
  <div className="space-y-3">
  <div className="flex items-center justify-between">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Staff Management
  </h4>
@@ -8128,11 +8000,11 @@ export const ManagePage: React.FC = () => {
  {/* Profile Photo Section */}
  <div className="flex flex-col items-center gap-3 pb-6 ">
  <div className="relative group">
- <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden -4 -background group-hover: transition-all">
+ <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center overflow-hidden border-4 -background group-hover: transition-all">
  {stfPhotoURL ? (
  <img src={stfPhotoURL} alt="Staff" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
  ) : (
- <UserIcon size={40} className="text-slate-700 dark:text-slate-300/30" />
+ <UserIcon size={40} className="text-muted-foreground/30" />
  )}
  </div>
  <button 
@@ -8146,12 +8018,12 @@ export const ManagePage: React.FC = () => {
  <Edit2 size={14} />
  </button>
  </div>
- <span className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300">Profile Photo</span>
+ <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Profile Photo</span>
  </div>
 
  {/* Basic Information */}
  <div className="space-y-4">
- <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-2">
+ <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
  <UserIcon size={12} />
  Basic Information
  </h5>
@@ -8172,7 +8044,7 @@ export const ManagePage: React.FC = () => {
 
  {/* Employment Details */}
  <div className="space-y-4 pt-4 ">
- <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-2">
+ <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
  <Briefcase size={12} />
  Employment Details
  </h5>
@@ -8185,7 +8057,7 @@ export const ManagePage: React.FC = () => {
  placeholder="e.g. 50"
  />
  <div className="space-y-3">
- <label className="text-[10px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Assigned Roles</label>
+ <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-1">Assigned Roles</label>
  <div className="flex flex-wrap gap-2 pb-4">
  {['staff', 'cashier', 'owner', 'super_admin'].filter(role => role !== 'super_admin' || isSuperAdmin).map(roleOption => (
  <button 
@@ -8207,7 +8079,7 @@ export const ManagePage: React.FC = () => {
  setStfRole(calculatedRole as any);
  }}
  className={`px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${
- stfRoles.includes(roleOption) ? "bg-primary text-white -primary" : "bg-transparent text-slate-900 dark:text-slate-100 hover:-primary/50"
+ stfRoles.includes(roleOption) ? "bg-primary text-white border-primary" : "bg-transparent text-foreground hover:border-primary/50"
  }`}
  >
  {roleOption.replace('_', ' ')}
@@ -8218,7 +8090,7 @@ export const ManagePage: React.FC = () => {
  </div>
 
  <div className="relative group">
- <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-700 dark:text-slate-300 group-focus-within:text-amber-600 dark:text-amber-400 transition-colors">
+ <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors">
  <Activity size={18} />
  </div>
  <CustomSelect
@@ -8230,7 +8102,7 @@ export const ManagePage: React.FC = () => {
  { value: 'on_leave', label: '🟡 On Leave' }
  ]}
  buttonClassName={cn(
- "w-full bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl py-4 pl-12 pr-4 text-xs font-bold uppercase tracking-widest",
+ "w-full bg-background rounded-2xl py-4 pl-12 pr-4 text-xs font-bold uppercase tracking-widest",
  stfStatus === 'active' ? "-green-500/30 text-green-500" :
  stfStatus === 'on_leave' ? "-yellow-500/30 text-yellow-500" :
  "-red-500/30 text-red-500"
@@ -8241,12 +8113,12 @@ export const ManagePage: React.FC = () => {
 
  {/* Schedule & Capabilities */}
  <div className="space-y-3 md:space-y-5 pt-4 ">
- <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-2">
+ <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
  <CalendarHeart size={12} />
  Schedule & Expertise
  </h5>
  <div className="space-y-3">
- <label className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 px-1">Working Days</label>
+ <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Working Days</label>
  <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl ">
  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
  <button
@@ -8261,8 +8133,8 @@ export const ManagePage: React.FC = () => {
  className={cn(
  "px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex-1 text-center min-w-[80px]",
  stfWorkingDays.includes(day) 
- ? "bg-amber-100/50 dark:bg-amber-900/30 -primary text-amber-600 dark:text-amber-400 " 
- : "bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] text-slate-700 dark:text-slate-300 hover:-primary/30"
+ ? "bg-primary/20 border-primary text-primary " 
+ : "bg-background text-muted-foreground hover:border-primary/30"
  )}
  >
  {day.substring(0, 3)}
@@ -8272,7 +8144,7 @@ export const ManagePage: React.FC = () => {
  </div>
 
  <div className="space-y-3">
- <label className="text-[10px] font-bold uppercase tracking-widest text-slate-700 dark:text-slate-300 px-1">Specialties</label>
+ <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Specialties</label>
  <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl min-h-[60px]">
  {categories.map(cat => (
  <button
@@ -8287,22 +8159,22 @@ export const ManagePage: React.FC = () => {
  className={cn(
  "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ",
  stfSpecialties.includes(cat.name) 
- ? "bg-secondary text-secondary-foreground -secondary " 
- : "bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] text-slate-700 dark:text-slate-300 hover:-secondary/30"
+ ? "bg-secondary text-secondary-foreground border-secondary " 
+ : "bg-background text-muted-foreground hover:-secondary/30"
  )}
  >
  {cat.name}
  </button>
  ))}
  {categories.length === 0 && (
- <p className="text-xs text-slate-700 dark:text-slate-300 italic m-auto">No categories found. Please add categories first.</p>
+ <p className="text-xs text-muted-foreground italic m-auto">No categories found. Please add categories first.</p>
  )}
  </div>
  </div>
  </div>
 
  <div className="space-y-3 pt-4 ">
- <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 dark:text-amber-400 flex items-center gap-2">
+ <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
  <FileText size={12} />
  Additional Notes
  </h5>
@@ -8310,7 +8182,7 @@ export const ManagePage: React.FC = () => {
  value={stfBio}
  onChange={(e) => setStfBio(e.target.value)}
  placeholder="Brief staff bio, performance notes, or internal remarks..."
- className="w-full bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] rounded-2xl p-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:-primary transition-all min-h-[100px] text-sm resize-none"
+ className="w-full bg-background rounded-2xl p-4 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all min-h-[100px] text-sm resize-none"
  />
  </div>
 
@@ -8325,7 +8197,7 @@ export const ManagePage: React.FC = () => {
  setStfStatus('active'); setStfBio(''); setStfPhotoURL(''); setStfSpecialties([]);
  setStfWorkingDays(['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
  }} 
- className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
  </button>
@@ -8338,26 +8210,26 @@ export const ManagePage: React.FC = () => {
  </Modal>
  
  <div className="space-y-4 pt-2">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
  <span>Registered Staff ({staff.filter(s => s.role !== 'super_admin').length})</span>
  <UsersIcon size={14} />
  </h4>
  {staff.filter(s => s.role !== 'super_admin').map(s => (
- <div key={s.email} className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] p-4 rounded-2xl space-y-4 hover:-primary/30 transition-all">
+ <div key={s.email} className="bg-background p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all">
  <div className="flex justify-between items-start">
  <div className="flex items-center gap-4">
  <div className="w-12 h-12 rounded-full bg-muted overflow-hidden ">
  {s.photoURL ? (
  <img src={s.photoURL} alt={s.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
  ) : (
- <div className="w-full h-full flex items-center justify-center bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 font-bold text-lg">
+ <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary font-bold text-lg">
  {s.name.charAt(0)}
  </div>
  )}
  </div>
  <div>
- <span className="block font-bold text-amber-600 dark:text-amber-400 text-lg leading-tight">{s.name}</span>
- <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{s.email}</span>
+ <span className="block font-bold text-primary text-lg leading-tight">{s.name}</span>
+ <span className="text-xs text-muted-foreground font-medium">{s.email}</span>
  </div>
  </div>
  <div className="flex items-center gap-2">
@@ -8378,7 +8250,7 @@ export const ManagePage: React.FC = () => {
  setStfWorkingDays(s.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
  setShowStfForm(true);
  }}
- className="p-2 text-amber-600 dark:text-amber-400 hover:bg-amber-100/50 dark:bg-amber-900/30 rounded-lg transition-colors"
+ className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors"
  title="Edit Staff"
  >
  <Settings size={18} />
@@ -8399,7 +8271,7 @@ export const ManagePage: React.FC = () => {
  </div>
 
  {s.bio && (
- <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 italic px-1">
+ <p className="text-xs text-muted-foreground line-clamp-2 italic px-1">
  "{s.bio}"
  </p>
  )}
@@ -8407,9 +8279,9 @@ export const ManagePage: React.FC = () => {
  <div className="flex flex-wrap gap-2">
  <div className={cn(
  "px-3 py-1.5 rounded-xl flex items-center gap-2",
- s.status === 'active' ? "bg-green-500/10 -green-500/30" :
- s.status === 'on_leave' ? "bg-yellow-500/10 -yellow-500/30" :
- "bg-red-500/10 -red-500/30"
+ s.status === 'active' ? "bg-green-500/10 border-green-500/30" :
+ s.status === 'on_leave' ? "bg-yellow-500/10 border-yellow-500/30" :
+ "bg-red-500/10 border-red-500/30"
  )}>
  <div className={cn(
  "w-1.5 h-1.5 rounded-full",
@@ -8428,12 +8300,12 @@ export const ManagePage: React.FC = () => {
  </div>
 
  <div className="bg-muted/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Comm:</span> 
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Comm:</span> 
  <b className="text-green-500 text-xs">{s.commission}%</b>
  </div>
  <div className="bg-muted/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">Role:</span> 
- <b className="text-amber-600 dark:text-amber-400 text-xs uppercase">
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Role:</span> 
+ <b className="text-primary text-xs uppercase">
  {s.roles && s.roles.length > 0 ? s.roles.map(r => r === 'super_admin' ? 'Admin' : r).join(', ') : (s.role === 'super_admin' ? 'Admin' : s.role)}
  </b>
  </div>
@@ -8442,7 +8314,7 @@ export const ManagePage: React.FC = () => {
  {s.specialties && s.specialties.length > 0 && (
  <div className="flex flex-wrap gap-1.5 pt-1">
  {s.specialties.map(spec => (
- <span key={spec} className="text-[9px] font-bold bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
+ <span key={spec} className="text-[9px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">
  {spec}
  </span>
  ))}
@@ -8459,7 +8331,7 @@ export const ManagePage: React.FC = () => {
  {activeTab === 'customers' && (
  <div className="space-y-3">
  <div className="flex items-center justify-between">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Customer Management
  </h4>
@@ -8487,7 +8359,7 @@ export const ManagePage: React.FC = () => {
  <button 
  type="button" 
  onClick={() => { setShowCustForm(false); setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); }}
- className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
  </button>
@@ -8502,30 +8374,30 @@ export const ManagePage: React.FC = () => {
  </Modal>
 
  <div className="space-y-4">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
+ <h4 className="text-primary font-bold uppercase tracking-widest text-xs px-1 flex items-center justify-between">
  <span>Customer List ({customers.length})</span>
  <UsersIcon size={14} />
  </h4>
  {customers.length === 0 ? (
- <div className="text-center py-12 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/50 rounded-2xl -dashed ">
- <p className="text-slate-700 dark:text-slate-300 text-sm italic">No customers registered yet.</p>
+ <div className="text-center py-12 bg-background rounded-2xl border-dashed ">
+ <p className="text-muted-foreground text-sm italic">No customers registered yet.</p>
  </div>
  ) : (
  customers.map(c => (
- <div key={c.id} className="bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] p-4 rounded-2xl space-y-4 hover:-primary/30 transition-all group">
+ <div key={c.id} className="bg-background p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all group">
  <div className="flex justify-between items-start">
  <div>
- <h5 className="font-bold text-slate-900 dark:text-slate-100 text-lg group-hover:text-amber-600 dark:text-amber-400 transition-colors">{c.name}</h5>
+ <h5 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">{c.name}</h5>
  <div className="flex items-center gap-3 mt-1">
- <p className="text-amber-600 dark:text-amber-400 text-sm font-bold">{c.phone}</p>
+ <p className="text-primary text-sm font-bold">{c.phone}</p>
  <div className="flex items-center gap-1">
- <span className="text-[10px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest ">{(c.points || 0).toLocaleString()} pts</span>
+ <span className="text-[10px] bg-primary/20 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest ">{(c.points || 0).toLocaleString()} pts</span>
  <button 
  onClick={() => {
  setQuickEditingPoints(c);
  setQuickPointsValue(String(c.points || 0));
  }}
- className="p-1 bg-amber-50/50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-md -primary/10 hover:bg-primary hover:text-white transition-all"
+ className="p-1 bg-primary/20 text-primary rounded-md border-primary/10 hover:bg-primary hover:text-white transition-all"
  title="Quick Edit Points"
  >
  <Coins size={12} />
@@ -8544,14 +8416,14 @@ export const ManagePage: React.FC = () => {
  setCustNotes(c.notes || '');
  setCustPoints(String(c.points || 0));
  }}
- className="p-2.5 bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl hover:bg-primary hover:text-white transition-all"
+ className="p-2.5 bg-primary/20 text-primary rounded-xl hover:bg-primary hover:text-white transition-all"
  title="Edit Customer"
  >
  <Settings size={18} />
  </button>
  <button 
  onClick={() => setShowConfirm({ coll: 'customers', id: c.id })}
- className="p-2.5 bg-red-500/10 text-red-500 rounded-xl -red-500/20 hover:bg-red-500 hover:text-slate-900 dark:text-slate-100 transition-all"
+ className="p-2.5 bg-red-500/10 text-red-500 rounded-xl border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all"
  title="Delete Customer"
  >
  <Trash2 size={18} />
@@ -8561,7 +8433,7 @@ export const ManagePage: React.FC = () => {
  
  <button 
  onClick={() => setViewingCustomerHistory(c)}
- className="w-full bg-muted/5 text-slate-700 dark:text-slate-300 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:-primary hover:text-amber-600 dark:text-amber-400 hover:bg-amber-50/50 dark:bg-amber-900/20 transition-all flex items-center justify-center gap-2"
+ className="w-full bg-muted/5 text-muted-foreground py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:border-primary hover:text-primary hover:bg-primary/20 transition-all flex items-center justify-center gap-2"
  >
  <FileText size={14} />
  VIEW HISTORY
@@ -8591,7 +8463,7 @@ export const ManagePage: React.FC = () => {
  <button 
  type="button" 
  onClick={() => setEditingCustomer(null)}
- className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
+ className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
  </button>
@@ -8614,8 +8486,8 @@ export const ManagePage: React.FC = () => {
  >
  <div className="space-y-4">
  <div className="text-center">
- <p className="text-xs text-slate-700 dark:text-slate-300 font-medium uppercase tracking-wider mb-1">Customer</p>
- <p className="font-bold text-slate-900 dark:text-slate-100">{quickEditingPoints?.name}</p>
+ <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Customer</p>
+ <p className="font-bold text-foreground">{quickEditingPoints?.name}</p>
  </div>
  <FloatingInput 
  label="Loyalty Points" 
@@ -8628,7 +8500,7 @@ export const ManagePage: React.FC = () => {
  <button 
  type="button" 
  onClick={() => setQuickEditingPoints(null)}
- className="flex-1 bg-muted text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-slate-100 py-3 rounded-xl uppercase tracking-widest font-black transition-colors"
+ className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-3 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
  </button>
@@ -8644,45 +8516,45 @@ export const ManagePage: React.FC = () => {
 
  {/* Customer History Modal */}
  {viewingCustomerHistory && (
- <div className="fixed inset-0 bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412]/95 z-[25000] flex flex-col p-4">
+ <div className="fixed inset-0 bg-background z-[25000] flex flex-col p-4">
  <div className="flex justify-between items-center mb-4 md:mb-8 max-w-4xl mx-auto w-full">
  <div>
- <h3 className="text-amber-600 dark:text-amber-400 font-bold text-2xl tracking-tight">{viewingCustomerHistory.name}</h3>
+ <h3 className="text-primary font-bold text-2xl tracking-tight">{viewingCustomerHistory.name}</h3>
  <div className="flex items-center gap-3 mt-1">
- <p className="text-slate-700 dark:text-slate-300 text-sm font-medium uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
- <span className="text-[10px] bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2.5 py-1 rounded-full font-bold uppercase tracking-widest ">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
+ <p className="text-muted-foreground text-sm font-medium uppercase tracking-widest">{viewingCustomerHistory.phone}</p>
+ <span className="text-[10px] bg-primary/20 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest ">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
  </div>
  </div>
- <button onClick={() => setViewingCustomerHistory(null)} className="p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl text-slate-900 dark:text-slate-100 hover:-primary transition-all"><X size={24} /></button>
+ <button onClick={() => setViewingCustomerHistory(null)} className="p-3 bg-card border border-border rounded-2xl text-foreground hover:border-primary transition-all"><X size={24} /></button>
  </div>
  
  <div className="flex-1 overflow-y-auto space-y-4 pb-10 max-w-4xl mx-auto w-full">
- <h4 className="text-amber-600 dark:text-amber-400 font-bold uppercase text-xs tracking-widest pb-3 flex items-center gap-2">
+ <h4 className="text-primary font-bold uppercase text-xs tracking-widest pb-3 flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Service History
  </h4>
  {sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).length === 0 ? (
- <div className="text-center py-24 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl -dashed ">
- <p className="text-slate-700 dark:text-slate-300 text-sm italic">No service history found for this customer.</p>
+ <div className="text-center py-24 bg-card border border-border rounded-2xl border-dashed ">
+ <p className="text-muted-foreground text-sm italic">No service history found for this customer.</p>
  </div>
  ) : (
  sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).map(s => (
- <div key={s.id} className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl space-y-4 hover:-primary/30 transition-all group">
+ <div key={s.id} className="bg-card border border-border p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all group">
  <div className="flex justify-between items-center">
- <span className="text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-widest">{new Date(s.dateTime).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
- <span className="text-amber-600 dark:text-amber-400 font-bold text-lg">{s.total.toLocaleString()} Ks</span>
+ <span className="text-muted-foreground text-xs font-bold uppercase tracking-widest">{new Date(s.dateTime).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+ <span className="text-primary font-bold text-lg">{s.total.toLocaleString()} Ks</span>
  </div>
  <div className="space-y-2">
  {s.items.map((item, idx) => (
  <div key={idx} className="flex justify-between text-sm items-center">
- <span className="text-slate-900 dark:text-slate-100 font-medium">{item.name} <span className="text-slate-700 dark:text-slate-300 text-xs ml-1">x{item.qty}</span></span>
+ <span className="text-foreground font-medium">{item.name} <span className="text-muted-foreground text-xs ml-1">x{item.qty}</span></span>
  {item.disP > 0 && <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold">-{item.disP}%</span>}
  </div>
  ))}
  </div>
- <div className="pt-4 flex justify-between items-center text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest">
+ <div className="pt-4 flex justify-between items-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
  <span className="flex items-center gap-1.5">
- <UserIcon size={10} className="text-amber-600 dark:text-amber-400" />
+ <UserIcon size={10} className="text-primary" />
  Staff: {s.staff}
  </span>
  <span className="bg-muted/10 px-2 py-0.5 rounded-md">
@@ -8707,8 +8579,8 @@ export const ManagePage: React.FC = () => {
  className={cn(
  "px-4 md:px-6 py-4 rounded-2xl flex items-center gap-3 pointer-events-auto",
  statusMsg.type === 'success' 
- ? "bg-green-500 -green-600 text-slate-900 dark:text-slate-100" 
- : "bg-red-500 -red-600 text-slate-900 dark:text-slate-100"
+ ? "bg-green-500 border-green-600 text-foreground" 
+ : "bg-red-500 border-red-600 text-foreground"
  )}
  >
  {statusMsg.type === 'success' ? <div className="p-1 bg-white/20 rounded-full"><Check size={16} /></div> : <div className="p-1 bg-white/20 rounded-full"><X size={16} /></div>}
@@ -8729,19 +8601,19 @@ export const ManagePage: React.FC = () => {
  <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center text-red-500 mx-auto animate-pulse">
  <Trash2 size={40} />
  </div>
- <p className="text-slate-700 dark:text-slate-300 text-sm font-bold leading-relaxed">This will permanently delete every single sale record. This cannot be undone.</p>
+ <p className="text-muted-foreground text-sm font-bold leading-relaxed">This will permanently delete every single sale record. This cannot be undone.</p>
  <div className="flex flex-col gap-3">
  <button 
  disabled={isClearing}
  onClick={handleClearHistory}
- className="w-full bg-red-500 text-slate-900 dark:text-slate-100 font-black py-4 rounded-2xl shadow-red-500/20 disabled:opacity-50 uppercase tracking-widest"
+ className="w-full bg-red-500 text-foreground font-black py-4 rounded-2xl shadow-red-500/20 disabled:opacity-50 uppercase tracking-widest"
  >
  {isClearing ? "CLEARING..." : "YES, DELETE EVERYTHING"}
  </button>
  <button 
  disabled={isClearing}
  onClick={() => setShowClearConfirm(false)}
- className="w-full bg-muted/20 text-slate-900 dark:text-slate-100 font-black py-4 rounded-2xl hover:bg-muted/30 transition-all uppercase tracking-widest"
+ className="w-full bg-muted/20 text-foreground font-black py-4 rounded-2xl hover:bg-muted/30 transition-all uppercase tracking-widest"
  >
  CANCEL
  </button>
@@ -8760,18 +8632,18 @@ export const ManagePage: React.FC = () => {
  <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto">
  <Trash2 size={32} />
  </div>
- <p className="text-slate-700 dark:text-slate-300 text-sm font-bold">This action cannot be undone.</p>
+ <p className="text-muted-foreground text-sm font-bold">This action cannot be undone.</p>
  <div className="grid grid-cols-2 gap-3">
  <button 
  onClick={() => setShowConfirm(null)}
- className="bg-muted/20 text-slate-900 dark:text-slate-100 font-black py-3 rounded-xl hover:bg-muted/30 transition-all uppercase tracking-widest text-xs"
+ className="bg-muted/20 text-foreground font-black py-3 rounded-xl hover:bg-muted/30 transition-all uppercase tracking-widest text-xs"
  >
  CANCEL
  </button>
  <button 
  disabled={isDeleting}
  onClick={() => handleDelete(showConfirm!.coll, showConfirm!.id)}
- className="bg-red-500 text-slate-900 dark:text-slate-100 font-black py-3 rounded-xl shadow-red-500/20 uppercase tracking-widest text-xs disabled:opacity-50"
+ className="bg-red-500 text-foreground font-black py-3 rounded-xl shadow-red-500/20 uppercase tracking-widest text-xs disabled:opacity-50"
  >
  {isDeleting ? "DELETING..." : "DELETE"}
  </button>
@@ -8818,22 +8690,22 @@ const ForcePasswordChangePage: React.FC = () => {
  };
 
  return (
- <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] p-4 overflow-y-auto select-none">
- <div className="max-w-md w-full p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl relative overflow-hidden my-auto shrink-0">
- <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50/50 dark:bg-amber-900/20 rounded-full -mr-16 -mt-16 blur-3xl" />
+ <div className="min-h-screen flex flex-col items-center justify-center bg-background p-4 overflow-y-auto select-none">
+ <div className="max-w-md w-full p-4 bg-card border border-border rounded-2xl relative overflow-hidden my-auto shrink-0">
+ <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full -mr-16 -mt-16 blur-3xl" />
  
  <div className="relative z-10">
  <div className="flex items-center gap-4 mb-4 md:mb-8">
- <div className="p-3 bg-amber-100/50 dark:bg-amber-900/30 rounded-2xl ">
- <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+ <div className="p-3 bg-primary/20 rounded-2xl ">
+ <AlertTriangle className="w-6 h-6 text-primary" />
  </div>
  <div>
  <h2 className="text-2xl font-black tracking-tighter">Security Update</h2>
- <p className="text-xs text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
+ <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
  </div>
  </div>
 
- <p className="text-sm text-slate-700 dark:text-slate-300 mb-3 md:mb-6 font-medium leading-relaxed">
+ <p className="text-sm text-muted-foreground mb-3 md:mb-6 font-medium leading-relaxed">
  An administrator has reset your password. For your security, you must set a new password before continuing.
  </p>
 
@@ -8841,7 +8713,7 @@ const ForcePasswordChangePage: React.FC = () => {
  <motion.div 
  initial={{ opacity: 0, y: -10 }}
  animate={{ opacity: 1, y: 0 }}
- className="mb-3 md:mb-6 p-4 bg-red-500/10 -red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
+ className="mb-3 md:mb-6 p-4 bg-red-500/10 border-red-500/20 text-red-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
  >
  <AlertCircle className="w-5 h-5 flex-shrink-0" />
  {error}
@@ -8852,7 +8724,7 @@ const ForcePasswordChangePage: React.FC = () => {
  <motion.div 
  initial={{ opacity: 0, y: -10 }}
  animate={{ opacity: 1, y: 0 }}
- className="mb-3 md:mb-6 p-4 bg-green-500/10 -green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
+ className="mb-3 md:mb-6 p-4 bg-green-500/10 border-green-500/20 text-green-500 text-sm rounded-2xl flex items-center gap-3 font-bold"
  >
  <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
  Password updated! Redirecting...
@@ -8861,24 +8733,24 @@ const ForcePasswordChangePage: React.FC = () => {
 
  <form onSubmit={handleSubmit} className="space-y-3">
  <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">New Password</label>
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">New Password</label>
  <input
  type="password"
  value={newPassword}
  onChange={(e) => setNewPassword(e.target.value)}
- className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary focus:-transparent outline-none transition-all font-bold text-sm"
+ className="w-full p-4 rounded-2xl bg-input border border-border focus:ring-2 focus:ring-primary focus:-transparent outline-none transition-all font-bold text-sm"
  placeholder="••••••••"
  required
  />
  </div>
 
  <div className="space-y-2">
- <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Confirm New Password</label>
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Confirm New Password</label>
  <input
  type="password"
  value={confirmPassword}
  onChange={(e) => setConfirmPassword(e.target.value)}
- className="w-full p-4 rounded-2xl bg-muted/30 focus:ring-2 focus:ring-primary focus:-transparent outline-none transition-all font-bold text-sm"
+ className="w-full p-4 rounded-2xl bg-input border border-border focus:ring-2 focus:ring-primary focus:-transparent outline-none transition-all font-bold text-sm"
  placeholder="••••••••"
  required
  />
@@ -9026,20 +8898,20 @@ const SettingsPage: React.FC = () => {
 
  return (
  <div className="max-w-4xl mx-auto space-y-3 pb-20">
- <div className="flex items-center gap-3 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl relative overflow-hidden">
- <div className="absolute top-0 right-0 w-24 h-24 bg-amber-50/50 dark:bg-amber-900/20 rounded-full -mr-12 -mt-12 blur-2xl" />
- <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400 relative z-10">
+ <div className="flex items-center gap-3 p-4 bg-card border border-border rounded-2xl relative overflow-hidden">
+ <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full -mr-12 -mt-12 blur-2xl" />
+ <div className="p-2 bg-primary/20 rounded-xl text-primary relative z-10">
  <Settings className="w-5 h-5" />
  </div>
  <div className="relative z-10">
  <h1 className="text-xl font-black tracking-tighter">Settings</h1>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
+ <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
  </div>
  </div>
 
- <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+ <div className="p-4 bg-card border border-border rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div className="flex items-center gap-2">
- <Moon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+ <Moon className="w-4 h-4 text-primary" />
  <h2 className="text-sm font-black tracking-tighter uppercase">App Theme</h2>
  </div>
  <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
@@ -9050,8 +8922,8 @@ const SettingsPage: React.FC = () => {
  className={cn(
  "py-2 px-3 rounded-xl transition-all font-black text-[10px] tracking-widest uppercase flex items-center gap-2 shrink-0",
  theme === t 
- ? "-primary bg-amber-100/50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 " 
- : " text-slate-700 dark:text-slate-300 hover:bg-muted"
+ ? "-primary bg-primary/20 text-primary " 
+ : " text-muted-foreground hover:bg-muted"
  )}
  >
  <div className={cn(
@@ -9067,23 +8939,23 @@ const SettingsPage: React.FC = () => {
  </div>
 
  
- <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col space-y-4">
+ <div className="p-4 bg-card border border-border rounded-2xl flex flex-col space-y-4">
  <div className="flex items-center gap-2">
- <Globe className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+ <Globe className="w-4 h-4 text-primary" />
  <h2 className="text-sm font-black tracking-tighter uppercase">Localization</h2>
  </div>
  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
  <div className="space-y-1">
- <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Date Format</label>
- <select className="w-full p-3 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.dateFormat || 'MM/DD/YYYY'} onChange={(e) => handleUpdatePreferences({ dateFormat: e.target.value })}>
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Date Format</label>
+ <select className="w-full p-3 rounded-xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.dateFormat || 'MM/DD/YYYY'} onChange={(e) => handleUpdatePreferences({ dateFormat: e.target.value })}>
  <option value="MM/DD/YYYY">MM/DD/YYYY</option>
  <option value="DD/MM/YYYY">DD/MM/YYYY</option>
  <option value="YYYY-MM-DD">YYYY-MM-DD</option>
  </select>
  </div>
  <div className="space-y-1">
- <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-700 dark:text-slate-300 ml-1">Time Format</label>
- <select className="w-full p-3 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.timeFormat || '12h'} onChange={(e) => handleUpdatePreferences({ timeFormat: e.target.value })}>
+ <label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-1">Time Format</label>
+ <select className="w-full p-3 rounded-xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-xs" value={preferences.timeFormat || '12h'} onChange={(e) => handleUpdatePreferences({ timeFormat: e.target.value })}>
  <option value="12h">12-Hour (AM/PM)</option>
  <option value="24h">24-Hour</option>
  </select>
@@ -9091,27 +8963,27 @@ const SettingsPage: React.FC = () => {
  </div>
  </div>
 
- <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col space-y-4">
+ <div className="p-4 bg-card border border-border rounded-2xl flex flex-col space-y-4">
  <div className="flex items-center gap-2">
- <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+ <Bell className="w-4 h-4 text-primary" />
  <h2 className="text-sm font-black tracking-tighter uppercase">Notification Preferences</h2>
  </div>
  <div className="space-y-3 pt-2">
  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl ">
  <div>
  <h3 className="text-xs font-bold">Push Notifications</h3>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium mt-0.5">Receive alerts on your device.</p>
+ <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Receive alerts on your device.</p>
  </div>
- <button onClick={() => handleUpdatePreferences({ pushNotifications: !preferences.pushNotifications })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.pushNotifications ? "bg-amber-200/50 dark:bg-amber-900/40" : "bg-muted/50")}>
+ <button onClick={() => handleUpdatePreferences({ pushNotifications: !preferences.pushNotifications })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.pushNotifications ? "bg-primary/20" : "bg-muted/50")}>
  <div className={cn("pointer-events-none inline-block h-4 w-4 transform rounded-full ring-0 transition duration-200 ease-in-out", preferences.pushNotifications ? "translate-x-2 bg-primary" : "-translate-x-2 bg-white")}></div>
  </button>
  </div>
  <div className="flex items-center justify-between p-3 bg-muted/20 rounded-xl ">
  <div>
  <h3 className="text-xs font-bold">Email Alerts</h3>
- <p className="text-[10px] text-slate-700 dark:text-slate-300 font-medium mt-0.5">Receive weekly reports and alerts via email.</p>
+ <p className="text-[10px] text-muted-foreground font-medium mt-0.5">Receive weekly reports and alerts via email.</p>
  </div>
- <button onClick={() => handleUpdatePreferences({ emailAlerts: !preferences.emailAlerts })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.emailAlerts ? "bg-amber-200/50 dark:bg-amber-900/40" : "bg-muted/50")}>
+ <button onClick={() => handleUpdatePreferences({ emailAlerts: !preferences.emailAlerts })} className={cn("relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors", preferences.emailAlerts ? "bg-primary/20" : "bg-muted/50")}>
  <div className={cn("pointer-events-none inline-block h-4 w-4 transform rounded-full ring-0 transition duration-200 ease-in-out", preferences.emailAlerts ? "translate-x-2 bg-primary" : "-translate-x-2 bg-white")}></div>
  </button>
  </div>
@@ -9128,49 +9000,49 @@ const SettingsPage: React.FC = () => {
  setResetSuccess(false);
  setIsPasswordModalOpen(true);
  }}
- className="w-full p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex items-center justify-between gap-4 hover:-primary/50 transition-all group active:scale-[0.99] cursor-pointer text-left"
+ className="w-full p-4 bg-card border border-border rounded-2xl flex items-center justify-between gap-4 hover:border-primary/50 transition-all group active:scale-[0.99] cursor-pointer text-left"
  >
  <div className="flex items-center gap-3">
- <div className="p-2 bg-amber-100/50 dark:bg-amber-900/30 rounded-xl text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+ <div className="p-2 bg-primary/20 rounded-xl text-primary group-hover:scale-110 transition-transform">
  <Lock className="w-4 h-4" />
  </div>
  <div>
  <h2 className="text-sm font-black tracking-tighter uppercase">Change Password</h2>
- <p className="text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-widest mt-0.5">Update security credentials</p>
+ <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">Update security credentials</p>
  </div>
  </div>
- <ChevronRight className="w-5 h-5 text-slate-700 dark:text-slate-300 group-hover:text-amber-600 dark:text-amber-400 transition-colors" />
+ <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
  </button>
 
  {isPasswordModalOpen && (
- <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-md rounded-2xl p-4 flex flex-col animate-in zoom-in-95 duration-300 relative overflow-hidden">
+ <div className="fixed inset-0 z-[50000] flex items-start justify-center p-4 pt-[100px] sm:pt-[120px] bg-black/70 backdrop-blur-md animate-in fade-in">
+ <div className="bg-card border border-border w-full max-w-md rounded-2xl p-4 flex flex-col animate-in zoom-in-95 duration-300 relative overflow-hidden">
  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
  <div className="relative z-10">
  <div className="flex justify-between items-start mb-3 md:mb-6">
- <div className="w-14 h-14 bg-amber-100/50 dark:bg-amber-900/30 rounded-2xl flex items-center justify-center -primary/20 ">
- <Lock size={28} className="text-amber-600 dark:text-amber-400" />
+ <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center border-primary/20 ">
+ <Lock size={28} className="text-primary" />
  </div>
  <button onClick={() => setIsPasswordModalOpen(false)} className="p-2.5 bg-muted/50 hover:bg-muted rounded-full transition-colors active:scale-95"><X size={20} /></button>
  </div>
  
  <h3 className="text-2xl font-black tracking-tight mb-2">Change Password</h3>
- <p className="text-slate-700 dark:text-slate-300 text-xs font-medium mb-3 md:mb-6">Update your account password. If you forgot your current password, you can request a reset link.</p>
+ <p className="text-muted-foreground text-xs font-medium mb-3 md:mb-6">Update your account password. If you forgot your current password, you can request a reset link.</p>
 
  {error && (
- <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-red-500/10 -red-500/20 text-red-500 text-xs rounded-xl flex items-center gap-2 font-bold">
+ <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-red-500/10 border-red-500/20 text-red-500 text-xs rounded-xl flex items-center gap-2 font-bold">
  <AlertCircle className="w-4 h-4 flex-shrink-0" />
  {error}
  </motion.div>
  )}
  {pwdSuccess && (
- <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-emerald-500/10 -emerald-500/20 text-emerald-600 text-xs rounded-xl flex items-center gap-2 font-bold">
+ <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-emerald-500/10 border-emerald-500/20 text-emerald-600 text-xs rounded-xl flex items-center gap-2 font-bold">
  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
  Password updated successfully!
  </motion.div>
  )}
  {resetSuccess && (
- <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-blue-500/10 -blue-500/20 text-blue-600 text-xs rounded-xl flex items-center gap-2 font-bold">
+ <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="p-3.5 mb-4 bg-blue-500/10 border-blue-500/20 text-blue-600 text-xs rounded-xl flex items-center gap-2 font-bold">
  <Mail className="w-4 h-4 flex-shrink-0" />
  Password reset link sent to your email!
  </motion.div>
@@ -9179,34 +9051,34 @@ const SettingsPage: React.FC = () => {
  <form onSubmit={handlePasswordSubmit} className="space-y-4">
  <div className="space-y-1.5">
  <div className="flex items-center justify-between">
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 ml-1">Current Password</label>
- <button type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline disabled:opacity-50 transition-all">
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Current Password</label>
+ <button type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-[10px] font-bold text-primary hover:underline disabled:opacity-50 transition-all">
  {resetLoading ? 'Sending...' : 'Forgot password?'}
  </button>
  </div>
  <div className="relative">
- <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
- <Lock className="w-4 h-4 text-slate-700 dark:text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+ <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+ <Lock className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
  </div>
  </div>
  
  <div className="space-y-1.5">
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 ml-1">New Password</label>
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Password</label>
  <div className="relative">
- <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
- <Key className="w-4 h-4 text-slate-700 dark:text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+ <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+ <Key className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
  </div>
  </div>
 
  <div className="space-y-1.5">
- <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 ml-1">Confirm New Password</label>
+ <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Confirm New Password</label>
  <div className="relative">
- <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-muted/30 focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
- <Key className="w-4 h-4 text-slate-700 dark:text-slate-300 absolute left-3.5 top-1/2 -translate-y-1/2" />
+ <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
+ <Key className="w-4 h-4 text-muted-foreground absolute left-3.5 top-1/2 -translate-y-1/2" />
  </div>
  </div>
 
- <button type="submit" disabled={pwdLoading || resetLoading} className="w-full py-4 px-4 md:px-6 rounded-2xl bg-primary text-amber-600 dark:text-amber-400-foreground font-black text-[11px] tracking-widest uppercase shadow-primary/25 hover:opacity-95 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all mt-6 flex items-center justify-center gap-2">
+ <button type="submit" disabled={pwdLoading || resetLoading} className="w-full py-4 px-4 md:px-6 rounded-2xl bg-primary text-primary-foreground font-black text-[11px] tracking-widest uppercase shadow-primary/25 hover:opacity-95 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all mt-6 flex items-center justify-center gap-2">
  {pwdLoading ? 'Updating...' : 'Update Password'}
  </button>
  </form>
@@ -9215,35 +9087,35 @@ const SettingsPage: React.FC = () => {
  </div>
  )}
 
- <div className="p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 rounded-2xl flex flex-col space-y-4 relative overflow-hidden">
+ <div className="p-4 bg-card border border-border rounded-2xl flex flex-col space-y-4 relative overflow-hidden">
  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
  <div className="flex items-center gap-3">
- <div className="p-2.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-xl -primary/20 text-amber-600 dark:text-amber-400">
+ <div className="p-2.5 bg-primary/20 rounded-xl border-primary/20 text-primary">
  <ShieldCheck className="w-5 h-5" />
  </div>
  <div>
  <div className="flex items-center gap-2">
  <h2 className="text-sm font-black tracking-tight uppercase">System Version & Updates</h2>
- <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 -emerald-500/20">
+ <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
  Stable
  </span>
  </div>
- <p className="text-[11px] text-slate-700 dark:text-slate-300 font-medium mt-0.5">
+ <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
  Keep your system software up to date for optimal security and features.
  </p>
  </div>
  </div>
 
  <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
- <div className="px-3 py-1.5 rounded-xl bg-muted/40 text-xs font-black tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
- <span className="text-[10px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-wider">Version:</span>
+ <div className="px-3 py-1.5 rounded-xl bg-muted/40 text-xs font-black tracking-tight text-foreground flex items-center gap-1.5">
+ <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Version:</span>
  <span>v{CURRENT_VERSION}</span>
  </div>
  <button 
  onClick={checkForUpdates} 
  disabled={updateChecking} 
- className="py-2.5 px-4 rounded-xl bg-primary text-amber-600 dark:text-amber-400-foreground font-black text-[10px] tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 shrink-0"
+ className="py-2.5 px-4 rounded-xl bg-primary text-primary-foreground font-black text-[10px] tracking-widest uppercase hover:bg-primary/90 active:scale-95 transition-all disabled:opacity-50 flex items-center gap-2 shrink-0"
  >
  <RefreshCw className={cn("w-3.5 h-3.5", updateChecking && "animate-spin")} />
  {updateChecking ? 'Checking...' : 'Check for updates'}
@@ -9258,8 +9130,8 @@ const SettingsPage: React.FC = () => {
  className={cn(
  "p-3.5 rounded-xl text-xs font-bold flex items-center justify-between gap-3",
  updateMsg.type === 'success' 
- ? "bg-emerald-500/10 text-emerald-600 -emerald-500/20" 
- : "bg-red-500/10 text-red-500 -red-500/20"
+ ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+ : "bg-red-500/10 text-red-500 border-red-500/20"
  )}
  >
  <div className="flex items-center gap-2.5">
@@ -9277,32 +9149,32 @@ const SettingsPage: React.FC = () => {
  )}
 
  {isUpdateModalOpen && (
- <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-md rounded-2xl p-4 -primary/30 space-y-3 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+ <div className="fixed inset-0 z-[50000] flex items-start justify-center p-4 pt-[100px] sm:pt-[120px] bg-black/70 backdrop-blur-md animate-in fade-in">
+ <div className="bg-card border border-border w-full max-w-md rounded-2xl p-4 border-primary/30 space-y-3 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
  
  <div className="relative z-10 flex flex-col items-center">
- <div className="w-20 h-20 bg-primary/15 rounded-full flex items-center justify-center relative -primary/30 mb-4 animate-bounce duration-1000">
- <Download className="w-10 h-10 text-amber-600 dark:text-amber-400 drop-" />
+ <div className="w-20 h-20 bg-primary/15 rounded-full flex items-center justify-center relative border-primary/30 mb-4 animate-bounce duration-1000">
+ <Download className="w-10 h-10 text-primary drop-" />
  </div>
 
- <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/15 text-amber-600 dark:text-amber-400 -primary/30 mb-2">
+ <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-primary/15 text-primary border-primary/30 mb-2">
  <Sparkles className="w-3 h-3" />
  New Release Ready
  </span>
 
- <h3 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">Software Update Available</h3>
- <p className="text-slate-700 dark:text-slate-300 text-xs font-medium px-2 mt-2 leading-relaxed">
+ <h3 className="text-2xl font-black tracking-tight text-foreground">Software Update Available</h3>
+ <p className="text-muted-foreground text-xs font-medium px-2 mt-2 leading-relaxed">
  {updateMsg?.text || "A new version of the application is available. Upgrade now for the latest features, security enhancements, and stability improvements."}
  </p>
  </div>
 
  <div className="bg-muted/30 rounded-2xl p-4 text-left space-y-2 relative z-10">
- <div className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
+ <div className="text-[10px] font-black uppercase tracking-wider text-muted-foreground flex items-center justify-between">
  <span>Release Highlights</span>
- <span className="text-amber-600 dark:text-amber-400 font-bold">Stable Channel</span>
+ <span className="text-primary font-bold">Stable Channel</span>
  </div>
- <ul className="text-xs font-medium space-y-1.5 text-slate-900 dark:text-slate-100/80">
+ <ul className="text-xs font-medium space-y-1.5 text-foreground/80">
  <li className="flex items-center gap-2">
  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
  Performance optimizations and faster startup
@@ -9321,14 +9193,14 @@ const SettingsPage: React.FC = () => {
  <div className="space-y-3 relative z-10 pt-2">
  <button
  onClick={forceUpdate}
- className="w-full bg-primary text-amber-600 dark:text-amber-400-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-primary/25 hover:opacity-95 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2.5 uppercase"
+ className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-primary/25 hover:opacity-95 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2.5 uppercase"
  >
  <Download size={18} />
  Install Update Now
  </button>
  <button
  onClick={() => setIsUpdateModalOpen(false)}
- className="w-full bg-muted/60 text-slate-700 dark:text-slate-300 font-bold text-xs tracking-widest uppercase py-3.5 rounded-2xl hover:bg-muted active:scale-95 transition-all"
+ className="w-full bg-muted/60 text-muted-foreground font-bold text-xs tracking-widest uppercase py-3.5 rounded-2xl hover:bg-muted active:scale-95 transition-all"
  >
  Remind Me Later
  </button>
@@ -9343,9 +9215,9 @@ const SettingsPage: React.FC = () => {
 
 const ResetPasswordPage: React.FC = () => {
  return (
- <div className="min-h-screen bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] flex flex-col items-center justify-center p-4">
+ <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
  <h2 className="text-2xl font-black mb-4">Reset Password</h2>
- <p className="text-slate-700 dark:text-slate-300 mb-4">Password reset is handled via Identity Reset or Admin panel.</p>
+ <p className="text-muted-foreground mb-4">Password reset is handled via Identity Reset or Admin panel.</p>
  <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
  </div>
  );
@@ -9353,9 +9225,9 @@ const ResetPasswordPage: React.FC = () => {
 
 const IdentityResetPage: React.FC = () => {
  return (
- <div className="min-h-screen bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] flex flex-col items-center justify-center p-4">
+ <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
  <h2 className="text-2xl font-black mb-4">Identity Reset</h2>
- <p className="text-slate-700 dark:text-slate-300 mb-4">Please contact an admin to reset your password or identity details.</p>
+ <p className="text-muted-foreground mb-4">Please contact an admin to reset your password or identity details.</p>
  <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
  </div>
  );
@@ -9527,7 +9399,7 @@ const LoginPage: React.FC = () => {
 
  return (
  <div 
- className="fixed inset-0 z-[99999] overflow-hidden overscroll-none transition-colors duration-500 ease-in-out text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 select-none bg-cover bg-center"
+ className="fixed inset-0 z-[99999] overflow-hidden overscroll-none transition-colors duration-500 ease-in-out text-foreground [.midnight_&]:text-slate-200 select-none bg-cover bg-center"
  style={{ backgroundImage: `url(${nailSalonBg})` }}
  >
  <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
@@ -9565,7 +9437,7 @@ const LoginPage: React.FC = () => {
  </button>
  <button
  onClick={() => { setViewState('signup'); setError(null); }}
- className="flex-1 bg-transparent -2 -white text-white font-black py-4 px-4 md:px-8 rounded-xl hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
+ className="flex-1 bg-transparent border-2 border-white text-white font-black py-4 px-4 md:px-8 rounded-xl hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
  >
  CREATE ACCOUNT
  </button>
@@ -9584,7 +9456,7 @@ const LoginPage: React.FC = () => {
  >
  <button
  onClick={() => setViewState('welcome')}
- className="absolute top-4 left-4 p-2 text-slate-700 dark:text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
+ className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
  >
  <ArrowLeft size={14} /> Back
  </button>
@@ -9598,7 +9470,7 @@ const LoginPage: React.FC = () => {
  <motion.div 
  initial={{ opacity: 0, x: -10 }}
  animate={{ opacity: 1, x: 0 }}
- className="mb-4 p-3 bg-red-500/10 -red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3"
+ className="mb-4 p-3 bg-red-500/10 border-red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3"
  >
  <AlertCircle size={16} className="shrink-0" />
  {error}
@@ -9606,13 +9478,13 @@ const LoginPage: React.FC = () => {
  )}
 
  {/* Auth Method Selector */}
- <div className="flex p-1 bg-white/10 rounded-xl mb-5 -white/20 backdrop-blur-sm">
+ <div className="flex p-1 bg-white/10 rounded-xl mb-5 border-white/20 backdrop-blur-sm">
  <button
  type="button"
  onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
  className={cn(
  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
- loginMethod === 'phone' ? "text-white" : "text-slate-700 dark:text-slate-300 hover:text-white"
+ loginMethod === 'phone' ? "text-white" : "text-muted-foreground hover:text-white"
  )}
  >
  {loginMethod === 'phone' && (
@@ -9625,7 +9497,7 @@ const LoginPage: React.FC = () => {
  onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
  className={cn(
  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
- loginMethod === 'email' ? "text-white" : "text-slate-700 dark:text-slate-300 hover:text-white"
+ loginMethod === 'email' ? "text-white" : "text-muted-foreground hover:text-white"
  )}
  >
  {loginMethod === 'email' && (
@@ -9637,7 +9509,7 @@ const LoginPage: React.FC = () => {
 
  <form onSubmit={handleLoginSubmit} className="space-y-4">
  <div className="space-y-1">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">
+ <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">
  {loginMethod === 'phone' ? 'Phone Number' : 'Email Address'}
  </label>
  <div className="relative">
@@ -9651,18 +9523,18 @@ const LoginPage: React.FC = () => {
  value={identifier}
  onChange={(e) => setIdentifier(e.target.value)}
  placeholder={loginMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
- className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ className="w-full bg-white/10 border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
  />
  </div>
  </div>
 
  <div className="space-y-1">
  <div className="flex justify-between items-center px-1">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest">Password</label>
+ <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Password</label>
  <button 
  type="button"
  onClick={() => navigate('/identity-reset')}
- className="text-[9px] text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 font-bold hover:underline"
+ className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-bold hover:underline"
  >
  Forgot?
  </button>
@@ -9674,7 +9546,7 @@ const LoginPage: React.FC = () => {
  value={password}
  onChange={(e) => setPassword(e.target.value)}
  placeholder="••••••••"
- className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ className="w-full bg-white/10 border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
  />
  <button 
  type="button"
@@ -9699,7 +9571,7 @@ const LoginPage: React.FC = () => {
  <button 
  onClick={handleBiometricLogin}
  disabled={isSubmitting}
- className="w-full flex items-center justify-center gap-3 bg-white/10 -white/20 text-white font-bold py-3 mt-4 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 mt-4 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
  >
  <Zap size={18} />
  <span className="text-[10px] font-black uppercase tracking-widest">1-Tap Login</span>
@@ -9711,13 +9583,13 @@ const LoginPage: React.FC = () => {
  <div className="absolute inset-0 flex items-center">
  <div className="w-full "></div>
  </div>
- <span className="relative px-4 text-[8px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest bg-transparent">Or continue with</span>
+ <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-transparent">Or continue with</span>
  </div>
 
  <button 
  onClick={handleGoogleLogin}
  disabled={isSubmitting}
- className="w-full flex items-center justify-center gap-3 bg-white/10 -white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
  >
  <span className="text-xs tracking-wider">Continue with Google</span>
  </button>
@@ -9727,7 +9599,7 @@ const LoginPage: React.FC = () => {
  <div className="pt-6 text-center">
  <button 
  onClick={() => setShowHelp(!showHelp)}
- className="text-[9px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-[0.2em] hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
+ className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
  >
  <HelpCircle size={12} />
  Need help?
@@ -9737,11 +9609,11 @@ const LoginPage: React.FC = () => {
  <motion.div 
  initial={{ opacity: 0, y: 10 }}
  animate={{ opacity: 1, y: 0 }}
- className="mt-4 p-4 bg-amber-50/50 dark:bg-amber-900/20 -primary/10 rounded-2xl text-left"
+ className="mt-4 p-4 bg-primary/20 border-primary/10 rounded-2xl text-left"
  >
- <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400 uppercase tracking-widest mb-2">Staff Registration</p>
- <p className="text-[9px] text-slate-700 dark:text-slate-300 leading-relaxed">
- If you were added as a staff member by an admin, you still need to <strong className="text-amber-600 dark:text-amber-400 [.midnight_&]:text-amber-400">Sign Up</strong> once with your email to set your password.
+ <p className="text-[10px] font-black text-primary [.midnight_&]:text-amber-400 uppercase tracking-widest mb-2">Staff Registration</p>
+ <p className="text-[9px] text-muted-foreground leading-relaxed">
+ If you were added as a staff member by an admin, you still need to <strong className="text-primary [.midnight_&]:text-amber-400">Sign Up</strong> once with your email to set your password.
  </p>
  </motion.div>
  )}
@@ -9760,7 +9632,7 @@ const LoginPage: React.FC = () => {
  >
  <button
  onClick={() => setViewState('welcome')}
- className="absolute top-4 left-4 p-2 text-slate-700 dark:text-slate-300 hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
+ className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
  >
  <ArrowLeft size={14} /> Back
  </button>
@@ -9768,23 +9640,23 @@ const LoginPage: React.FC = () => {
  <div className="w-full max-w-md mx-auto">
  <div className="text-center mb-3 md:mb-6 mt-4">
  <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Create Account</h2>
- <p className="text-[9px] text-slate-700 dark:text-slate-300 font-bold uppercase tracking-[0.2em] mt-1">Join Nail Pro Studio</p>
+ <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-[0.2em] mt-1">Join Nail Pro Studio</p>
  </div>
 
  {error && (
- <div className="mb-4 p-3 bg-red-500/10 -red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3">
+ <div className="mb-4 p-3 bg-red-500/10 border-red-500/20 text-red-500 text-xs rounded-xl font-bold flex items-center gap-3">
  <AlertCircle size={16} className="shrink-0" />
  {error}
  </div>
  )}
 
- <div className="flex p-1 bg-white/10 rounded-xl mb-5 -white/20 backdrop-blur-sm">
+ <div className="flex p-1 bg-white/10 rounded-xl mb-5 border-white/20 backdrop-blur-sm">
  <button
  type="button"
  onClick={() => { setSignUpMethod('phone'); setSignUpIdentifier(''); setError(null); }}
  className={cn(
  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
- signUpMethod === 'phone' ? "text-white" : "text-slate-700 dark:text-slate-300 hover:text-white"
+ signUpMethod === 'phone' ? "text-white" : "text-muted-foreground hover:text-white"
  )}
  >
  {signUpMethod === 'phone' && (
@@ -9797,7 +9669,7 @@ const LoginPage: React.FC = () => {
  onClick={() => { setSignUpMethod('email'); setSignUpIdentifier(''); setError(null); }}
  className={cn(
  "flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 relative",
- signUpMethod === 'email' ? "text-white" : "text-slate-700 dark:text-slate-300 hover:text-white"
+ signUpMethod === 'email' ? "text-white" : "text-muted-foreground hover:text-white"
  )}
  >
  {signUpMethod === 'email' && (
@@ -9809,7 +9681,7 @@ const LoginPage: React.FC = () => {
 
  <form onSubmit={handleSignUpSubmit} className="space-y-4">
  <div className="space-y-1">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Full Name</label>
+ <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Full Name</label>
  <div className="relative">
  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
  <input 
@@ -9817,13 +9689,13 @@ const LoginPage: React.FC = () => {
  value={signUpName}
  onChange={(e) => setSignUpName(e.target.value)}
  placeholder="Your Name"
- className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ className="w-full bg-white/10 border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
  />
  </div>
  </div>
 
  <div className="space-y-1">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">
+ <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">
  {signUpMethod === 'phone' ? 'Phone Number' : 'Email Address'}
  </label>
  <div className="relative">
@@ -9837,25 +9709,25 @@ const LoginPage: React.FC = () => {
  value={signUpIdentifier}
  onChange={(e) => setSignUpIdentifier(e.target.value)}
  placeholder={signUpMethod === 'email' ? "email@example.com" : "09xxxxxxxxx"}
- className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ className="w-full bg-white/10 border-white/20 rounded-xl p-3 pl-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
  />
  </div>
  </div>
 
  {signUpMethod === 'phone' && (
  <div className="space-y-1">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Date of Birth</label>
+ <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Date of Birth</label>
  <input 
  type="date"
  value={signUpDob}
  onChange={(e) => setSignUpDob(e.target.value)}
- className="w-full bg-input rounded-xl p-3 text-slate-900 dark:text-slate-100 [.midnight_&]:text-slate-200 text-sm focus:-primary outline-none transition-all"
+ className="w-full bg-input border border-border rounded-xl p-3 text-foreground [.midnight_&]:text-slate-200 text-sm focus:border-primary outline-none transition-all"
  />
  </div>
  )}
 
  <div className="space-y-1">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Password</label>
+ <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Password</label>
  <div className="relative">
  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
  <input 
@@ -9863,7 +9735,7 @@ const LoginPage: React.FC = () => {
  value={signUpPassword}
  onChange={(e) => setSignUpPassword(e.target.value)}
  placeholder="••••••••"
- className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ className="w-full bg-white/10 border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
  />
  <button 
  type="button"
@@ -9877,7 +9749,7 @@ const LoginPage: React.FC = () => {
 
  {signUpMethod === 'phone' && (
  <div className="space-y-1">
- <label className="text-[9px] text-slate-700 dark:text-slate-300 font-black uppercase tracking-widest ml-1">Confirm Password</label>
+ <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest ml-1">Confirm Password</label>
  <div className="relative">
  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
  <input 
@@ -9885,7 +9757,7 @@ const LoginPage: React.FC = () => {
  value={signUpConfirmPassword}
  onChange={(e) => setSignUpConfirmPassword(e.target.value)}
  placeholder="••••••••"
- className="w-full bg-white/10 -white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
+ className="w-full bg-white/10 border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
  />
  </div>
  </div>
@@ -9905,13 +9777,13 @@ const LoginPage: React.FC = () => {
  <div className="absolute inset-0 flex items-center">
  <div className="w-full "></div>
  </div>
- <span className="relative px-4 text-[8px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest bg-transparent">Or continue with</span>
+ <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-transparent">Or continue with</span>
  </div>
 
  <button 
  onClick={handleGoogleLogin}
  disabled={isSubmitting}
- className="w-full flex items-center justify-center gap-3 bg-white/10 -white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
  >
  <span className="text-xs tracking-wider">Continue with Google</span>
  </button>
@@ -9997,14 +9869,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  const renderExitConfirm = () => {
  if (!showExitConfirm) return null;
  return (
- <div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300 select-none">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 p-4 rounded-2xl w-full max-w-[320px] text-center space-y-3 ">
- <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 uppercase tracking-widest font-serif">Exit App</h3>
- <p className="text-slate-700 dark:text-slate-300 text-sm">Are you sure you want to exit the app?</p>
+ <div className="fixed inset-0 bg-black/60 z-[999999] flex items-start justify-center p-4 pt-[100px] sm:pt-[120px] backdrop-blur-sm animate-in fade-in duration-300 select-none">
+ <div className="bg-card border border-border p-4 rounded-2xl w-full max-w-[320px] text-center space-y-3 ">
+ <h3 className="text-xl font-black text-foreground uppercase tracking-widest font-serif">Exit App</h3>
+ <p className="text-muted-foreground text-sm">Are you sure you want to exit the app?</p>
  <div className="flex gap-3">
  <button
  onClick={() => setShowExitConfirm(false)}
- className="flex-1 bg-muted text-slate-900 dark:text-slate-100 font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
+ className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
  >
  NO
  </button>
@@ -10017,7 +9889,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  window.location.href = "about:blank";
  }
  }}
- className="flex-1 bg-primary text-amber-600 dark:text-amber-400-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-all text-xs tracking-wider "
+ className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-all text-xs tracking-wider "
  >
  YES
  </button>
@@ -10030,20 +9902,20 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  const renderNeedsUpdate = () => {
  if (!needsUpdate || !updateInfo?.updateUrl) return null;
  return (
- <div className="fixed inset-0 z-[60000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
- <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-rose-200/50 dark:border-rose-900/30 w-full max-w-sm rounded-2xl p-4 -primary/20 space-y-3 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
+ <div className="fixed inset-0 z-[60000] flex items-start justify-center p-4 pt-[100px] sm:pt-[120px] bg-black/60 backdrop-blur-sm animate-in fade-in">
+ <div className="bg-card border border-border w-full max-w-sm rounded-2xl p-4 border-primary/20 space-y-3 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
- <div className="w-20 h-20 bg-amber-100/50 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto relative z-10 -primary/20">
- <Download className="w-10 h-10 text-amber-600 dark:text-amber-400 drop-" />
+ <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto relative z-10 border-primary/20">
+ <Download className="w-10 h-10 text-primary drop-" />
  </div>
  <div className="space-y-3 relative z-10">
- <h3 className="text-3xl font-black tracking-tighter text-slate-900 dark:text-slate-100">Update Available</h3>
- <p className="text-slate-700 dark:text-slate-300 text-sm font-medium px-4">A new version of the application is available. Please update to continue using all features securely.</p>
+ <h3 className="text-3xl font-black tracking-tighter text-foreground">Update Available</h3>
+ <p className="text-muted-foreground text-sm font-medium px-4">A new version of the application is available. Please update to continue using all features securely.</p>
  </div>
  <div className="space-y-4 relative z-10">
  <button
  onClick={() => { window.location.href = updateInfo.updateUrl; }}
- className="w-full bg-primary text-amber-600 dark:text-amber-400-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-primary/20 hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
+ className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-primary/20 hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
  >
  <Download size={18} />
  UPDATE NOW
@@ -10055,8 +9927,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  };
 
  if (loading) return (
- <div className="fixed inset-0 flex items-center justify-center bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] transition-colors duration-300 select-none">
- <div className="w-12 h-12 -4 -primary -transparent rounded-full animate-spin" />
+ <div className="fixed inset-0 flex items-center justify-center bg-background transition-colors duration-300 select-none">
+ <div className="w-12 h-12 border-4 border-primary border-transparent rounded-full animate-spin" />
  </div>
  );
 
@@ -10087,7 +9959,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  const isPos = location.pathname === '/pos';
 
  return (
- <div className={`${isPos ? 'h-screen w-full flex flex-col overflow-hidden' : 'min-h-screen pb-10'} bg-gradient-to-br from-rose-50/50 via-white to-amber-50/30 dark:from-[#1a1412] dark:via-[#120f0e] dark:to-[#1a1412] text-slate-900 dark:text-slate-100 transition-colors duration-300 select-none animate-in fade-in duration-500`}>
+ <div className={`${isPos ? 'h-screen w-full flex flex-col overflow-hidden' : 'min-h-screen pb-10'} bg-background text-foreground transition-colors duration-300 select-none animate-in fade-in duration-500`}>
  {renderNeedsUpdate()}
  {renderExitConfirm()}
  <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />

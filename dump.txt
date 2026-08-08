@@ -1,0 +1,45 @@
+ const navigate = useNavigate();
+ const [sales, setSales] = useState<Sale[]>([]);
+ const [expenses, setExpenses] = useState<Expense[]>([]);
+ const [appointments, setAppointments] = useState<Appointment[]>([]);
+ const [loading, setLoading] = useState(true);
+
+ const today = getLocalISODate();
+
+ useEffect(() => {
+ if (isCustomer) return;
+
+ const qSales = query(collection(db, 'sales'), where('date', '==', today));
+ const qAppts = query(collection(db, 'appointments'), where('date', '==', today));
+
+ const unsubSales = onSnapshot(qSales, (snapshot) => {
+ setSales(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'sales'));
+
+ let unsubExp = () => {};
+ const qExp = query(collection(db, 'expenses'), where('date', '==', today));
+ unsubExp = onSnapshot(qExp, (snapshot) => {
+ setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'expenses'));
+
+ const unsubAppts = onSnapshot(qAppts, (snapshot) => {
+ let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
+ data.sort((a,b) => {
+ if (a.date !== b.date) return b.date.localeCompare(a.date);
+ return b.time.localeCompare(a.time);
+ });
+ setAppointments(data);
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'appointments'));
+ setLoading(false);
+
+ return () => {
+ unsubSales();
+ unsubExp();
+ unsubAppts();
+ };
+ }, [profile, today]);
+
+ const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
+ const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+ const netProfit = totalSales - totalExpenses;
+ const pendingAppts = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;

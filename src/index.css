@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
+
 @custom-variant midnight (.midnight &);
 
 @theme {
@@ -24,51 +25,51 @@
 }
 
 :root, .gold {
-  --theme-primary: #d4af37;
-  --theme-primary-foreground: #140809;
-  --bg: transparent;
-  --fg: #4A2E31;
-  --card: #ffffff;
-  --card-fg: #4A2E31;
-  --border-color: rgba(74, 46, 49, 0.15);
-  --input-bg: #FFFDFD;
-  --muted: #F9EFEF;
-  --muted-foreground: #8A7074;
-  --secondary: #FFF5F5;
-  --secondary-foreground: #4A2E31;
+  --theme-primary: #D4AF37;
+  --theme-primary-foreground: #FFFFFF;
+  --bg: #FAF7F2;
+  --fg: #3A3328;
+  --card: #FFFFFF;
+  --card-fg: #3A3328;
+  --border-color: #E6DFD3;
+  --input-bg: #FFFFFF;
+  --muted: #F3EFE9;
+  --muted-foreground: #8B8378;
+  --secondary: #FDF9F6;
+  --secondary-foreground: #3A3328;
   --accent: var(--theme-primary);
-  --body-bg-from: #FFF5F5;
-  --body-bg-via: #F4DCD9;
-  --body-bg-to: #E8BEB9;
 }
 
 .rose {
-  --theme-primary: #b76e79;
-  --theme-primary-foreground: #ffffff;
-  --fg: #4A2E31;
-  --border-color: rgba(183, 110, 121, 0.2);
-  --body-bg-from: #FFF5F6;
-  --body-bg-via: #F9E4E8;
-  --body-bg-to: #F1CED4;
+  --theme-primary: #E0A899;
+  --theme-primary-foreground: #FFFFFF;
+  --bg: #FFF5F5;
+  --fg: #4A2832;
+  --card: #FFFFFF;
+  --card-fg: #4A2832;
+  --border-color: #F3E1DC;
+  --input-bg: #FFFFFF;
+  --muted: #FAECEE;
+  --muted-foreground: #9B7E85;
+  --secondary: #FFFDFD;
+  --secondary-foreground: #4A2832;
+  --accent: var(--theme-primary);
 }
 
 .midnight {
   --theme-primary: #D4AF37;
   --theme-primary-foreground: #12100E;
-  --bg: transparent;
-  --fg: #E6DFD9;
-  --card: #221C18;
-  --card-fg: #E6DFD9;
-  --border-color: #3D322C;
-  --input-bg: #2E2520;
-  --muted: #1A1613;
-  --muted-foreground: #9C9086;
-  --secondary: #3A2F28;
-  --secondary-foreground: #E6DFD9;
+  --bg: #0B0F19;
+  --fg: #E2E8F0;
+  --card: #161C2C;
+  --card-fg: #E2E8F0;
+  --border-color: #2D3748;
+  --input-bg: #1F293D;
+  --muted: #1E293B;
+  --muted-foreground: #94A3B8;
+  --secondary: #0F172A;
+  --secondary-foreground: #E2E8F0;
   --accent: #D4AF37;
-  --body-bg-from: #12100E;
-  --body-bg-via: #161311;
-  --body-bg-to: #1A1613;
 }
 
 @layer base {
@@ -76,13 +77,13 @@
     @apply border-border;
   }
   body {
-    background-image: linear-gradient(to bottom right, var(--body-bg-from), var(--body-bg-via), var(--body-bg-to));
+    background-color: var(--bg);
     color: var(--fg);
     min-height: 100vh;
     background-attachment: fixed;
   }
-  input, textarea {
-    @apply select-text;
+  input, textarea, select {
+    @apply select-text bg-input border border-border text-foreground placeholder-muted-foreground focus:outline-none focus:border-primary transition-all;
   }
 }
 
@@ -93,7 +94,7 @@
 }
 
 .card-shadow {
-  @apply shadow-[0_8px_30px_rgb(74,46,49,0.08)];
+  @apply shadow-[0_8px_30px_rgb(58,51,40,0.08)];
 }
 
 .btn-primary {

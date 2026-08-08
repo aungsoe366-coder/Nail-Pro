@@ -25,16 +25,15 @@ service cloud.firestore {
     function isStaff() { return hasRole(['staff', 'cashier', 'owner', 'super_admin']); }
 
     match /users/{email} {
-      allow get: if isAuthenticated();
-      allow list: if isStaff();
+      allow read: if true;
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() && (getUserEmail() == email || isStaff());
       allow delete: if isSuperAdmin();
     }
     match /customers/{id} {
-      allow read: if isStaff() || (isAuthenticated() && resource.data.email == getUserEmail());
-      allow create: if isStaff() || isAuthenticated();
-      allow update: if isStaff() || (isAuthenticated() && resource.data.email == getUserEmail());
+      allow read: if true;
+      allow create: if true;
+      allow update: if isStaff() || isAuthenticated();
       allow delete: if isStaff();
     }
     match /sales/{id} {
