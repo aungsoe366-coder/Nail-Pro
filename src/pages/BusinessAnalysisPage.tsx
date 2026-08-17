@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { 
  TrendingUp, 
- TrendingDown, 
+ TrendingDown, Minus, 
  DollarSign, 
  Users, 
  Receipt, 
@@ -64,10 +64,7 @@ const getLocalDateKey = (d: Date): string => {
 export const BusinessAnalysisPage: React.FC = () => {
  const { isAdmin } = useAuth();
 
- // Role Protection: Only Admin and Owner allowed!
- if (!isAdmin) {
- return <Navigate to="/appointments" replace />;
- }
+
 
  const [timeRange, setTimeRange] = useState<'7days' | '30days' | 'month' | 'year' | 'custom'>('7days');
  const [customStartDate, setCustomStartDate] = useState<string>(() => {
@@ -168,11 +165,9 @@ export const BusinessAnalysisPage: React.FC = () => {
  const [ey, em, ed] = customEndDate.split('-').map(Number);
  currentEnd = new Date(ey, em - 1, ed, 23, 59, 59, 999);
  }
- const diffMs = currentEnd.getTime() - currentStart.getTime();
- const diffDays = Math.max(1, Math.round(diffMs / (1000 * 60 * 60 * 24)));
- prevStart = new Date(currentStart.getTime() - (diffDays * 24 * 60 * 60 * 1000));
- prevEnd = new Date(currentStart.getTime() - 1);
- periodLabel = `${customStartDate} to ${customEndDate}`;
+ prevStart = new Date(currentStart.getFullYear(), currentStart.getMonth() - 1, currentStart.getDate(), 0, 0, 0, 0);
+      prevEnd = new Date(currentEnd.getFullYear(), currentEnd.getMonth() - 1, currentEnd.getDate(), 23, 59, 59, 999);
+      periodLabel = `${customStartDate} to ${customEndDate}`;
  }
 
  const currentSales = sales.filter(s => {
@@ -203,58 +198,56 @@ export const BusinessAnalysisPage: React.FC = () => {
  const currentTotalRev = currentSales.reduce((acc, s) => acc + (s.total || 0), 0);
  const prevTotalRev = previousSales.reduce((acc, s) => acc + (s.total || 0), 0);
 
- const revGrowth = prevTotalRev > 0 
- ? (((currentTotalRev - prevTotalRev) / prevTotalRev) * 100).toFixed(1)
- : (currentTotalRev > 0 ? '+100' : '0');
+ const getGrowthValue = (current, previous) => {
+      if (previous > 0) {
+        return ((current - previous) / previous) * 100;
+      }
+      return current > 0 ? 100 : 0;
+    };
 
- const currentSalesCount = currentSales.length;
- const prevSalesCount = previousSales.length;
+    const revGrowthVal = getGrowthValue(currentTotalRev, prevTotalRev);
 
- const currentAvgTicket = currentSalesCount > 0 ? Math.round(currentTotalRev / currentSalesCount) : 0;
- const prevAvgTicket = prevSalesCount > 0 ? Math.round(prevTotalRev / prevSalesCount) : 0;
+    const currentSalesCount = currentSales.length;
+    const prevSalesCount = previousSales.length;
 
- const ticketGrowth = prevAvgTicket > 0 
- ? (((currentAvgTicket - prevAvgTicket) / prevAvgTicket) * 100).toFixed(1)
- : (currentAvgTicket > 0 ? '+100' : '0');
+    const currentAvgTicket = currentSalesCount > 0 ? Math.round(currentTotalRev / currentSalesCount) : 0;
+    const prevAvgTicket = prevSalesCount > 0 ? Math.round(prevTotalRev / prevSalesCount) : 0;
 
- // Total Discounts from sales items
- let totalDiscount = 0;
- currentSales.forEach(s => {
- s.items?.forEach(item => {
- if (item.disP && item.disP > 0) {
- totalDiscount += (item.price * item.qty * (item.disP / 100));
- }
- });
- });
+    const ticketGrowthVal = getGrowthValue(currentAvgTicket, prevAvgTicket);
 
- const discountRatio = currentTotalRev > 0 
- ? ((totalDiscount / (currentTotalRev + totalDiscount)) * 100).toFixed(1) 
- : '0.0';
+    // Total Discounts from sales items
+    let totalDiscount = 0;
+    currentSales.forEach(s => {
+      s.items?.forEach(item => {
+        if (item.disP && item.disP > 0) {
+          totalDiscount += (item.price * item.qty * (item.disP / 100));
+        }
+      });
+    });
 
- // Unique Customers or Total Appointments
- const clientCount = currentAppts.length > 0 ? currentAppts.length : currentSalesCount;
- const prevClientCount = previousAppts.length > 0 ? previousAppts.length : prevSalesCount;
+    const discountRatio = currentTotalRev > 0 
+      ? ((totalDiscount / (currentTotalRev + totalDiscount)) * 100).toFixed(1) 
+      : '0.0';
 
- const clientGrowth = prevClientCount > 0 
- ? (((clientCount - prevClientCount) / prevClientCount) * 100).toFixed(1)
- : (clientCount > 0 ? '+100' : '0');
+    // Unique Customers or Total Appointments
+    const clientCount = currentAppts.length > 0 ? currentAppts.length : currentSalesCount;
+    const prevClientCount = previousAppts.length > 0 ? previousAppts.length : prevSalesCount;
 
- return {
- totalRevenue: currentTotalRev,
- revenueGrowth: Number(revGrowth) >= 0 ? `+${revGrowth}%` : `${revGrowth}%`,
- isRevUp: Number(revGrowth) >= 0,
+    const clientGrowthVal = getGrowthValue(clientCount, prevClientCount);
 
- avgTicket: currentAvgTicket,
- ticketGrowth: Number(ticketGrowth) >= 0 ? `+${ticketGrowth}%` : `${ticketGrowth}%`,
- isTicketUp: Number(ticketGrowth) >= 0,
+    return {
+      totalRevenue: currentTotalRev,
+      revenueGrowthValue: revGrowthVal,
 
- totalDiscount: Math.round(totalDiscount),
- discountRatio: `${discountRatio}%`,
+      avgTicket: currentAvgTicket,
+      ticketGrowthValue: ticketGrowthVal,
 
- clientCount,
- clientGrowth: Number(clientGrowth) >= 0 ? `+${clientGrowth}%` : `${clientGrowth}%`,
- isClientUp: Number(clientGrowth) >= 0
- };
+      totalDiscount: Math.round(totalDiscount),
+      discountRatio: `${discountRatio}%`,
+
+      clientCount,
+      clientGrowthValue: clientGrowthVal
+    };
  }, [currentSales, previousSales, currentAppts, previousAppts]);
 
  // SECTION B1: Revenue Trend Over Time (Area Chart Data) - Daily for 7days, 30days, month, custom!
@@ -412,8 +405,8 @@ export const BusinessAnalysisPage: React.FC = () => {
  return formatted;
  }, [currentSales]);
 
- // SECTION B3: Top Selling Services (Horizontal Bar Chart)
- const topServicesData = useMemo(() => {
+ // SECTION B3: Top Selling Services
+ const { topServicesByRevenue, topServicesByUsage } = useMemo(() => {
  const serviceMap: Record<string, { revenue: number, count: number }> = {};
 
  currentSales.forEach(sale => {
@@ -429,12 +422,13 @@ export const BusinessAnalysisPage: React.FC = () => {
  });
  });
 
- const sorted = Object.entries(serviceMap)
- .map(([name, data]) => ({ name, revenue: Math.round(data.revenue), count: data.count }))
- .sort((a, b) => b.revenue - a.revenue)
- .slice(0, 5);
+ const entries = Object.entries(serviceMap)
+ .map(([name, data]) => ({ name, revenue: Math.round(data.revenue), count: data.count }));
 
- return sorted;
+ const topServicesByRevenue = [...entries].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+ const topServicesByUsage = [...entries].sort((a, b) => b.count - a.count).slice(0, 5);
+
+ return { topServicesByRevenue, topServicesByUsage };
  }, [currentSales]);
 
  // SECTION B4: Hourly Traffic / Peak Hours (Column Chart)
@@ -615,6 +609,11 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  URL.revokeObjectURL(url);
  };
 
+ // Role Protection: Only Admin and Owner allowed!
+ if (!isAdmin) {
+ return <Navigate to="/appointments" replace />;
+ }
+
  return (
  <div className="w-full px-3 py-4 md:p-6 space-y-3 pb-12 animate-in fade-in duration-300">
  
@@ -627,9 +626,9 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <span className="p-2 rounded-xl bg-primary/20 text-primary">
  <BarChart3 size={22} />
  </span>
- <h1 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+ <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">
  Business Analytics
- </h1>
+</h1>
  <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full border-emerald-500/20">
  <Sparkles size={12} /> Actual Live Firestore
  </span>
@@ -751,13 +750,28 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
  </div>
  <div className="flex items-center justify-between text-xs pt-1 ">
- <span className={`inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md ${
- metrics.isRevUp 
- ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
- : 'bg-red-500/10 text-red-500'
- }`}>
- {metrics.isRevUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {metrics.revenueGrowth}
- </span>
+ {(() => {
+                  const val = metrics.revenueGrowthValue;
+                  if (val > 0) {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <TrendingUp size={12} /> +{val.toFixed(1)}%
+                      </span>
+                    );
+                  } else if (val < 0) {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400">
+                        <TrendingDown size={12} /> {val.toFixed(1)}%
+                      </span>
+                    );
+                  } else {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-500 dark:text-slate-400">
+                        <Minus size={12} /> 0.0%
+                      </span>
+                    );
+                  }
+                })()}
  <span className="text-muted-foreground font-medium text-[11px]">vs previous period</span>
  </div>
  </div>
@@ -778,13 +792,28 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
  </div>
  <div className="flex items-center justify-between text-xs pt-1 ">
- <span className={`inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md ${
- metrics.isTicketUp 
- ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' 
- : 'bg-red-500/10 text-red-500'
- }`}>
- {metrics.isTicketUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {metrics.ticketGrowth}
- </span>
+ {(() => {
+                  const val = metrics.ticketGrowthValue;
+                  if (val > 0) {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <TrendingUp size={12} /> +{val.toFixed(1)}%
+                      </span>
+                    );
+                  } else if (val < 0) {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400">
+                        <TrendingDown size={12} /> {val.toFixed(1)}%
+                      </span>
+                    );
+                  } else {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-500 dark:text-slate-400">
+                        <Minus size={12} /> 0.0%
+                      </span>
+                    );
+                  }
+                })()}
  <span className="text-muted-foreground font-medium text-[11px]">per transaction</span>
  </div>
  </div>
@@ -828,13 +857,28 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
  </div>
  <div className="flex items-center justify-between text-xs pt-1 ">
- <span className={`inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md ${
- metrics.isClientUp 
- ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' 
- : 'bg-red-500/10 text-red-500'
- }`}>
- {metrics.isClientUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />} {metrics.clientGrowth}
- </span>
+ {(() => {
+                  const val = metrics.clientGrowthValue;
+                  if (val > 0) {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <TrendingUp size={12} /> +{val.toFixed(1)}%
+                      </span>
+                    );
+                  } else if (val < 0) {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400">
+                        <TrendingDown size={12} /> {val.toFixed(1)}%
+                      </span>
+                    );
+                  } else {
+                    return (
+                      <span className="inline-flex items-center gap-1 font-extrabold px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-500 dark:text-slate-400">
+                        <Minus size={12} /> 0.0%
+                      </span>
+                    );
+                  }
+                })()}
  <span className="text-muted-foreground font-medium text-[11px]">active appointments</span>
  </div>
  </div>
@@ -944,14 +988,14 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
  </div>
 
- {/* CHART 3: TOP-SELLING SERVICES (HORIZONTAL BAR CHART) */}
+  {/* CHART 3A: TOP-SELLING SERVICES BY REVENUE (HORIZONTAL BAR CHART) */}
  <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
  <h3 className="text-base font-black text-foreground flex items-center gap-2">
- <Award size={18} className="text-primary" /> Top Performing Services
+ <Award size={18} className="text-primary" /> Top Services by Revenue
  </h3>
- <p className="text-xs text-muted-foreground">Most requested nail treatments & revenue volume</p>
+ <p className="text-xs text-muted-foreground">Most requested nail treatments by revenue volume</p>
  </div>
  <span className="text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary px-2.5 py-1 rounded-lg">
  Horizontal Bar
@@ -959,7 +1003,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  <div className="h-64 sm:h-72 w-full pt-2">
- {topServicesData.length === 0 ? (
+ {topServicesByRevenue.length === 0 ? (
  <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground p-4">
  <p className="text-xs font-bold">No services sold yet in this period.</p>
  </div>
@@ -967,7 +1011,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <ResponsiveContainer width="100%" height="100%">
  <BarChart 
  layout="vertical" 
- data={topServicesData} 
+ data={topServicesByRevenue} 
  margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
  >
  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-muted-foreground/40" />
@@ -991,8 +1035,55 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
  </div>
 
- {/* CHART 4: HOURLY TRAFFIC & PEAK HOURS (COLUMN CHART) */}
+ {/* CHART 3B: TOP-SELLING SERVICES BY USAGE (HORIZONTAL BAR CHART) */}
  <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="flex justify-between items-center mb-4">
+ <div>
+ <h3 className="text-base font-black text-foreground flex items-center gap-2">
+ <Award size={18} className="text-primary" /> Top Services by Usage
+ </h3>
+ <p className="text-xs text-muted-foreground">Most requested nail treatments by customer usage</p>
+ </div>
+ <span className="text-[10px] font-black uppercase tracking-wider bg-primary/20 text-primary px-2.5 py-1 rounded-lg">
+ Horizontal Bar
+ </span>
+ </div>
+
+ <div className="h-64 sm:h-72 w-full pt-2">
+ {topServicesByUsage.length === 0 ? (
+ <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground p-4">
+ <p className="text-xs font-bold">No services sold yet in this period.</p>
+ </div>
+ ) : (
+ <ResponsiveContainer width="100%" height="100%">
+ <BarChart 
+ layout="vertical" 
+ data={topServicesByUsage} 
+ margin={{ top: 5, right: 20, left: 20, bottom: 5 }}
+ >
+ <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="currentColor" className="text-muted-foreground/40" />
+ <XAxis type="number" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+ <YAxis 
+ dataKey="name" 
+ type="category" 
+ tick={{ fontSize: 11, fontWeight: 700 }} 
+ axisLine={false} 
+ tickLine={false} 
+ width={130}
+ />
+ <Tooltip 
+ formatter={(value: any) => [value, 'Count']}
+ contentStyle={{ backgroundColor: 'var(--color-card, #1e293b)', borderColor: 'var(--color-border, #334155)', borderRadius: '12px', fontSize: '12px' }}
+ />
+ <Bar dataKey="count" name="Count" fill="#3B82F6" radius={[0, 8, 8, 0]} />
+ </BarChart>
+ </ResponsiveContainer>
+ )}
+ </div>
+ </div>
+
+ {/* CHART 4: HOURLY TRAFFIC & PEAK HOURS (COLUMN CHART) */}
+ <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between lg:col-span-2">
  <div className="flex justify-between items-center mb-4">
  <div>
  <h3 className="text-base font-black text-foreground flex items-center gap-2">

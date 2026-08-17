@@ -1,18 +1,11 @@
 const fs = require('fs');
 let content = fs.readFileSync('src/AppCore.tsx', 'utf8');
 
-// The file currently starts with the wrong <CustomSelect ... /> which ends at />import ...
-// Let's find "/>import"
-const splitIndex = content.indexOf('/>import { Filter } from "lucide-react";');
-if (splitIndex !== -1) {
-  // Remove everything before "import { Filter }"
-  content = content.substring(splitIndex + 2); // skips '/>'
-}
+const regex = /<CustomSelect[\s\S]*?disabled={!isAdmin && \(appt\.status === 'completed' || appt\.status === 'cancelled'\)}[\s\S]*?onChange={\(val\) => handleQuickStatusUpdate\(appt\.id, val as any\)}[\s\S]*?options={\[[\s\S]*?\]}[\s\S]*?buttonClassName={cn\([\s\S]*?shadow-\[0_0_10px_rgba\(239,68,68,0\.2\)\]"\s*\)\}\s*\/>/;
 
-// Now replace the actual CustomSelect for status
-const oldSelectRegex = /<CustomSelect\s*disabled={!isAdmin && \(appt\.status === 'completed' || appt\.status === 'cancelled'\)}[\s\S]*?onChange={\(val\) => handleQuickStatusUpdate\(appt\.id, val as any\)}[\s\S]*?options={\[[\s\S]*?\]}[\s\S]*?buttonClassName={cn\([\s\S]*?shadow-\[0_0_10px_rgba\(239,68,68,0\.2\)\]"\s*\)\}\s*\/>/;
-
-const newSelect = `              <CustomSelect
+const match = content.match(regex);
+if (match) {
+  const replacement = `              <CustomSelect
                 disabled={!isAdmin && (appt.status === 'completed' || appt.status === 'cancelled')}
                 value={appt.status}
                 onChange={(val) => handleQuickStatusUpdate(appt.id, val as any)}
@@ -57,17 +50,10 @@ const newSelect = `              <CustomSelect
                 renderValue={(opt) => (
                   <div className="flex items-center gap-1.5">
                     {opt?.value === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.6)]" />}
-                    {opt?.value === 'confirmed' && <Check size={12} strokeWidth={3} className="drop-shadow-sm text-blue-600" />}
-                    {opt?.value === 'completed' && <Check size={12} strokeWidth={3} className="drop-shadow-sm text-green-600" />}
-                    {opt?.value === 'cancelled' && <X size={12} strokeWidth={3} className="drop-shadow-sm text-red-600" />}
-                    <span className={cn(
-                      opt?.value === 'pending' && "text-yellow-600",
-                      opt?.value === 'confirmed' && "text-blue-600",
-                      opt?.value === 'completed' && "text-green-600",
-                      opt?.value === 'cancelled' && "text-red-600"
-                    )}>
-                      {opt?.value}
-                    </span>
+                    {opt?.value === 'confirmed' && <Check size={12} strokeWidth={3} className="drop-shadow-sm" />}
+                    {opt?.value === 'completed' && <Check size={12} strokeWidth={3} className="drop-shadow-sm" />}
+                    {opt?.value === 'cancelled' && <X size={12} strokeWidth={3} className="drop-shadow-sm" />}
+                    <span>{opt?.value}</span>
                   </div>
                 )}
                 dropdownClassName="p-2 space-y-1 bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-xl"
@@ -79,7 +65,9 @@ const newSelect = `              <CustomSelect
                   appt.status === 'cancelled' && "bg-gradient-to-r from-red-500/10 to-rose-500/10 text-red-600 border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.15)] hover:shadow-[0_0_20px_rgba(239,68,68,0.25)]"
                 )}
               />`;
-
-content = content.replace(oldSelectRegex, newSelect);
-fs.writeFileSync('src/AppCore.tsx', content);
-console.log('Fixed');
+  content = content.replace(match[0], replacement);
+  fs.writeFileSync('src/AppCore.tsx', content);
+  console.log('Patched correctly');
+} else {
+  console.log('Regex did not match');
+}

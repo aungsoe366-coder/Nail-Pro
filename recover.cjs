@@ -1,8 +1,13 @@
 const fs = require('fs');
-const code = fs.readFileSync('backup_appcore.js', 'utf8');
-const idx = code.indexOf('"/identity-reset"');
-if (idx !== -1) {
-  console.log(code.substring(Math.max(0, idx - 1000), idx + 4000));
+const content = fs.readFileSync('src/pages/BusinessAnalysisPage.tsx', 'utf8');
+
+const first42 = content.substring(0, 42);
+const restMatch = content.match(/mo \} from 'react';[\s\S]*/);
+
+if (restMatch) {
+    const recovered = first42 + restMatch[0];
+    fs.writeFileSync('src/pages/BusinessAnalysisPage.tsx', recovered);
+    console.log("Recovered file!");
 } else {
-  console.log('Not found');
+    console.log("Could not find the rest");
 }

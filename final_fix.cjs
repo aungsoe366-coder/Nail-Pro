@@ -1,16 +1,18 @@
 const fs = require('fs');
 let content = fs.readFileSync('src/AppCore.tsx', 'utf8');
 
-// The file currently starts with the wrong <CustomSelect ... /> which ends at />import ...
-// Let's find "/>import"
+// 1. Remove the incorrectly inserted block at the top.
 const splitIndex = content.indexOf('/>import { Filter } from "lucide-react";');
 if (splitIndex !== -1) {
-  // Remove everything before "import { Filter }"
   content = content.substring(splitIndex + 2); // skips '/>'
+  console.log('Removed top block.');
+} else {
+  console.log('Top block not found!');
 }
 
-// Now replace the actual CustomSelect for status
-const oldSelectRegex = /<CustomSelect\s*disabled={!isAdmin && \(appt\.status === 'completed' || appt\.status === 'cancelled'\)}[\s\S]*?onChange={\(val\) => handleQuickStatusUpdate\(appt\.id, val as any\)}[\s\S]*?options={\[[\s\S]*?\]}[\s\S]*?buttonClassName={cn\([\s\S]*?shadow-\[0_0_10px_rgba\(239,68,68,0\.2\)\]"\s*\)\}\s*\/>/;
+// 2. Find the old CustomSelect block.
+// Let's use a regex without the `||` trap.
+const oldSelectRegex = /<CustomSelect\s*disabled={!isAdmin && \(appt\.status === 'completed' \|\| appt\.status === 'cancelled'\)}[\s\S]*?onChange={\(val\) => handleQuickStatusUpdate\(appt\.id, val as any\)}[\s\S]*?options={\[[\s\S]*?\]}[\s\S]*?buttonClassName={cn\([\s\S]*?shadow-\[0_0_10px_rgba\(239,68,68,0\.2\)\]"\s*\)\}\s*\/>/;
 
 const newSelect = `              <CustomSelect
                 disabled={!isAdmin && (appt.status === 'completed' || appt.status === 'cancelled')}
@@ -80,6 +82,12 @@ const newSelect = `              <CustomSelect
                 )}
               />`;
 
-content = content.replace(oldSelectRegex, newSelect);
+const match = content.match(oldSelectRegex);
+if (match) {
+  console.log('Found old Select. Replacing...');
+  content = content.replace(match[0], newSelect);
+} else {
+  console.log('Old select not found!');
+}
+
 fs.writeFileSync('src/AppCore.tsx', content);
-console.log('Fixed');

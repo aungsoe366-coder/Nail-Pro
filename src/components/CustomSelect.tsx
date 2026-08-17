@@ -26,6 +26,7 @@ interface CustomSelectProps {
   icon?: React.ReactNode;
   renderValue?: (option: SelectOption | undefined) => React.ReactNode;
   id?: string;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 export function CustomSelect({
@@ -39,7 +40,8 @@ export function CustomSelect({
   disabled = false,
   icon,
   renderValue,
-  id
+  id,
+  onOpenChange
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -49,13 +51,18 @@ export function CustomSelect({
   const selectedOption = options.find(o => o.value === value);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        if (onOpenChange) onOpenChange(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   return (
@@ -67,7 +74,8 @@ export function CustomSelect({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          setIsOpen(!isOpen);
+          e.currentTarget.focus();
+          const next = !isOpen; setIsOpen(next); if (onOpenChange) onOpenChange(next);
         }}
         className={cn(
           "w-full flex items-center justify-between gap-2 px-4 py-3 bg-input border border-border rounded-xl text-left focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed",
@@ -114,6 +122,7 @@ export function CustomSelect({
                     e.stopPropagation();
                     onChange(option.value);
                     setIsOpen(false);
+                    if (onOpenChange) onOpenChange(false);
                   }}
                   className={cn(
                     "w-full flex items-center justify-between gap-3 px-4 py-3 text-left text-sm transition-all duration-200 group relative overflow-hidden",
