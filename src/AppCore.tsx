@@ -1722,9 +1722,9 @@ export const DashboardPage: React.FC = () => {
         <div className="grid grid-cols-2 gap-3">
  {stats.map((s, i) => (
  <motion.div 
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
+              transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 24 }}
               key={i} 
               className="bg-stone-50/80 border border-stone-100 shadow-sm p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group"
             >
@@ -1763,8 +1763,14 @@ export const DashboardPage: React.FC = () => {
                   </div>
  ) : (
  <div className="divide-y divide-stone-100">
- {sales.slice(0, 10).map((s) => (
- <div key={s.id} className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group">
+ {sales.slice(0, 10).map((s, index) => (
+ <motion.div 
+   initial={{ opacity: 0, x: -10 }}
+   animate={{ opacity: 1, x: 0 }}
+   transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 24 }}
+   key={s.id} 
+   className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group"
+ >
  <div className="flex items-center gap-4">
  <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary font-black text-xs">
  {s.customerName ? s.customerName[0].toUpperCase() : 'G'}
@@ -1780,7 +1786,7 @@ export const DashboardPage: React.FC = () => {
  <p className="text-sm font-black text-foreground">{s.total.toLocaleString()} Ks</p>
  <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">{s.items.length} items</p>
  </div>
- </div>
+ </motion.div>
  ))}
  </div>
  )}
@@ -1805,8 +1811,14 @@ export const DashboardPage: React.FC = () => {
                   </div>
  ) : (
  <div className="divide-y divide-stone-100">
- {appointments.sort((a, b) => a.time.localeCompare(b.time)).map((a) => (
- <div key={a.id} className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group">
+ {appointments.sort((a, b) => a.time.localeCompare(b.time)).map((a, index) => (
+ <motion.div 
+   initial={{ opacity: 0, x: -10 }}
+   animate={{ opacity: 1, x: 0 }}
+   transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 24 }}
+   key={a.id} 
+   className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group"
+ >
  <div className="flex items-center gap-4">
  <div className={cn(
  "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
@@ -1827,7 +1839,7 @@ export const DashboardPage: React.FC = () => {
  {a.status}
  </span>
  </div>
- </div>
+ </motion.div>
  ))}
  </div>
  )}
