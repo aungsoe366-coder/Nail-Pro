@@ -618,7 +618,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="w-full px-3 py-4 md:p-6 space-y-3 pb-12 animate-in fade-in duration-300">
  
  {/* BUSINESS ANALYTICS CARD WITH EMBEDDED FILTERING & CUSTOM DATE RANGE */}
- <div className="bg-card border border-border rounded-2xl p-4 md:p-5 space-y-3">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 md:p-5 space-y-3">
  {/* Top Header Row */}
  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
  <div>
@@ -626,7 +626,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <span className="p-2 rounded-xl bg-primary/20 text-primary">
  <BarChart3 size={22} />
  </span>
- <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">
+ <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">
  Business Analytics
 </h1>
  <span className="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-black px-2.5 py-1 rounded-full border-emerald-500/20">
@@ -735,13 +735,13 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-3 md:gap-5">
  
  {/* Card 1: Total Revenue */}
- <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
  <div className="flex justify-between items-start mb-3">
  <div>
  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
  Total Revenue
  </p>
- <h3 className="text-2xl font-black text-foreground tracking-tight">
+ <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-[#E6DFD9] tracking-tight">
  {metrics.totalRevenue.toLocaleString()} <span className="text-xs font-extrabold text-muted-foreground">Ks</span>
  </h3>
  </div>
@@ -777,13 +777,13 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* Card 2: Average Ticket Size */}
- <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
  <div className="flex justify-between items-start mb-3">
  <div>
  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
  Avg Ticket Size
  </p>
- <h3 className="text-2xl font-black text-foreground tracking-tight">
+ <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-[#E6DFD9] tracking-tight">
  {metrics.avgTicket.toLocaleString()} <span className="text-xs font-extrabold text-muted-foreground">Ks</span>
  </h3>
  </div>
@@ -819,13 +819,13 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* Card 3: Total Discounts Given */}
- <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
  <div className="flex justify-between items-start mb-3">
  <div>
  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
  Discounts Given
  </p>
- <h3 className="text-2xl font-black text-foreground tracking-tight">
+ <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-[#E6DFD9] tracking-tight">
  {metrics.totalDiscount.toLocaleString()} <span className="text-xs font-extrabold text-muted-foreground">Ks</span>
  </h3>
  </div>
@@ -842,13 +842,13 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* Card 4: Clients Served / Active Appointments */}
- <div className="bg-card border border-border rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 relative overflow-hidden group hover:bg-rose-50/50 dark:hover:bg-slate-800/90 transition-all">
  <div className="flex justify-between items-start mb-3">
  <div>
  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">
  Clients Served
  </p>
- <h3 className="text-2xl font-black text-foreground tracking-tight">
+ <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-[#E6DFD9] tracking-tight">
  {metrics.clientCount} <span className="text-xs font-extrabold text-muted-foreground">Clients</span>
  </h3>
  </div>
@@ -889,7 +889,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
  
  {/* CHART 1: REVENUE TREND OVER TIME (AREA CHART) */}
- <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
  <h3 className="text-base font-black text-foreground flex items-center gap-2">
@@ -943,7 +943,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* CHART 2: PAYMENT METHODS BREAKDOWN (DONUT CHART) */}
- <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
  <h3 className="text-base font-black text-foreground flex items-center gap-2">
@@ -989,7 +989,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
   {/* CHART 3A: TOP-SELLING SERVICES BY REVENUE (HORIZONTAL BAR CHART) */}
- <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
  <h3 className="text-base font-black text-foreground flex items-center gap-2">
@@ -1036,7 +1036,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* CHART 3B: TOP-SELLING SERVICES BY USAGE (HORIZONTAL BAR CHART) */}
- <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 md:p-5 flex flex-col justify-between">
  <div className="flex justify-between items-center mb-4">
  <div>
  <h3 className="text-base font-black text-foreground flex items-center gap-2">
@@ -1083,7 +1083,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* CHART 4: HOURLY TRAFFIC & PEAK HOURS (COLUMN CHART) */}
- <div className="bg-card border border-border rounded-2xl p-4 md:p-5 flex flex-col justify-between lg:col-span-2">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 md:p-5 flex flex-col justify-between lg:col-span-2">
  <div className="flex justify-between items-center mb-4">
  <div>
  <h3 className="text-base font-black text-foreground flex items-center gap-2">
@@ -1122,7 +1122,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  </div>
 
  {/* SECTION C: STAFF LEADERBOARD & COMMISSION TABLE */}
- <div className="bg-card border border-border rounded-2xl overflow-hidden">
+ <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl overflow-hidden">
  
  {/* Table Header & Controls */}
  <div className="p-4 border-slate-200/60 dark:-slate-700/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

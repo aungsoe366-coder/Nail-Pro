@@ -1597,7 +1597,7 @@ export const CustomerDashboardPage: React.FC = () => {
  <div className="bg-[#4A2E31] text-white p-4 rounded-2xl relative overflow-hidden">
  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
  <div className="relative z-10 space-y-2">
- <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Welcome back, {profile?.name || 'Beautiful'}!</h2>
+ <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Welcome back, {profile?.name || 'Beautiful'}!</h2>
  <p className="text-white/80">Ready for your next salon experience?</p>
  </div>
  </div>
@@ -1698,7 +1698,7 @@ export const DashboardPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-6 animate-in fade-in duration-500">
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4">
           <div className="space-y-0.5">
-            <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Dashboard</h3>
+            <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Dashboard</h3>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Overview • {formatFullDate(new Date())}</p>
           </div>
           <div className="grid grid-cols-2 gap-3 w-full md:w-[400px]">
@@ -1726,17 +1726,17 @@ export const DashboardPage: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 24 }}
               key={i} 
-              className="bg-stone-50/80 border border-stone-100 shadow-sm p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group"
+              className="bg-stone-50/80 [.midnight_&]:bg-[#221C18] border border-stone-100 [.midnight_&]:border-[#3D322C] shadow-sm p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group"
             >
               <div className="flex justify-between items-start mb-2">
-                <p className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider leading-tight">{s.label}</p>
+                <p className="text-[10px] text-stone-500 [.midnight_&]:text-[#D4AF37] font-semibold uppercase tracking-wider leading-tight">{s.label}</p>
                 <div className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 duration-500", s.bg, s.color)}>
                   {React.cloneElement(s.icon as any, { size: 16, strokeWidth: 2 })}
                 </div>
               </div>
-              <h4 className="text-xl font-extrabold text-slate-800 tracking-tight truncate">
+              <h4 className="text-xl font-extrabold text-slate-800 [.midnight_&]:text-[#E6DFD9] tracking-tight truncate">
                 {s.value}
-                {s.suffix && <span className="text-xs font-medium text-stone-500 ml-1">{s.suffix}</span>}
+                {s.suffix && <span className="text-xs font-medium text-stone-500 [.midnight_&]:text-[#E6DFD9]/70 ml-1">{s.suffix}</span>}
               </h4>
             </motion.div>
  ))}
@@ -1746,16 +1746,16 @@ export const DashboardPage: React.FC = () => {
 
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
  {/* Recent Sales */}
- <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-4 flex flex-col">
+ <div className="bg-white [.midnight_&]:bg-[#221C18] rounded-2xl border border-stone-100 [.midnight_&]:border-[#3D322C] shadow-sm overflow-hidden mb-4 flex flex-col">
               <div className="px-4 py-3 flex justify-between items-center border-b border-stone-100">
-                <h4 className="text-xs font-bold tracking-wider text-stone-400 uppercase">
+                <h4 className="text-xs font-bold tracking-wider text-stone-400 [.midnight_&]:text-[#D4AF37] uppercase">
                   Recent Sales
                 </h4>
  <button onClick={() => navigate('/history')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW ALL</button>
  </div>
  <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
  {sales.length === 0 ? (
- <div className="p-6 flex flex-col items-center justify-center text-stone-400 space-y-2 bg-stone-50/50 rounded-2xl m-4 border border-dashed border-stone-200">
+ <div className="p-6 flex flex-col items-center justify-center text-stone-400 [.midnight_&]:text-[#E6DFD9]/50 space-y-2 bg-stone-50/50 [.midnight_&]:bg-[#1A1613] rounded-2xl m-4 border border-dashed border-stone-200 [.midnight_&]:border-[#3D322C]">
                     <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-stone-100 flex items-center justify-center text-stone-400">
                       <ShoppingCart size={20} strokeWidth={1.5} />
                     </div>
@@ -1794,16 +1794,16 @@ export const DashboardPage: React.FC = () => {
  </div>
 
  {/* Upcoming Appointments */}
- <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-4 flex flex-col">
+ <div className="bg-white [.midnight_&]:bg-[#221C18] rounded-2xl border border-stone-100 [.midnight_&]:border-[#3D322C] shadow-sm overflow-hidden mb-4 flex flex-col">
               <div className="px-4 py-3 flex justify-between items-center border-b border-stone-100">
-                <h4 className="text-xs font-bold tracking-wider text-stone-400 uppercase">
+                <h4 className="text-xs font-bold tracking-wider text-stone-400 [.midnight_&]:text-[#D4AF37] uppercase">
                   Today's Appointments
                 </h4>
  <button onClick={() => navigate('/appointments')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW CALENDAR</button>
  </div>
  <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
  {appointments.length === 0 ? (
- <div className="p-6 flex flex-col items-center justify-center text-stone-400 space-y-2 bg-stone-50/50 rounded-2xl m-4 border border-dashed border-stone-200">
+ <div className="p-6 flex flex-col items-center justify-center text-stone-400 [.midnight_&]:text-[#E6DFD9]/50 space-y-2 bg-stone-50/50 [.midnight_&]:bg-[#1A1613] rounded-2xl m-4 border border-dashed border-stone-200 [.midnight_&]:border-[#3D322C]">
                     <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-stone-100 flex items-center justify-center text-stone-400">
                       <Calendar size={20} strokeWidth={1.5} />
                     </div>
@@ -3103,7 +3103,7 @@ export const MonthlySummaryPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
  <div className="space-y-1">
- <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Monthly <span className="italic font-serif">Summary</span></h3>
+ <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Monthly <span className="italic font-serif">Summary</span></h3>
  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Financial Performance Overview</p>
  </div>
  <div className="flex items-center gap-4 bg-card border border-border p-2 rounded-2xl ">
@@ -3467,7 +3467,7 @@ export const ExpenseListPage: React.FC = () => {
 <div className="flex flex-col gap-6 pb-6">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="space-y-1 flex-1 min-w-0">
-                        <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Shop <span className="italic font-serif">Expenses</span></h3>
+                        <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Shop <span className="italic font-serif">Expenses</span></h3>
                         <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] mb-4">Operating Cost Management</p>
                     </div> 
                     
@@ -4014,7 +4014,7 @@ export const HistoryPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
  <div className="space-y-1">
- <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Daily <span className="italic font-serif">Sales List</span></h3>
+ <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Daily <span className="italic font-serif">Sales List</span></h3>
  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
  </div>
  
@@ -4469,7 +4469,7 @@ export const StaffCommissionsPage: React.FC = () => {
 
  return (
  <div className="w-full px-3 py-4 md:p-6 space-y-3">
- <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Staff Commissions</h3>
+ <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Staff Commissions</h3>
  
  <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
  {/* Commissions Grid */}
@@ -4640,7 +4640,7 @@ export const SalesReportPage: React.FC = () => {
 
  return (
  <div className="w-full px-3 py-4 md:p-6 space-y-3 relative">
- <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Sales Report</h3>
+ <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Sales Report</h3>
  
  <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative group">
  <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
@@ -5506,7 +5506,7 @@ export const AppointmentsPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
  <div className="flex flex-col gap-1">
- <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">
+ <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">
  {isCustomer ? 'My Appointments' : 'Customer Appointments'}
 </h1>
  {isCustomer && profile.points !== undefined && (
@@ -8882,7 +8882,7 @@ const ForcePasswordChangePage: React.FC = () => {
  <AlertTriangle className="w-6 h-6 text-primary" />
  </div>
  <div>
- <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Security Update</h2>
+ <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Security Update</h2>
  <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
  </div>
  </div>
@@ -8949,7 +8949,7 @@ const ForcePasswordChangePage: React.FC = () => {
  <button
  type="button"
  onClick={logout}
- className="w-full py-4 px-4 md:px-6 rounded-2xl hover:bg-muted transition-all font-black text-xs tracking-widest uppercase active:scale-95"
+ className="w-full py-4 px-4 md:px-6 rounded-2xl hover:bg-muted transition-all font-black text-xs tracking-widest uppercase active:scale-95 text-foreground [.midnight_&]:text-[#E6DFD9] [.midnight_&]:bg-[#221C18] [.midnight_&]:border [.midnight_&]:border-[#3D322C] [.midnight_&]:hover:bg-[#2A231E]"
  >
  Logout
  </button>
@@ -9081,7 +9081,7 @@ const SettingsPage: React.FC = () => {
  return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20 pt-2 px-2 md:px-0">
       <div className="px-2 md:px-0 mb-4">
-         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase">Settings</h1>
+         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Settings</h1>
          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
       </div>
 
@@ -9259,7 +9259,7 @@ const SettingsPage: React.FC = () => {
  <button onClick={() => setIsPasswordModalOpen(false)} className="p-2.5 bg-muted/50 hover:bg-muted rounded-full transition-colors active:scale-95"><X size={20} /></button>
  </div>
  
- <h3 className="text-2xl font-black tracking-tight mb-2">Change Password</h3>
+ <h3 className="text-2xl font-black tracking-tight mb-2 text-foreground [.midnight_&]:text-[#D4AF37]">Change Password</h3>
  <p className="text-muted-foreground text-xs font-medium mb-3 md:mb-6">Update your account password. If you forgot your current password, you can request a reset link.</p>
 
  {error && (
@@ -9360,7 +9360,7 @@ const SettingsPage: React.FC = () => {
  New Release Ready
  </span>
 
- <h3 className="text-2xl font-black tracking-tight text-foreground">Software Update Available</h3>
+ <h3 className="text-2xl font-black tracking-tight text-foreground [.midnight_&]:text-[#D4AF37]">Software Update Available</h3>
  <p className="text-muted-foreground text-xs font-medium px-2 mt-2 leading-relaxed">
  {updateMsg?.text || "A new version of the application is available. Upgrade now for the latest features, security enhancements, and stability improvements."}
  </p>
@@ -9412,7 +9412,7 @@ const SettingsPage: React.FC = () => {
 const ResetPasswordPage: React.FC = () => {
  return (
  <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
- <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase mb-4">Reset Password</h2>
+ <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase mb-4">Reset Password</h2>
  <p className="text-muted-foreground mb-4">Password reset is handled via Identity Reset or Admin panel.</p>
  <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
  </div>
@@ -9422,7 +9422,7 @@ const ResetPasswordPage: React.FC = () => {
 const IdentityResetPage: React.FC = () => {
  return (
  <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
- <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 uppercase mb-4">Identity Reset</h2>
+ <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase mb-4">Identity Reset</h2>
  <p className="text-muted-foreground mb-4">Please contact an admin to reset your password or identity details.</p>
  <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
  </div>
