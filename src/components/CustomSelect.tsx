@@ -67,7 +67,7 @@ export function CustomSelect({
 
   return (
     <div className={cn("relative", className)} ref={containerRef}>
-      <button
+      <motion.button whileTap={{ scale: 0.97 }}
         type="button"
         id={id}
         disabled={disabled}
@@ -95,7 +95,7 @@ export function CustomSelect({
           className={cn("text-muted-foreground flex-shrink-0 transition-transform duration-200", isOpen && "rotate-180")} 
           size={16} 
         />
-      </button>
+      </motion.button>
 
       <AnimatePresence>
         {isOpen && (
@@ -114,7 +114,7 @@ export function CustomSelect({
               <div className="px-4 py-3 text-sm text-muted-foreground text-center font-medium">No options</div>
             ) : (
               options.map((option) => (
-                <button
+                <motion.button whileTap={{ scale: 0.97 }}
                   key={option.value}
                   type="button"
                   onClick={(e) => {
@@ -151,7 +151,7 @@ export function CustomSelect({
                       className="absolute inset-0 bg-primary/5 -z-0"
                     />
                   )}
-                </button>
+                </motion.button>
               ))
             )}
           </motion.div>

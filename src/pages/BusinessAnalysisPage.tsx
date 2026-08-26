@@ -40,6 +40,7 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { Sale, UserProfile, Appointment } from '../types';
 import { useAuth } from '../AppCore';
+import { motion, AnimatePresence } from "motion/react";
 
 // Date parser helper
 const parseSaleDate = (sale: Sale): Date => {
@@ -615,7 +616,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  }
 
  return (
- <div className="w-full px-3 py-4 md:p-6 space-y-3 pb-12 animate-in fade-in duration-300">
+ <motion.div className="w-full px-3 py-4 md:p-6 space-y-3 pb-12" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }}>
  
  {/* BUSINESS ANALYTICS CARD WITH EMBEDDED FILTERING & CUSTOM DATE RANGE */}
  <div className="bg-card [.midnight_&]:bg-[#221C18] border border-border [.midnight_&]:border-[#3D322C] rounded-2xl p-4 md:p-5 space-y-3">
@@ -661,7 +662,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  { id: 'year', label: 'This Year' },
  { id: 'custom', label: 'Custom Range' }
  ].map(preset => (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={preset.id}
  onClick={() => setTimeRange(preset.id as any)}
  className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap shrink-0 ${
@@ -671,24 +672,24 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  }`}
  >
  {preset.label}
- </button>
+ </motion.button>
  ))}
  </div>
 
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={handleExportReport}
  className="flex items-center justify-center gap-1.5 px-4 py-2 bg-primary/20 hover:bg-primary/30 text-primary text-xs font-extrabold rounded-xl transition-all cursor-pointer active:scale-95 shrink-0 border-primary/20 shadow-2xs"
  title="Export Report"
  >
  <Download size={14} />
  <span className="inline">Export Report</span>
- </button>
+ </motion.button>
  </div>
  </div>
 
  {/* Embedded Custom Analysis Date Range inside the Card */}
  {timeRange === 'custom' && (
- <div className="bg-muted/40 rounded-xl p-3.5 border-primary/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 min-w-0 max-w-full animate-in fade-in slide-in-from-top-1 duration-200">
+ <motion.div className="bg-muted/40 rounded-xl p-3.5 border-primary/30 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 min-w-0 max-w-full" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: "easeOut" }}>
  <div className="flex items-center gap-2 text-xs font-extrabold text-foreground shrink-0">
  <Calendar size={15} className="text-primary shrink-0" />
  <span>Custom Analysis Date Range:</span>
@@ -719,7 +720,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
  {periodLabel}
  </span>
  </div>
- </div>
+ </motion.div>
  )}
  </div>
 
@@ -1247,7 +1248,7 @@ ${staffLeaderboardData.map((s, idx) => `${idx + 1}. ${s.name} (${s.role}) - Serv
 
  </div>
 
- </div>
+ </motion.div>
  );
 };
 

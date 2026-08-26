@@ -1,7 +1,7 @@
 import { Filter } from "lucide-react";
 import { Minus, Percent } from 'lucide-react';
 import nailSalonBg from './assets/images/nail_salon_background_1784539561011.jpg';
-import React, { useState, useEffect, createContext, useContext, useMemo, useRef } from 'react';
+import React, { useState, useEffect, createContext, useContext, useMemo, useRef, useCallback } from 'react';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { 
  Routes, 
@@ -1359,6 +1359,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
 
 
  const menuItems = [
+ { id: 'customer-home', label: 'Home', icon: <Home size={18} />, path: '/', roles: ['customer'] },
  { id: 'dashboard', label: 'Dashboard', icon: <Home size={18} />, path: '/', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
  { id: 'pos', label: 'Point of Sale', icon: <ShoppingCart size={18} />, path: '/pos', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
  { id: 'business-analysis', label: 'Business Analysis', icon: <TrendingUp size={18} />, path: '/business-analysis', roles: ['super_admin', 'owner'] },
@@ -1384,7 +1385,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  onClick={onClose}
  />
  <div className={cn(
- "fixed top-0 left-0 w-[300px] h-full bg-card backdrop-blur-xl border-r border-border z-[10001] transition-transform duration-500 ease-out flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.2)]",
+ "fixed top-0 left-0 w-[300px] h-full bg-card  border-r border-border z-[10001] transition-transform duration-500 ease-out flex flex-col shadow-[20px_0_50px_rgba(0,0,0,0.2)]",
  isOpen ? "translate-x-0" : "-translate-x-full"
  )}>
  <div className="p-4 relative overflow-hidden group">
@@ -1420,7 +1421,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  {filteredItems.map(item => {
  const isActive = location.pathname === item.path;
  return (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={item.id}
  onClick={() => { navigate(item.path); onClose(); }}
  className={cn(
@@ -1445,7 +1446,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  </span>
  <span className="text-sm font-bold tracking-tight relative z-10">{item.label}</span>
  {isActive && <ChevronRight size={14} className="ml-auto relative z-10" />}
- </button>
+ </motion.button>
  );
  })}
  </nav>
@@ -1460,14 +1461,14 @@ const Header: React.FC<{ onMenuClick: () => void, className?: string }> = ({ onM
  const navigate = useNavigate();
  
  return (
- <header className={cn("sticky top-0 z-[1000] flex justify-between items-center px-4 md:px-6 py-4 bg-card backdrop-blur-xl border-b border-border transition-all duration-500", className)}>
+ <header className={cn("sticky top-0 z-[1000] flex justify-between items-center px-4 md:px-6 py-4 bg-card  border-b border-border transition-all duration-500", className)}>
  <div className="flex items-center gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={onMenuClick} 
  className="text-primary hover:scale-110 active:scale-90 transition-all p-2 bg-primary/20 rounded-xl border-primary/10"
  >
  <Menu size={20} />
- </button>
+ </motion.button>
  <div 
  onClick={() => navigate('/')} 
  className="flex flex-col cursor-pointer group"
@@ -1593,12 +1594,12 @@ export const CustomerDashboardPage: React.FC = () => {
  const navigate = useNavigate();
 
  return (
- <div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in zoom-in duration-500">
- <div className="bg-[#4A2E31] text-white p-4 rounded-2xl relative overflow-hidden">
- <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+ <motion.div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
+ <div className="bg-gradient-to-r from-amber-100 via-amber-50 to-orange-100 border border-amber-200 p-4 rounded-2xl relative overflow-hidden [.midnight_&]:from-amber-900/30 [.midnight_&]:via-amber-800/20 [.midnight_&]:to-orange-900/30 [.midnight_&]:border-amber-700/50">
+ <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/40 [.midnight_&]:bg-amber-500/10 rounded-full blur-3xl"></div>
  <div className="relative z-10 space-y-2">
  <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Welcome back, {profile?.name || 'Beautiful'}!</h2>
- <p className="text-white/80">Ready for your next salon experience?</p>
+ <p className="text-amber-800/80 [.midnight_&]:text-amber-200/80 font-medium">Ready for your next salon experience?</p>
  </div>
  </div>
  
@@ -1611,12 +1612,12 @@ export const CustomerDashboardPage: React.FC = () => {
  <h3 className="font-bold text-lg">Book an Appointment</h3>
  <p className="text-sm text-muted-foreground">Schedule your next visit easily with our online booking system.</p>
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => navigate('/appointments')}
  className="mt-4 px-4 md:px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 w-full md:w-auto"
  >
  Book Now
- </button>
+ </motion.button>
  </div>
 
  <div className="bg-card border border-border p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
@@ -1629,7 +1630,7 @@ export const CustomerDashboardPage: React.FC = () => {
  </div>
  </div>
  </div>
- </div>
+ </motion.div>
  );
 };
 
@@ -1695,52 +1696,51 @@ export const DashboardPage: React.FC = () => {
 
 
  return (
- <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-6 animate-in fade-in duration-500">
+ <motion.div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-6" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4">
           <div className="space-y-0.5">
             <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Dashboard</h3>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Overview • {formatFullDate(new Date())}</p>
           </div>
           <div className="grid grid-cols-2 gap-3 w-full md:w-[400px]">
-            <button 
+            <motion.button whileTap={{ scale: 0.97 }} 
               onClick={() => navigate('/pos')}
               className="flex items-center justify-center gap-2 bg-primary text-white h-12 rounded-2xl font-bold text-xs tracking-wider shadow-sm shadow-primary/20 active:scale-95 transition-all hover:opacity-90"
             >
               <Plus size={16} />
               <span>NEW SALE</span>
-            </button>
-            <button 
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.97 }} 
               onClick={() => navigate('/appointments')}
               className="flex items-center justify-center gap-2 bg-white border border-stone-200 text-stone-700 h-12 rounded-2xl font-bold text-xs tracking-wider shadow-sm active:scale-95 transition-all hover:bg-stone-50"
             >
               <Calendar size={16} />
               <span>APPOINTMENTS</span>
-            </button>
+            </motion.button>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
- {stats.map((s, i) => (
- <motion.div 
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.08, type: "spring", stiffness: 300, damping: 24 }}
-              key={i} 
-              className="bg-stone-50/80 [.midnight_&]:bg-[#221C18] border border-stone-100 [.midnight_&]:border-[#3D322C] shadow-sm p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group"
-            >
-              <div className="flex justify-between items-start mb-2">
-                <p className="text-[10px] text-stone-500 [.midnight_&]:text-[#D4AF37] font-semibold uppercase tracking-wider leading-tight">{s.label}</p>
-                <div className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 duration-500", s.bg, s.color)}>
-                  {React.cloneElement(s.icon as any, { size: 16, strokeWidth: 2 })}
-                </div>
-              </div>
-              <h4 className="text-xl font-extrabold text-slate-800 [.midnight_&]:text-[#E6DFD9] tracking-tight truncate">
-                {s.value}
-                {s.suffix && <span className="text-xs font-medium text-stone-500 [.midnight_&]:text-[#E6DFD9]/70 ml-1">{s.suffix}</span>}
-              </h4>
-            </motion.div>
- ))}
- </div>
+ <AnimatePresence mode="wait">{stats.map((s, i) => (
+              <motion.div 
+                           initial={{ opacity: 0, y: 15 }}
+                           animate={{ opacity: 1, y: 0 }}
+                           transition={{  type: "spring", damping: 30, stiffness: 350, mass: 0.8 }}
+                           key={i} 
+                           className="bg-stone-50/80 [.midnight_&]:bg-[#221C18] border border-stone-100 [.midnight_&]:border-[#3D322C] shadow-sm p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group" layout
+                         >
+                           <div className="flex justify-between items-start mb-2">
+                             <p className="text-[10px] text-stone-500 [.midnight_&]:text-[#D4AF37] font-semibold uppercase tracking-wider leading-tight">{s.label}</p>
+                             <div className={cn("w-8 h-8 rounded-full flex items-center justify-center transition-transform group-hover:scale-110 duration-500", s.bg, s.color)}>
+                               {React.cloneElement(s.icon as any, { size: 16, strokeWidth: 2 })}
+                             </div>
+                           </div>
+                           <h4 className="text-xl font-extrabold text-slate-800 [.midnight_&]:text-[#E6DFD9] tracking-tight truncate">
+                             {s.value}
+                             {s.suffix && <span className="text-xs font-medium text-stone-500 [.midnight_&]:text-[#E6DFD9]/70 ml-1">{s.suffix}</span>}
+                           </h4>
+                         </motion.div>
+              ))}</AnimatePresence></div>
 
  
 
@@ -1751,7 +1751,7 @@ export const DashboardPage: React.FC = () => {
                 <h4 className="text-xs font-bold tracking-wider text-stone-400 [.midnight_&]:text-[#D4AF37] uppercase">
                   Recent Sales
                 </h4>
- <button onClick={() => navigate('/history')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW ALL</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => navigate('/history')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW ALL</motion.button>
  </div>
  <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
  {sales.length === 0 ? (
@@ -1763,32 +1763,31 @@ export const DashboardPage: React.FC = () => {
                   </div>
  ) : (
  <div className="divide-y divide-stone-100">
- {sales.slice(0, 10).map((s, index) => (
- <motion.div 
-   initial={{ opacity: 0, x: -10 }}
-   animate={{ opacity: 1, x: 0 }}
-   transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 24 }}
-   key={s.id} 
-   className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group"
- >
- <div className="flex items-center gap-4">
- <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary font-black text-xs">
- {s.customerName ? s.customerName[0].toUpperCase() : 'G'}
- </div>
- <div>
- <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{s.customerName || 'Guest Customer'}</p>
- <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
- {formatDisplayDate(s.dateTime)} • {formatTime(s.dateTime)} • {s.method}
- </p>
- </div>
- </div>
- <div className="text-right">
- <p className="text-sm font-black text-foreground">{s.total.toLocaleString()} Ks</p>
- <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">{s.items.length} items</p>
- </div>
- </motion.div>
- ))}
- </div>
+ <AnimatePresence mode="wait">{sales.slice(0, 10).map((s, index) => (
+                                  <motion.div 
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{  type: "spring", damping: 30, stiffness: 350, mass: 0.8 }}
+                                    key={s.id} 
+                                    className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group" layout
+                                  >
+                                  <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary font-black text-xs">
+                                  {s.customerName ? s.customerName[0].toUpperCase() : 'G'}
+                                  </div>
+                                  <div>
+                                  <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{s.customerName || 'Guest Customer'}</p>
+                                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
+                                  {formatDisplayDate(s.dateTime)} • {formatTime(s.dateTime)} • {s.method}
+                                  </p>
+                                  </div>
+                                  </div>
+                                  <div className="text-right">
+                                  <p className="text-sm font-black text-foreground">{s.total.toLocaleString()} Ks</p>
+                                  <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest">{s.items.length} items</p>
+                                  </div>
+                                  </motion.div>
+                                  ))}</AnimatePresence></div>
  )}
  </div>
  </div>
@@ -1799,7 +1798,7 @@ export const DashboardPage: React.FC = () => {
                 <h4 className="text-xs font-bold tracking-wider text-stone-400 [.midnight_&]:text-[#D4AF37] uppercase">
                   Today's Appointments
                 </h4>
- <button onClick={() => navigate('/appointments')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW CALENDAR</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => navigate('/appointments')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW CALENDAR</motion.button>
  </div>
  <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
  {appointments.length === 0 ? (
@@ -1811,44 +1810,63 @@ export const DashboardPage: React.FC = () => {
                   </div>
  ) : (
  <div className="divide-y divide-stone-100">
- {appointments.sort((a, b) => a.time.localeCompare(b.time)).map((a, index) => (
- <motion.div 
-   initial={{ opacity: 0, x: -10 }}
-   animate={{ opacity: 1, x: 0 }}
-   transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 24 }}
-   key={a.id} 
-   className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group"
- >
- <div className="flex items-center gap-4">
- <div className={cn(
- "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
- a.status === 'confirmed' ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
- )}>
- {a.time}
- </div>
- <div>
- <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{a.customerName}</p>
- <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{a.serviceName} • {a.staffName}</p>
- </div>
- </div>
- <div className="text-right">
- <span className={cn(
- "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full ",
- a.status === 'confirmed' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
- )}>
- {a.status}
- </span>
- </div>
- </motion.div>
- ))}
- </div>
+ <AnimatePresence mode="wait">{appointments.sort((a, b) => a.time.localeCompare(b.time)).map((a, index) => (
+                                  <motion.div 
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{  type: "spring", damping: 30, stiffness: 350, mass: 0.8 }}
+                                    key={a.id} 
+                                    className="px-4 py-3 flex justify-between items-center hover:bg-muted/5 transition-colors group" layout
+                                  >
+                                  <div className="flex items-center gap-4">
+                                  <div className={cn(
+                                  "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
+                                  a.status === 'confirmed' ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+                                  )}>
+                                  {a.time}
+                                  </div>
+                                  <div>
+                                  <p className="text-sm font-black text-foreground tracking-tight group-hover:text-primary transition-colors">{a.customerName}</p>
+                                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">{a.serviceName} • {a.staffName}</p>
+                                  </div>
+                                  </div>
+                                  <div className="text-right">
+                                  <span className={cn(
+                                  "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full ",
+                                  a.status === 'confirmed' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                  )}>
+                                  {a.status}
+                                  </span>
+                                  </div>
+                                  </motion.div>
+                                  ))}</AnimatePresence></div>
  )}
  </div>
  </div>
  </div>
-</div>
+</motion.div>
 );
 };
+
+
+const ServiceCard = React.memo(({ service, isInCart, addToCart }: any) => (
+  <motion.button 
+    whileTap={{ scale: 0.97 }} 
+    onClick={() => addToCart(service)} 
+    className={`text-left bg-card border border-border p-3.5 rounded-xl transition-all active:scale-95 group relative overflow-hidden flex flex-col justify-between min-h-[90px] ${ isInCart ? '-primary bg-primary/20 ring-2 ring-primary/20 shadow-primary/10' : ' hover:border-primary/50 hover:' }`} 
+  > 
+    {isInCart && ( 
+      <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center transition-transform scale-110"> 
+        <Check size={12} strokeWidth={3} /> 
+      </div> 
+    )} 
+    <div className="space-y-0.5 mt-1 pr-6"> 
+      <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-80 truncate">{service.category}</p> 
+      <h3 className="text-sm font-bold text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">{service.name}</h3> 
+    </div> 
+    <p className="text-sm font-black text-foreground mt-2">{service.price.toLocaleString()} Ks</p> 
+  </motion.button>
+));
 
 export const POSPage: React.FC = () => {
  const { profile, isAdmin, isStaff, isStaffMember, isCustomer } = useAuth();
@@ -1966,7 +1984,7 @@ export const POSPage: React.FC = () => {
  return matchesCategory && matchesSearch;
  });
 
- const addToCart = (service: Service) => {
+ const addToCart = useCallback((service: Service) => {
  setCart(prev => {
  const existing = prev.find(item => item.id === service.id);
  if (existing) {
@@ -1976,8 +1994,8 @@ export const POSPage: React.FC = () => {
  // First click: select / add to cart
  const initialDiscount = isLoyaltyDiscountActive ? LOYALTY_DISCOUNT : 0;
  return [...prev, { ...service, qty: 1, disP: initialDiscount }];
- });
- };
+    });
+  }, [isLoyaltyDiscountActive]);
 
  const updateCartItem = (index: number, updates: Partial<CartItem>) => {
  setCart(prev => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
@@ -2052,7 +2070,7 @@ export const POSPage: React.FC = () => {
  return allErrors;
  };
 
- const handleClearAllCart = () => {
+ const handleClearAllCart = useCallback(() => {
  if (cart.length === 0) return;
  setConfirmAction({
  message: "Are you sure you want to clear all items from the cart?",
@@ -2067,9 +2085,9 @@ export const POSPage: React.FC = () => {
  setSelectedStaffEmail('');
  setPayments([{ method: 'Cash', amount: 0 }]);
  setConfirmAction(null);
- }
- });
- };
+      }
+    });
+  }, [cart.length]);
 
  const handleProceedToCheckout = () => {
  const cartValidationErrs = getCartValidationErrors(cart);
@@ -2295,7 +2313,7 @@ export const POSPage: React.FC = () => {
  : "";
  
  return (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={step.id}
  onClick={() => setCurrentStep(step.id as any)}
  className="relative z-10 flex flex-col items-center gap-2 group outline-none"
@@ -2312,7 +2330,7 @@ export const POSPage: React.FC = () => {
  <span className={`text-[10px] sm:text-xs font-black uppercase tracking-widest transition-colors ${isActive ? "text-primary" : "text-muted-foreground"}`}>
  {step.label}
  </span>
- </button>
+ </motion.button>
  )
  })}
  </div>
@@ -2320,8 +2338,8 @@ export const POSPage: React.FC = () => {
 
  {/* Middle Content Area (flex-1 overflow-y-auto) */}
  <div className="flex-1 overflow-y-auto pb-32">
- {currentStep === 'services' && (
- <div className="w-full max-w-5xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
+ {(currentStep === 'services' || currentStep === 'cart') && (
+ <motion.div className="w-full max-w-5xl mx-auto px-3 py-4 md:p-6 space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  {/* Search and Category Filter */}
  <div className="flex flex-col gap-5 mb-8">
  {/* Search Bar */}
@@ -2337,14 +2355,14 @@ export const POSPage: React.FC = () => {
  className="w-full bg-card border-2 border-border/60 rounded-full pl-14 pr-14 py-4 text-base font-medium text-foreground placeholder-muted-foreground/60 focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all shadow-sm hover:border-border/80"
  />
  {search && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setSearch('')} 
  className="absolute inset-y-0 right-4 flex items-center text-muted-foreground hover:text-red-500 transition-colors"
  >
  <div className="p-1.5 bg-muted rounded-full group-hover:bg-muted/80">
  <X size={16} strokeWidth={2.5} />
  </div>
- </button>
+ </motion.button>
  )}
  </div>
 
@@ -2353,7 +2371,7 @@ export const POSPage: React.FC = () => {
  {categoryList.map(cat => {
  const isSelected = selectedCategory === cat;
  return (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={cat}
  onClick={() => setSelectedCategory(cat)}
  className={`whitespace-nowrap px-5 py-2.5 rounded-full font-bold text-[11px] uppercase tracking-widest transition-all shrink-0 border ${
@@ -2363,7 +2381,7 @@ export const POSPage: React.FC = () => {
  }`}
  >
  {cat}
- </button>
+ </motion.button>
  );
  })}
  </div>
@@ -2376,36 +2394,37 @@ export const POSPage: React.FC = () => {
  </div>
  ) : (
  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
- {filteredServices.map(service => {
- const isInCart = cart.some(c => c.id === service.id);
- return (
- <button
- key={service.id}
- onClick={() => addToCart(service)}
- className={`text-left bg-card border border-border p-3.5 rounded-xl transition-all active:scale-95 group relative overflow-hidden flex flex-col justify-between min-h-[90px] ${
- isInCart ? '-primary bg-primary/20 ring-2 ring-primary/20 shadow-primary/10' : ' hover:border-primary/50 hover:'
- }`}
- >
- {isInCart && (
- <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center transition-transform scale-110">
- <Check size={12} strokeWidth={3} />
+ {filteredServices.map(service => (
+  <ServiceCard 
+    key={service.id} 
+    service={service} 
+    isInCart={cart.some(c => c.id === service.id)} 
+    addToCart={addToCart} 
+  />
+))}
  </div>
  )}
- <div className="space-y-0.5 mt-1 pr-6">
- <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-80 truncate">{service.category}</p>
- <h3 className="text-sm font-bold text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">{service.name}</h3>
- </div>
- <p className="text-sm font-black text-foreground mt-2">{service.price.toLocaleString()} Ks</p>
- </button>
- );
- })}
- </div>
- )}
- </div>
+ </motion.div>
  )}
 
- {currentStep === 'cart' && (
- <div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
+ <AnimatePresence mode="wait">
+  {currentStep === 'cart' && (
+    <motion.div 
+      className="fixed inset-0 z-[60000] flex items-end sm:items-center justify-center bg-black/60  sm:p-4"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}
+     style={{ willChange: "transform, opacity" }}>
+      <motion.div 
+        className="bg-background w-full sm:max-w-xl sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
+        initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 350, mass: 0.8 }}
+      >
+        <div className="flex justify-between items-center p-4 border-b border-border bg-card sticky top-0 z-10 shrink-0">
+          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCurrentStep('services')} className="flex items-center gap-2 text-primary font-bold hover:underline">
+            <ArrowLeft size={18} />
+            <span className="text-sm">Add More Services</span>
+          </motion.button>
+          <h2 className="font-black uppercase tracking-widest text-xs text-muted-foreground">Cart Overview</h2>
+        </div>
+        <div className="w-full overflow-y-auto px-3 py-4 space-y-3 flex-1">
  {cart.length === 0 ? (
  <div className="text-center p-12 bg-card border border-border rounded-2xl flex flex-col items-center gap-4 ">
  <div className="w-16 h-16 bg-primary/20 text-primary rounded-full flex items-center justify-center">
@@ -2413,13 +2432,13 @@ export const POSPage: React.FC = () => {
  </div>
  <h3 className="text-lg font-black text-foreground">Your cart is empty</h3>
  <p className="text-muted-foreground">Select services to begin your order.</p>
- <button onClick={() => setCurrentStep('services')} className="mt-2 bg-primary text-primary-foreground px-4 md:px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:opacity-90 active:scale-95 transition-all">
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCurrentStep('services')} className="mt-2 bg-primary text-primary-foreground px-4 md:px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs hover:opacity-90 active:scale-95 transition-all">
  Browse Services
- </button>
+ </motion.button>
  </div>
           ) : (
             <div className="space-y-5">
-              <div className="flex justify-between items-center bg-card/60 border-2 border-border/50 p-4 sm:p-5 rounded-2xl backdrop-blur-sm">
+              <div className="flex justify-between items-center bg-card/60 border-2 border-border/50 p-4 sm:p-5 rounded-2xl ">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
                     <ShoppingCart size={20} strokeWidth={2.5} />
@@ -2433,222 +2452,249 @@ export const POSPage: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <button 
+                <motion.button whileTap={{ scale: 0.97 }} 
                   type="button"
                   onClick={handleClearAllCart} 
                   disabled={cart.length === 0}
                   className="text-xs text-red-500/70 font-black uppercase tracking-widest hover:bg-red-500/10 hover:text-red-500 px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 disabled:opacity-40 disabled:pointer-events-none active:scale-95 border border-transparent hover:border-red-500/20"
                 >
                   <Trash2 size={14} strokeWidth={2.5} /> <span className="hidden sm:inline">Clear All</span>
-                </button>
+                </motion.button>
               </div>
 
-            {cart.map((item, index) => {
-              const itemValidation = validateCartItem(item);
-              const hasErrors = !itemValidation.isValid && itemValidation.errors.length > 0;
-              
-              return (
-              <div key={item.id + index} className={`bg-card border-2 p-4 sm:p-5 rounded-2xl space-y-4 relative transition-all ${hasErrors ? 'border-red-500/50 shadow-sm shadow-red-500/10' : 'border-border/60 hover:border-primary/30 shadow-sm'}`}>
-                {/* Remove */}
-                <button 
-                  onClick={() => {
-                    setConfirmAction({
-                      message: "Remove this item from the cart?",
-                      onConfirm: () => {
-                        removeFromCart(index);
-                        setConfirmAction(null);
-                      }
-                    });
-                  }} 
-                  className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-20 cursor-pointer"
-                >
-                  <X size={16} strokeWidth={2.5} />
-                </button>
-                
-                <div className="flex flex-col gap-1 pr-10">
-                  <h4 className="font-bold text-foreground text-base tracking-tight leading-tight">{item.name}</h4>
-                  <p className="text-primary font-black text-sm">{item.price.toLocaleString()} Ks</p>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  {/* Quantity */}
-                  <div className="flex items-center bg-muted/60 rounded-xl p-1 shadow-inner border border-border/50">
-                    <button onClick={() => updateCartItem(index, { qty: Math.max(1, item.qty - 1) })} className="w-8 h-8 flex items-center justify-center bg-card hover:bg-background rounded-lg shadow-sm transition-all text-foreground">
-                      <Minus size={14} strokeWidth={3} />
-                    </button>
-                    <input 
-                      type="number"
-                      value={item.qty}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        updateCartItem(index, { qty: val === '' ? ('' as any) : parseInt(val) || 1 });
-                      }}
-                      onFocus={() => updateCartItem(index, { qty: '' as any })}
-                      onBlur={(e) => {
-                        if (!e.target.value || parseInt(e.target.value) < 1)
-                          updateCartItem(index, { qty: 1 });
-                      }}
-                      className="w-10 text-center text-sm font-black text-foreground bg-transparent border-none outline-none appearance-none"
-                      style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
-                    />
-                    <button onClick={() => updateCartItem(index, { qty: item.qty + 1 })} className="w-8 h-8 flex items-center justify-center bg-card hover:bg-background rounded-lg shadow-sm transition-all text-foreground">
-                      <Plus size={14} strokeWidth={3} />
-                    </button>
-                  </div>
-                  
-                  {/* Discount % */}
-                  <div className="relative w-24">
-                    <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-primary/10 text-primary flex items-center justify-center pointer-events-none">
-                      <Percent size={12} strokeWidth={3} />
-                    </div>
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={item.disP}
-                      onFocus={(e) => {
-                        if (item.disP === 0) {
-                          updateCartItem(index, { disP: '' as any });
-                        }
-                      }}
-                      onBlur={(e) => {
-                        if ((e.target.value as any) === '') {
-                          updateCartItem(index, { disP: 0 });
-                        }
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        updateCartItem(index, { disP: val === '' ? ('' as any) : Number(val) });
-                      }}
-                      className="w-full h-10 bg-input border-2 border-border/50 rounded-xl pl-10 pr-2 text-sm font-black text-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder-muted-foreground/50"
-                      placeholder="Disc"
-                    />
-                  </div>
-                </div>
+            <AnimatePresence mode="wait">{cart.map((item, index) => {
+                                               const itemValidation = validateCartItem(item);
+                                               const hasErrors = !itemValidation.isValid && itemValidation.errors.length > 0;
+                                               
+                                               return (
+                                               <motion.div key={item.id + index} className={`bg-card border-2 p-4 sm:p-5 rounded-2xl space-y-4 relative transition-all ${hasErrors ? 'border-red-500/50 shadow-sm shadow-red-500/10' : 'border-border/60 hover:border-primary/30 shadow-sm'}`} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+                                                 {/* Remove */}
+                                                 <motion.button whileTap={{ scale: 0.97 }} 
+                                                   onClick={() => {
+                                                     setConfirmAction({
+                                                       message: "Remove this item from the cart?",
+                                                       onConfirm: () => {
+                                                         removeFromCart(index);
+                                                         setConfirmAction(null);
+                                                       }
+                                                     });
+                                                   }} 
+                                                   className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-full transition-colors z-20 cursor-pointer"
+                                                 >
+                                                   <X size={16} strokeWidth={2.5} />
+                                                 </motion.button>
+                                                 
+                                                 <div className="flex flex-col gap-1 pr-10">
+                                                   <h4 className="font-bold text-foreground text-base tracking-tight leading-tight">{item.name}</h4>
+                                                   <p className="text-primary font-black text-sm">{item.price.toLocaleString()} Ks</p>
+                                                 </div>
+                                                 
+                                                 <div className="flex items-end gap-3 mt-2">
+                                                   {/* Quantity */}
+                                                   <div>
+                                                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">QTY</label>
+                                                     <div className="flex items-center bg-muted/60 rounded-xl p-1 shadow-inner border border-border/50">
+                                                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => updateCartItem(index, { qty: Math.max(1, item.qty - 1) })} className="w-8 h-8 flex items-center justify-center bg-card hover:bg-background rounded-lg shadow-sm transition-all text-foreground">
+                                                         <Minus size={14} strokeWidth={3} />
+                                                       </motion.button>
+                                                       <input 
+                                                         type="number"
+                                                         value={item.qty}
+                                                         onChange={(e) => {
+                                                           const val = e.target.value;
+                                                           updateCartItem(index, { qty: val === '' ? ('' as any) : parseInt(val) || 1 });
+                                                         }}
+                                                         onFocus={() => updateCartItem(index, { qty: '' as any })}
+                                                         onBlur={(e) => {
+                                                           if (!e.target.value || parseInt(e.target.value) < 1)
+                                                             updateCartItem(index, { qty: 1 });
+                                                         }}
+                                                         className="w-10 text-center text-sm font-black text-foreground bg-transparent border-none outline-none appearance-none"
+                                                         style={{ WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+                                                       />
+                                                       <motion.button whileTap={{ scale: 0.97 }} onClick={() => updateCartItem(index, { qty: item.qty + 1 })} className="w-8 h-8 flex items-center justify-center bg-card hover:bg-background rounded-lg shadow-sm transition-all text-foreground">
+                                                         <Plus size={14} strokeWidth={3} />
+                                                       </motion.button>
+                                                     </div>
+                                                   </div>
+                                                   
+                                                   {/* Discount % */}
+                                                   <div>
+                                                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 px-1">DISCOUNT</label>
+                                                     <div className="relative w-24">
+                                                       <div className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md bg-primary/10 text-primary flex items-center justify-center pointer-events-none">
+                                                         <Percent size={12} strokeWidth={3} />
+                                                       </div>
+                                                       <input
+                                                         type="number"
+                                                         min="0"
+                                                         max="100"
+                                                         value={item.disP}
+                                                         onFocus={(e) => {
+                                                           if (item.disP === 0) {
+                                                             updateCartItem(index, { disP: '' as any });
+                                                           }
+                                                         }}
+                                                         onBlur={(e) => {
+                                                           if ((e.target.value as any) === '') {
+                                                             updateCartItem(index, { disP: 0 });
+                                                           }
+                                                         }}
+                                                         onChange={(e) => {
+                                                           const val = e.target.value;
+                                                           updateCartItem(index, { disP: val === '' ? ('' as any) : Number(val) });
+                                                         }}
+                                                         className="w-full h-10 bg-input border-2 border-border/50 rounded-xl pl-10 pr-2 text-sm font-black text-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder-muted-foreground/50"
+                                                         placeholder="Disc"
+                                                       />
+                                                     </div>
+                                                   </div>
+                                                 </div>
 
-                <div className="h-px w-full bg-border/40" />
+                                                 <div className="h-px w-full bg-border/40" />
 
-                {/* Assign Staff (Split Staff Logic) */}
-                <div className="flex flex-col gap-2.5">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Staff Assignment</label>
-                  
-                  {(!item.staffAssignments || item.staffAssignments.length === 0) ? (
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1 group">
-                        <UserIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
-                        <select 
-                          value={item.staffName || ''}
-                          onChange={(e) => updateCartItem(index, { staffName: e.target.value, staffEmail: staff.find(s => s.name === e.target.value)?.email || '' })}
-                          className="w-full h-11 bg-input/50 border-2 border-border/60 hover:border-border rounded-xl pl-9 pr-3 text-sm font-semibold text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
-                        >
-                          <option value="">Select Staff</option>
-                          {staff.map(s => (
-                            <option key={s.id} value={s.name}>{s.name}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          const firstStaff = item.staffName ? [{ name: item.staffName, qty: Math.max(1, Math.floor(item.qty / 2)) }] : [];
-                          updateCartItem(index, { 
-                            staffName: '', 
-                            staffEmail: '', 
-                            staffAssignments: [...firstStaff, { name: '', qty: Math.max(1, Math.ceil(item.qty / 2)) }] 
-                          });
-                        }}
-                        className="h-11 px-4 bg-muted text-muted-foreground hover:text-foreground font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shrink-0"
-                      >
-                        Split
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2.5 bg-muted/20 p-3 rounded-xl border border-border/40">
-                      {item.staffAssignments.map((assignment, aIndex) => (
-                        <div key={aIndex} className="flex items-center gap-2">
-                          <div className="relative flex-1 group">
-                            <UserIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
-                            <select 
-                              value={assignment.name || ''}
-                              onChange={(e) => {
-                                const newAssignments = [...(item.staffAssignments || [])];
-                                newAssignments[aIndex].name = e.target.value;
-                                updateCartItem(index, { staffAssignments: newAssignments });
-                              }}
-                              className="w-full h-10 bg-card border-2 border-border/60 rounded-xl pl-9 pr-2 text-sm font-semibold text-foreground focus:border-primary outline-none transition-all appearance-none shadow-sm cursor-pointer"
-                            >
-                              <option value="">Select Staff</option>
-                              {staff.map(s => (
-                                <option key={s.id} value={s.name}>{s.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          
-                          <div className="relative w-20 shrink-0">
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground pointer-events-none uppercase">qty</span>
-                            <input
-                              type="number"
-                              min="0"
-                              max={item.qty}
-                              value={assignment.qty}
-                              onChange={(e) => {
-                                const newAssignments = [...(item.staffAssignments || [])];
-                                const val = parseInt(e.target.value) || 0;
-                                newAssignments[aIndex].qty = val;
-                                updateCartItem(index, { staffAssignments: newAssignments });
-                              }}
-                              className="w-full h-10 bg-card border-2 border-border/60 rounded-xl pl-3 pr-8 text-sm font-black text-foreground focus:border-primary outline-none transition-all shadow-sm"
-                            />
-                          </div>
-                          
-                          <button 
-                            onClick={() => {
-                              const newAssignments = [...(item.staffAssignments || [])];
-                              newAssignments.splice(aIndex, 1);
-                              if (newAssignments.length === 0) {
-                                updateCartItem(index, { staffAssignments: undefined });
-                              } else {
-                                updateCartItem(index, { staffAssignments: newAssignments });
-                              }
-                            }}
-                            className="w-10 h-10 flex items-center justify-center text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))}
-                      
-                      <button 
-                        onClick={() => {
-                          const newAssignments = [...(item.staffAssignments || []), { name: '', qty: 1 }];
-                          updateCartItem(index, { staffAssignments: newAssignments });
-                        }}
-                        className="h-10 flex items-center justify-center gap-2 bg-background border-2 border-dashed border-border/80 hover:border-primary/50 text-muted-foreground hover:text-primary text-xs font-bold uppercase tracking-wider rounded-xl transition-colors mt-1"
-                      >
-                        <Plus size={14} strokeWidth={3} /> Add Assignment
-                      </button>
-                    </div>
-                  )}
-                  
-                  {hasErrors && (
-                    <div className="space-y-1.5 mt-2 animate-in slide-in-from-top-1">
-                      {itemValidation.errors.map((err, errIdx) => (
-                        <div key={errIdx} className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-2.5 rounded-xl text-xs font-bold flex items-start gap-2 shadow-sm">
-                          <AlertCircle size={14} className="shrink-0 text-red-500 mt-0.5" strokeWidth={2.5} />
-                          <span className="leading-tight">{err}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )})}
-          </div>
+                                                 {/* Assign Staff (Split Staff Logic) */}
+                                                 <div className="flex flex-col gap-2.5">
+                                                   <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Staff Assignment</label>
+                                                   
+                                                   {(!item.staffAssignments || item.staffAssignments.length === 0) ? (
+                                                     <div className="flex items-center gap-2">
+                                                       <div className="relative flex-1 group">
+                                                         <UserIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
+                                                         <select 
+                                                           value={item.staffName || ''}
+                                                           onChange={(e) => updateCartItem(index, { staffName: e.target.value, staffEmail: staff.find(s => s.name === e.target.value)?.email || '' })}
+                                                           className="w-full h-11 bg-input/50 border-2 border-border/60 hover:border-border rounded-xl pl-9 pr-3 text-sm font-semibold text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
+                                                         >
+                                                           <option value="">Select Staff</option>
+                                                           {staff.map(s => (
+                                                             <option key={s.id} value={s.name}>{s.name}</option>
+                                                           ))}
+                                                         </select>
+                                                       </div>
+                                                       <motion.button whileTap={{ scale: 0.97 }} 
+                                                         onClick={() => {
+                                                           const firstStaff = item.staffName ? [{ name: item.staffName, qty: Math.max(1, Math.floor(item.qty / 2)) }] : [];
+                                                           updateCartItem(index, { 
+                                                             staffName: '', 
+                                                             staffEmail: '', 
+                                                             staffAssignments: [...firstStaff, { name: '', qty: Math.max(1, Math.ceil(item.qty / 2)) }] 
+                                                           });
+                                                         }}
+                                                         className="h-11 px-4 bg-muted text-muted-foreground hover:text-foreground font-bold text-xs uppercase tracking-wider rounded-xl transition-colors shrink-0"
+                                                       >
+                                                         Split
+                                                       </motion.button>
+                                                     </div>
+                                                   ) : (
+                                                     <div className="flex flex-col gap-2.5 bg-muted/20 p-3 rounded-xl border border-border/40">
+                                                       {item.staffAssignments.map((assignment, aIndex) => (
+                                                         <div key={aIndex} className="flex items-center gap-2">
+                                                           <div className="relative flex-1 group">
+                                                             <UserIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors pointer-events-none" />
+                                                             <select 
+                                                               value={assignment.name || ''}
+                                                               onChange={(e) => {
+                                                                 const newAssignments = [...(item.staffAssignments || [])];
+                                                                 newAssignments[aIndex].name = e.target.value;
+                                                                 updateCartItem(index, { staffAssignments: newAssignments });
+                                                               }}
+                                                               className="w-full h-10 bg-card border-2 border-border/60 rounded-xl pl-9 pr-2 text-sm font-semibold text-foreground focus:border-primary outline-none transition-all appearance-none shadow-sm cursor-pointer"
+                                                             >
+                                                               <option value="">Select Staff</option>
+                                                               {staff.map(s => (
+                                                                 <option key={s.id} value={s.name}>{s.name}</option>
+                                                               ))}
+                                                             </select>
+                                                           </div>
+                                                           
+                                                           <div className="relative w-20 shrink-0">
+                                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground pointer-events-none uppercase">qty</span>
+                                                             <input
+                                                               type="number"
+                                                               min="0"
+                                                               max={item.qty}
+                                                               value={assignment.qty}
+                                                               onChange={(e) => {
+                                                                 const newAssignments = [...(item.staffAssignments || [])];
+                                                                 const val = parseInt(e.target.value) || 0;
+                                                                 newAssignments[aIndex].qty = val;
+                                                                 updateCartItem(index, { staffAssignments: newAssignments });
+                                                               }}
+                                                               className="w-full h-10 bg-card border-2 border-border/60 rounded-xl pl-3 pr-8 text-sm font-black text-foreground focus:border-primary outline-none transition-all shadow-sm"
+                                                             />
+                                                           </div>
+                                                           
+                                                           <motion.button whileTap={{ scale: 0.97 }} 
+                                                             onClick={() => {
+                                                               const newAssignments = [...(item.staffAssignments || [])];
+                                                               newAssignments.splice(aIndex, 1);
+                                                               if (newAssignments.length === 0) {
+                                                                 updateCartItem(index, { staffAssignments: undefined });
+                                                               } else {
+                                                                 updateCartItem(index, { staffAssignments: newAssignments });
+                                                               }
+                                                             }}
+                                                             className="w-10 h-10 flex items-center justify-center text-red-500/70 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-colors shrink-0"
+                                                           >
+                                                             <Trash2 size={16} />
+                                                           </motion.button>
+                                                         </div>
+                                                       ))}
+                                                       
+                                                       <motion.button whileTap={{ scale: 0.97 }} 
+                                                         onClick={() => {
+                                                           const newAssignments = [...(item.staffAssignments || []), { name: '', qty: 1 }];
+                                                           updateCartItem(index, { staffAssignments: newAssignments });
+                                                         }}
+                                                         className="h-10 flex items-center justify-center gap-2 bg-background border-2 border-dashed border-border/80 hover:border-primary/50 text-muted-foreground hover:text-primary text-xs font-bold uppercase tracking-wider rounded-xl transition-colors mt-1"
+                                                       >
+                                                         <Plus size={14} strokeWidth={3} /> Add Assignment
+                                                       </motion.button>
+                                                     </div>
+                                                   )}
+                                                   
+                                                   {hasErrors && (
+                                                     <div className="space-y-1.5 mt-2 animate-in slide-in-from-top-1">
+                                                       {itemValidation.errors.map((err, errIdx) => (
+                                                         <div key={errIdx} className="bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 p-2.5 rounded-xl text-xs font-bold flex items-start gap-2 shadow-sm">
+                                                           <AlertCircle size={14} className="shrink-0 text-red-500 mt-0.5" strokeWidth={2.5} />
+                                                           <span className="leading-tight">{err}</span>
+                                                         </div>
+                                                       ))}
+                                                     </div>
+                                                   )}
+                                                 </div>
+                                               </motion.div>
+                                             )})}</AnimatePresence></div>
         )}
-      </div>
-      )}
+        </div>
+        {/* Cart Footer inside Overlay */}
+        <div className="p-4 border-t border-border bg-card shrink-0">
+          <motion.button whileTap={{ scale: 0.97 }} 
+            onClick={handleProceedToCheckout} 
+            disabled={cart.length === 0 || !isCartValid}
+            className="w-full bg-primary text-primary-foreground px-4 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            PROCEED TO PAY / CHECKOUT <ChevronRight size={18} />
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+  </AnimatePresence>
 
       {currentStep === 'checkout' && cart.length > 0 && (
- <div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3 animate-in fade-in duration-300">
+ <motion.div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
+ 
+ {/* Checkout Header Navigation */}
+ <div className="flex justify-between items-center pb-2">
+   <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCurrentStep('cart')} className="flex items-center gap-2 text-primary font-bold hover:underline">
+     <ArrowLeft size={18} />
+     <span className="text-sm">Back to Edit Cart</span>
+   </motion.button>
+ </div>
+ 
  {/* Order Summary */}
  <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
  <div className="flex items-center justify-between pb-3">
@@ -2669,34 +2715,33 @@ export const POSPage: React.FC = () => {
  <div className="col-span-3 sm:col-span-2 text-right">Amount</div>
  </div>
  <div className="divide-y divide-/20 max-h-60 overflow-y-auto pr-1 space-y-0.5">
- {cart.map((item, idx) => {
- const lineAmount = Math.round(item.price * item.qty * (1 - (item.disP || 0) / 100));
- return (
- <div key={idx} className="grid grid-cols-12 text-xs items-center py-2 gap-2">
- <div className="col-span-5 sm:col-span-6 min-w-0 pr-1">
- <div className="font-bold text-foreground truncate">{item.name}</div>
- {item.disP > 0 && (
- <span className="inline-block text-[10px] font-extrabold text-red-500 bg-red-500/10 px-1.5 py-0.2 rounded mt-0.5">
- Dis: {item.disP}%
- </span>
- )}
- {item.staffAssignments && item.staffAssignments.length > 0 ? (
- <div className="text-[10px] text-muted-foreground truncate mt-0.5">
- Staff: {item.staffAssignments.map(a => `${a.name || 'Staff'} (${a.qty})`).join(', ')}
- </div>
- ) : item.staffName ? (
- <div className="text-[10px] text-muted-foreground truncate mt-0.5">
- Staff: {item.staffName}
- </div>
- ) : null}
- </div>
- <div className="col-span-2 text-center text-muted-foreground font-semibold">{item.qty}</div>
- <div className="col-span-2 text-right text-muted-foreground font-semibold">{item.price.toLocaleString()} Ks</div>
- <div className="col-span-3 sm:col-span-2 text-right font-extrabold text-foreground">{lineAmount.toLocaleString()} Ks</div>
- </div>
- );
- })}
- </div>
+ <AnimatePresence mode="wait">{cart.map((item, idx) => {
+                                  const lineAmount = Math.round(item.price * item.qty * (1 - (item.disP || 0) / 100));
+                                  return (
+                                  <motion.div key={idx} className="grid grid-cols-12 text-xs items-center py-2 gap-2" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+                                  <div className="col-span-5 sm:col-span-6 min-w-0 pr-1">
+                                  <div className="font-bold text-foreground truncate">{item.name}</div>
+                                  {item.disP > 0 && (
+                                  <span className="inline-block text-[10px] font-extrabold text-red-500 bg-red-500/10 px-1.5 py-0.2 rounded mt-0.5">
+                                  Dis: {item.disP}%
+                                  </span>
+                                  )}
+                                  {item.staffAssignments && item.staffAssignments.length > 0 ? (
+                                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                  Staff: {item.staffAssignments.map(a => `${a.name || 'Staff'} (${a.qty})`).join(', ')}
+                                  </div>
+                                  ) : item.staffName ? (
+                                  <div className="text-[10px] text-muted-foreground truncate mt-0.5">
+                                  Staff: {item.staffName}
+                                  </div>
+                                  ) : null}
+                                  </div>
+                                  <div className="col-span-2 text-center text-muted-foreground font-semibold">{item.qty}</div>
+                                  <div className="col-span-2 text-right text-muted-foreground font-semibold">{item.price.toLocaleString()} Ks</div>
+                                  <div className="col-span-3 sm:col-span-2 text-right font-extrabold text-foreground">{lineAmount.toLocaleString()} Ks</div>
+                                  </motion.div>
+                                  );
+                                  })}</AnimatePresence></div>
  </div>
 
  <div className="h-px w-full bg-/50 my-2" />
@@ -2757,21 +2802,21 @@ export const POSPage: React.FC = () => {
  className="w-full bg-input border border-border rounded-xl pl-4 pr-10 py-3 text-sm font-bold text-foreground focus:border-primary outline-none transition-all"
  />
  {customerSearch && (
- <button onClick={() => setCustomerSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-red-500 transition-colors">
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCustomerSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-red-500 transition-colors">
  <X size={16} />
- </button>
+ </motion.button>
  )}
               {customerSuggestions.length > 0 && (
               <div className="absolute z-50 w-full mt-2 bg-card border border-border rounded-xl overflow-hidden shadow-xl max-h-60 overflow-y-auto">
                 {customerSuggestions.map(c => (
-                  <button
+                  <motion.button whileTap={{ scale: 0.97 }}
                     key={c.id}
                     onClick={() => { setSelectedCustomerId(c.id); setCustomerSearch(''); }}
                     className="w-full text-left px-4 py-3 hover:bg-muted transition-colors border-b border-border last:border-0"
                   >
                     <div className="font-bold text-foreground">{c.name}</div>
                     <div className="text-xs text-muted-foreground">{c.phone}</div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             )}
@@ -2783,9 +2828,9 @@ export const POSPage: React.FC = () => {
  <div className="text-xs font-black text-primary uppercase tracking-widest">Selected Customer</div>
  <div className="font-bold text-foreground">{customers.find(c => c.id === selectedCustomerId)?.name}</div>
  </div>
- <button onClick={() => { setSelectedCustomerId(''); setPointsToRedeem(0); setIsLoyaltyDiscountActive(false); }} className="p-2 text-muted-foreground hover:text-red-500 transition-colors">
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setSelectedCustomerId(''); setPointsToRedeem(0); setIsLoyaltyDiscountActive(false); }} className="p-2 text-muted-foreground hover:text-red-500 transition-colors">
  <X size={16} />
- </button>
+ </motion.button>
  </div>
  )}
  </div>
@@ -2823,13 +2868,13 @@ export const POSPage: React.FC = () => {
  <h3 className="font-black text-foreground uppercase tracking-widest flex items-center gap-2 text-sm sm:text-base">
  <DollarSign size={18} className="text-primary" /> Split Payments
  </h3>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={addPaymentMethod} 
  className="text-xs text-primary font-extrabold uppercase tracking-widest bg-primary/20 hover:bg-primary/20 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
  >
  <Plus size={14} /> Add Payment Method
- </button>
+ </motion.button>
  </div>
 
  <p className="text-xs text-muted-foreground">
@@ -2837,61 +2882,60 @@ export const POSPage: React.FC = () => {
  </p>
 
  <div className="space-y-3 pt-1">
- {payments.map((payment, index) => (
- <div key={index} className="flex gap-2.5 items-center bg-muted/30 p-2.5 rounded-xl ">
- <div className="flex-1 min-w-0">
- <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1 block">Method {index + 1}</label>
- <select
- value={payment.method}
- onChange={(e) => updatePayment(index, { method: e.target.value as any })}
- className="w-full bg-input border border-border rounded-lg px-3 py-2 text-xs font-bold text-foreground focus:border-primary outline-none transition-all appearance-none"
- >
- {paymentMethods.map(pm => (
- <option key={pm.id} value={pm.id}>{pm.label}</option>
- ))}
- </select>
- </div>
+ <AnimatePresence mode="wait">{payments.map((payment, index) => (
+                                      <motion.div key={index} className="flex gap-2.5 items-center bg-muted/30 p-2.5 rounded-xl " layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+                                      <div className="flex-1 min-w-0">
+                                      <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1 block">Method {index + 1}</label>
+                                      <select
+                                      value={payment.method}
+                                      onChange={(e) => updatePayment(index, { method: e.target.value as any })}
+                                      className="w-full bg-input border border-border rounded-lg px-3 py-2 text-xs font-bold text-foreground focus:border-primary outline-none transition-all appearance-none"
+                                      >
+                                      {paymentMethods.map(pm => (
+                                      <option key={pm.id} value={pm.id}>{pm.label}</option>
+                                      ))}
+                                      </select>
+                                      </div>
 
- <div className="w-32 sm:w-36">
- <div className="flex justify-between items-center mb-1">
- <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Amount</label>
- {remainingAmount > 0 && payments.length > 1 && (
- <button 
- type="button"
- onClick={() => updatePayment(index, { amount: payment.amount + remainingAmount })}
- className="text-primary hover:underline font-bold text-[9px] lowercase cursor-pointer"
- >
- +fill
- </button>
- )}
- </div>
- <div className="relative">
- <input
- type="number"
- value={payment.amount === 0 ? '' : payment.amount}
- placeholder="0"
- onChange={(e) => updatePayment(index, { amount: e.target.value === '' ? 0 : Number(e.target.value) })}
- className="w-full bg-input border border-border rounded-lg px-2.5 py-2 text-xs font-extrabold text-foreground focus:border-primary outline-none transition-all text-right pr-7"
- />
- <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none font-bold">
- Ks
- </span>
- </div>
- </div>
+                                      <div className="w-32 sm:w-36">
+                                      <div className="flex justify-between items-center mb-1">
+                                      <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Amount</label>
+                                      {remainingAmount > 0 && payments.length > 1 && (
+                                      <motion.button whileTap={{ scale: 0.97 }} 
+                                      type="button"
+                                      onClick={() => updatePayment(index, { amount: payment.amount + remainingAmount })}
+                                      className="text-primary hover:underline font-bold text-[9px] lowercase cursor-pointer"
+                                      >
+                                      +fill
+                                      </motion.button>
+                                      )}
+                                      </div>
+                                      <div className="relative">
+                                      <input
+                                      type="number"
+                                      value={payment.amount === 0 ? '' : payment.amount}
+                                      placeholder="0"
+                                      onChange={(e) => updatePayment(index, { amount: e.target.value === '' ? 0 : Number(e.target.value) })}
+                                      className="w-full bg-input border border-border rounded-lg px-2.5 py-2 text-xs font-extrabold text-foreground focus:border-primary outline-none transition-all text-right pr-7"
+                                      />
+                                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground pointer-events-none font-bold">
+                                      Ks
+                                      </span>
+                                      </div>
+                                      </div>
 
- {payments.length > 1 && (
- <button 
- type="button"
- onClick={() => removePaymentMethod(index)} 
- className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 mt-4 cursor-pointer"
- title="Remove payment method"
- >
- <Trash2 size={16} />
- </button>
- )}
- </div>
- ))}
- </div>
+                                      {payments.length > 1 && (
+                                      <motion.button whileTap={{ scale: 0.97 }} 
+                                      type="button"
+                                      onClick={() => removePaymentMethod(index)} 
+                                      className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 mt-4 cursor-pointer"
+                                      title="Remove payment method"
+                                      >
+                                      <Trash2 size={16} />
+                                      </motion.button>
+                                      )}
+                                      </motion.div>
+                                      ))}</AnimatePresence></div>
 
  {/* Payment Summary & Balance Status */}
  <div className="pt-4 space-y-2">
@@ -2921,63 +2965,73 @@ export const POSPage: React.FC = () => {
  </div>
  </div>
  </div>
- </div>
+ </motion.div>
  )}
  </div>
 
- {/* Bottom Footer (Fixed, shrink-0) */}
- <div className="flex-shrink-0 bg-background backdrop-blur-md p-4 z-20 shadow-[0_-20px_40px_rgba(0,0,0,0.05)]">
- <div className="max-w-5xl mx-auto w-full flex justify-between items-center gap-4">
- {/* Left Info / Back Buttons */}
- <div className="hidden sm:block">
- {currentStep !== 'services' && (
- <button onClick={() => setCurrentStep(currentStep === 'checkout' ? 'cart' : 'services')} className="text-muted-foreground font-bold hover:text-foreground transition-colors uppercase tracking-widest text-xs px-4 py-2 border-transparent hover: rounded-lg">
- Back
- </button>
- )}
- </div>
-
- {/* Action Buttons */}
- <div className="flex-1 sm:flex-none flex justify-end">
- {currentStep === 'services' && (
- <button 
- onClick={() => setCurrentStep('cart')} 
- className="w-full sm:w-auto bg-primary text-primary-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 group"
- >
- PROCEED TO CART 
- {cart.length > 0 && (
- <div className="bg-white/20 px-2 py-0.5 rounded-full text-xs group-hover:bg-white/30 transition-colors">
- {cart.length}
- </div>
- )}
- <ChevronRight size={18} />
- </button>
- )}
  
- {currentStep === 'cart' && (
- <button 
- onClick={handleProceedToCheckout} 
- disabled={cart.length === 0 || !isCartValid}
- className="w-full sm:w-auto bg-primary text-primary-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
- >
- CHECKOUT <ChevronRight size={18} />
- </button>
- )}
+      {/* Floating Bottom Bar for Services */}
+      <AnimatePresence mode="wait">
+        {currentStep === 'services' && cart.length > 0 && (
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ type: "spring", damping: 30, stiffness: 350, mass: 0.8 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-sm px-4 z-40"
+          >
+            <div className="bg-primary text-primary-foreground shadow-2xl shadow-primary/30 rounded-full p-2 flex items-center justify-between  overflow-hidden">
+              <div className="flex items-center gap-3 pl-4">
+                <div className="bg-white/20 px-3 h-8 rounded-full flex items-center justify-center font-black text-sm">
+                  {cart.reduce((sum, item) => sum + item.qty, 0)}
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground/70">Total</span>
+                  <span className="text-sm font-black tracking-tight">{netTotal.toLocaleString()} Ks</span>
+                </div>
+              </div>
+              <motion.button 
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setCurrentStep('cart')}
+                className="bg-white text-primary px-5 py-3 rounded-full font-black uppercase tracking-widest text-xs flex items-center gap-2 hover:bg-white/90 transition-colors"
+              >
+                View Cart <ChevronRight size={16} strokeWidth={3} />
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
- {currentStep === 'checkout' && (
- <button 
- onClick={() => handleCheckout()} 
- disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid}
- className="w-full sm:w-auto bg-primary text-primary-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
- >
- COMPLETE SALE <ChevronRight size={18} />
- </button>
- )}
- </div>
- </div>
- </div>
- 
- {showPrintPreview && pendingSaleParams && (
+      {/* Standard Footer for Checkout */}
+      <AnimatePresence mode="wait">
+      {currentStep === 'checkout' && (
+        <motion.div 
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          exit={{ y: 100 }}
+          className="flex-shrink-0 bg-background  p-4 z-20 shadow-[0_-20px_40px_rgba(0,0,0,0.05)] border-t border-border"
+        >
+          <div className="max-w-5xl mx-auto w-full flex justify-between items-center gap-4">
+            <div className="hidden sm:block">
+              <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCurrentStep('cart')} className="text-muted-foreground font-bold hover:text-foreground transition-colors uppercase tracking-widest text-xs px-4 py-2 border-transparent hover: rounded-lg flex items-center gap-2">
+                <ArrowLeft size={16} /> Back to Cart
+              </motion.button>
+            </div>
+            <div className="flex-1 sm:flex-none flex justify-end">
+              <motion.button whileTap={{ scale: 0.97 }} 
+                onClick={() => handleCheckout()} 
+                disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid}
+                className="w-full sm:w-auto bg-primary text-primary-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                COMPLETE SALE <ChevronRight size={18} />
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+      </AnimatePresence>
+      
+      {showPrintPreview && pendingSaleParams && (
  <PrintPreviewModal
  isOpen={true}
  onClose={() => {
@@ -2992,26 +3046,26 @@ export const POSPage: React.FC = () => {
  )}
 
  {confirmAction && (
- <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4">
- <div className="bg-card border border-border w-full max-w-sm rounded-2xl p-4 animate-in fade-in zoom-in-95 duration-200">
+ <motion.div className="fixed inset-0 bg-black/60 z-[70000] flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
+ <div className="bg-card border border-border w-full max-w-sm rounded-2xl p-4">
  <h3 className="text-xl font-black text-foreground mb-2">Confirm Action</h3>
  <p className="text-muted-foreground text-sm font-medium mb-4 md:mb-8">{confirmAction.message}</p>
  <div className="flex gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setConfirmAction(null)}
  className="flex-1 bg-muted text-muted-foreground font-bold py-3.5 rounded-xl hover:bg-muted/80 transition-colors"
  >
  Cancel
- </button>
- <button 
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={confirmAction.onConfirm}
  className="flex-1 bg-red-500 text-white font-bold py-3.5 rounded-xl hover:bg-red-600 transition-colors shadow-red-500/20"
  >
  Confirm
- </button>
+ </motion.button>
  </div>
  </div>
- </div>
+ </motion.div>
  )}
  </div>
  );
@@ -3384,7 +3438,7 @@ export const ExpenseListPage: React.FC = () => {
  </div>
 
  {(expCategory === 'Staff Salary' || expCategory === 'Advance Pay') && (
- <div className="space-y-1.5 animate-in fade-in zoom-in duration-200">
+ <motion.div className="space-y-1.5" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <label className="text-[10px] text-primary [.midnight_&]:text-[#D4AF37] font-bold uppercase tracking-widest ml-1">Assign Staff</label>
  <CustomSelect
  value={assignedStaff}
@@ -3393,7 +3447,7 @@ export const ExpenseListPage: React.FC = () => {
  options={staffList.map(s => ({ value: s.name, label: s.name }))}
  buttonClassName="w-full bg-input border border-border rounded-xl px-4 py-3 text-foreground text-sm focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:border-[#D4AF37]/50"
  />
- </div>
+ </motion.div>
  )}
 
  <FloatingInput 
@@ -3409,7 +3463,7 @@ export const ExpenseListPage: React.FC = () => {
  onChange={setExpAmt}
  onFocusClear
  />
- <button onClick={handleAddExpense} className="w-full bg-primary text-white font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Add Expense</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddExpense} className="w-full bg-primary text-white font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Add Expense</motion.button>
  </div>
  </Modal>
 
@@ -3427,24 +3481,23 @@ export const ExpenseListPage: React.FC = () => {
  onFocusClear
  />
  {editingExpenseCategory ? (
- <button onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Update Category</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Update Category</motion.button>
  ) : (
- <button onClick={handleAddExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Add Category</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Add Category</motion.button>
  )}
  </div>
  <div className="space-y-3 pt-6 ">
  <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Existing Categories</h4>
  <div className="flex flex-wrap gap-2">
- {expenseCategories.map(c => (
- <div key={c.id} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-full group hover:border-primary/50 transition-all">
- <span className="text-xs font-bold text-foreground">{c.name}</span>
- <button onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-muted-foreground hover:text-primary hover:scale-110 transition-all"><Settings size={12} /></button>
- {isAdmin && (
- <button onClick={() => setShowConfirm({ coll: 'expense_categories', id: c.id })} className="text-red-500 hover:text-red-600 hover:scale-110 transition-all"><Trash2 size={12} /></button>
- )}
- </div>
- ))}
- </div>
+ <AnimatePresence mode="wait">{expenseCategories.map(c => (
+                          <motion.div key={c.id} className="flex items-center gap-2 bg-background px-3 py-1.5 rounded-full group hover:border-primary/50 transition-all" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+                          <span className="text-xs font-bold text-foreground">{c.name}</span>
+                          <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setEditingExpenseCategory(c); setExpCatName(c.name); setShowExpCatForm(true); }} className="text-muted-foreground hover:text-primary hover:scale-110 transition-all"><Settings size={12} /></motion.button>
+                          {isAdmin && (
+                          <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowConfirm({ coll: 'expense_categories', id: c.id })} className="text-red-500 hover:text-red-600 hover:scale-110 transition-all"><Trash2 size={12} /></motion.button>
+                          )}
+                          </motion.div>
+                          ))}</AnimatePresence></div>
  </div>
  </div>
  </Modal>
@@ -3458,8 +3511,8 @@ export const ExpenseListPage: React.FC = () => {
  <div className="space-y-3">
  <p className="text-sm text-muted-foreground">Are you sure you want to delete this record? This action cannot be undone.</p>
  <div className="flex gap-4">
- <button onClick={() => setShowConfirm(null)} className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:opacity-80 transition-opacity">Cancel</button>
- <button onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-red-500/20">Delete</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowConfirm(null)} className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:opacity-80 transition-opacity">Cancel</motion.button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => showConfirm && handleDelete(showConfirm.coll, showConfirm.id)} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600 transition-colors shadow-red-500/20">Delete</motion.button>
  </div>
  </div>
  </Modal>
@@ -3472,19 +3525,19 @@ export const ExpenseListPage: React.FC = () => {
                     </div> 
                     
                     <div className="flex items-center gap-3">
-                        <button 
+                        <motion.button whileTap={{ scale: 0.97 }} 
                             onClick={() => setShowExpForm(true)}
                             className="bg-primary text-primary-foreground px-6 py-3 text-xs font-bold rounded-2xl flex items-center gap-2 shadow-xl shadow-primary/20 hover:opacity-90 transition-all active:scale-95 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]:border [.midnight_&]:border-[#D4AF37]"
                         >
                             <Plus size={16} /> ADD EXPENSE
-                        </button>
-                        <button 
+                        </motion.button>
+                        <motion.button whileTap={{ scale: 0.97 }} 
 
                             onClick={() => setShowExpCatForm(true)}
                             className="bg-card border border-border text-foreground px-5 py-3 text-xs font-bold rounded-2xl flex items-center gap-2 hover:border-primary/50 hover:bg-muted/50 transition-all active:scale-95"
                         >
                             <Settings size={16} /> MANAGE CATEGORIES
-                        </button>
+                        </motion.button>
                     </div>
                 </div>
 
@@ -3529,7 +3582,7 @@ export const ExpenseListPage: React.FC = () => {
                         </div>
                         
                         {(expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') && (
-                            <div className="flex flex-col justify-center animate-in fade-in zoom-in duration-200">
+                            <motion.div className="flex flex-col justify-center" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
                                 <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2 px-2">
                                     <UsersIcon size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> STAFF
                                 </label>
@@ -3543,7 +3596,7 @@ export const ExpenseListPage: React.FC = () => {
                                     ]}
                                     buttonClassName="bg-input border border-border rounded-xl px-4 py-3.5 text-foreground text-sm focus:border-primary [.midnight_&]:bg-[#2E2520] [.midnight_&]:text-[#E6DFD9]"
                                 />
-                            </div>
+                            </motion.div>
                         )}
                     </div>
                 </div>
@@ -3572,7 +3625,7 @@ export const ExpenseListPage: React.FC = () => {
               </div>
 
               {filteredExpenses.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
-                <button 
+                <motion.button whileTap={{ scale: 0.97 }} 
                   onClick={handleExportCSV} 
                   disabled={isExporting}
                   className="w-full md:w-auto px-6 py-4 bg-foreground text-background font-bold rounded-2xl hover:opacity-90 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 shrink-0 shadow-xl shadow-black/5 [.midnight_&]:bg-[#D4AF37] [.midnight_&]:text-black"
@@ -3589,7 +3642,7 @@ export const ExpenseListPage: React.FC = () => {
                       <span className="text-xs uppercase tracking-widest">Export Excel</span>
                     </>
                   )}
-                </button>
+                </motion.button>
               )}
             </div>
           </div>
@@ -3614,8 +3667,8 @@ export const ExpenseListPage: React.FC = () => {
                 </div>
               ) : (
                 groupedExpenses.map(([date, expenses]) => (
-                  <div key={date} className="space-y-4">
-                    <div className="sticky top-20 z-20 flex items-center gap-4 py-4 bg-background/80 backdrop-blur-md">
+                  <motion.div key={date} className="space-y-4" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+                    <div className="sticky top-20 z-20 flex items-center gap-4 py-4 bg-background/80 ">
                       <div className="flex flex-col">
                         <span className="text-sm font-black uppercase tracking-[0.1em] text-foreground [.midnight_&]:text-[#E6DFD9]">
                           {formatDisplayDate(date)}
@@ -3628,51 +3681,50 @@ export const ExpenseListPage: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-3">
-                      {expenses.map(e => (
-                        <div 
-                          onClick={() => setSelectedExpense(e)} 
-                          key={e.id} 
-                          className="group bg-card hover:bg-muted/50 border border-border rounded-2xl p-4 md:p-5 flex items-center justify-between transition-all cursor-pointer [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C] [.midnight_&]:hover:bg-[#2A231E]"
-                        >
-                          <div className="flex items-start gap-4 flex-1 min-w-0">
-                            <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 group-hover:scale-105 transition-transform shrink-0 [.midnight_&]:bg-red-900/20 [.midnight_&]:text-red-400">
-                              <Receipt size={22} strokeWidth={1.5} />
-                            </div>
-                            <div className="space-y-1 flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-base font-bold text-foreground tracking-tight [.midnight_&]:text-[#E6DFD9] truncate">
-                                  {e.assignedStaff ? `${e.category || 'General'} · ${e.assignedStaff}` : (e.category || 'General')}
-                                </span>
-                              </div>
-                              {e.desc && (
-                                <p className="text-sm text-muted-foreground leading-snug truncate max-w-[250px] sm:max-w-md [.midnight_&]:text-[#9C9086]">
-                                  {e.desc}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-4 mt-2">
-                                <span className="text-[11px] text-muted-foreground font-mono flex items-center gap-1.5">
-                                  <Clock size={12} /> 
-                                  {new Date(e.dateTime || e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                                {e.createdBy && (
-                                  <span className="text-[11px] text-muted-foreground flex items-center gap-1.5 [.midnight_&]:text-[#9C9086]/80">
-                                    <UserIcon size={12} />
-                                    {e.createdBy}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div> 
-                          
-                          <div className="flex flex-col items-end gap-1 shrink-0 pl-4">
-                            <span className="text-xl md:text-2xl font-mono font-bold text-foreground [.midnight_&]:text-[#E6DFD9]">
-                              {e.amount.toLocaleString()} <span className="text-xs font-sans text-muted-foreground">Ks</span>
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                      <AnimatePresence mode="wait">{expenses.map(e => (
+                                                    <motion.div 
+                                                      onClick={() => setSelectedExpense(e)} 
+                                                      key={e.id} 
+                                                      className="group bg-card hover:bg-muted/50 border border-border rounded-2xl p-4 md:p-5 flex items-center justify-between transition-all cursor-pointer [.midnight_&]:bg-[#221C18] [.midnight_&]:border-[#3D322C] [.midnight_&]:hover:bg-[#2A231E]" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}
+                                                    >
+                                                      <div className="flex items-start gap-4 flex-1 min-w-0">
+                                                        <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 group-hover:scale-105 transition-transform shrink-0 [.midnight_&]:bg-red-900/20 [.midnight_&]:text-red-400">
+                                                          <Receipt size={22} strokeWidth={1.5} />
+                                                        </div>
+                                                        <div className="space-y-1 flex-1 min-w-0">
+                                                          <div className="flex items-center gap-2">
+                                                            <span className="text-base font-bold text-foreground tracking-tight [.midnight_&]:text-[#E6DFD9] truncate">
+                                                              {e.assignedStaff ? `${e.category || 'General'} · ${e.assignedStaff}` : (e.category || 'General')}
+                                                            </span>
+                                                          </div>
+                                                          {e.desc && (
+                                                            <p className="text-sm text-muted-foreground leading-snug truncate max-w-[250px] sm:max-w-md [.midnight_&]:text-[#9C9086]">
+                                                              {e.desc}
+                                                            </p>
+                                                          )}
+                                                          <div className="flex items-center gap-4 mt-2">
+                                                            <span className="text-[11px] text-muted-foreground font-mono flex items-center gap-1.5">
+                                                              <Clock size={12} /> 
+                                                              {new Date(e.dateTime || e.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                            {e.createdBy && (
+                                                              <span className="text-[11px] text-muted-foreground flex items-center gap-1.5 [.midnight_&]:text-[#9C9086]/80">
+                                                                <UserIcon size={12} />
+                                                                {e.createdBy}
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                        </div>
+                                                      </div> 
+                                                      
+                                                      <div className="flex flex-col items-end gap-1 shrink-0 pl-4">
+                                                        <span className="text-xl md:text-2xl font-mono font-bold text-foreground [.midnight_&]:text-[#E6DFD9]">
+                                                          {e.amount.toLocaleString()} <span className="text-xs font-sans text-muted-foreground">Ks</span>
+                                                        </span>
+                                                      </div>
+                                                    </motion.div>
+                                                  ))}</AnimatePresence></div>
+                  </motion.div>
                 ))
               )}
             </div>
@@ -3736,7 +3788,7 @@ export const ExpenseListPage: React.FC = () => {
  </div>
  <div className="flex gap-3">
  {(profile?.role === 'super_admin' || profile?.role === 'owner') && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => {
  setSelectedExpense(null);
  setShowConfirm({ coll: 'expenses', id: selectedExpense.id! });
@@ -3745,14 +3797,14 @@ export const ExpenseListPage: React.FC = () => {
  title="Delete Expense"
  >
  <Trash2 size={18} />
- </button>
+ </motion.button>
  )}
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setSelectedExpense(null)}
  className="flex-1 py-4 bg-muted hover:bg-muted/80 text-foreground font-bold uppercase tracking-widest text-xs rounded-[1.5rem] transition-colors [.midnight_&]:bg-[#2E2520] [.midnight_&]:hover:bg-[#3A2F28] [.midnight_&]:text-[#E6DFD9] [.midnight_&]:border-[#D4AF37]/30"
  >
  Close Details
- </button>
+ </motion.button>
  </div>
  </div>
  )}
@@ -4094,7 +4146,7 @@ export const HistoryPage: React.FC = () => {
  {filteredSales.length > 0 && (
  <div className="relative z-10 mt-6 pt-2 flex flex-wrap items-center justify-center gap-3">
  {['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleExportCSV}
  disabled={isExporting}
  className="px-4 md:px-6 py-2.5 bg-gradient-to-r from-primary to-primary/80 text-white font-semibold rounded-full hover: hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
@@ -4111,16 +4163,16 @@ export const HistoryPage: React.FC = () => {
  <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
  </>
  )}
- </button>
+ </motion.button>
  )}
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handlePrintAll}
  className="px-4 md:px-6 py-2.5 bg-primary/20 text-primary font-semibold rounded-full border-primary/20 hover:bg-primary hover:text-white transition-all active:scale-95 flex items-center justify-center gap-2"
  title="Print Consolidated Report"
  >
  <Printer size={18} />
  <span className="text-xs uppercase tracking-widest font-bold">Print Report</span>
- </button>
+ </motion.button>
  </div>
  )}
  </div>
@@ -4162,7 +4214,7 @@ export const HistoryPage: React.FC = () => {
  </div>
  ) : (
  groupedSales.map(([date, sales]) => (
- <div key={date} className="space-y-4">
+ <motion.div key={date} className="space-y-4" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background ">
  <div className="flex items-center gap-3 px-3 md:px-5 py-2 bg-primary/20 rounded-2xl shadow-primary/5">
  <CalendarIcon size={14} className="text-primary" />
@@ -4178,149 +4230,176 @@ export const HistoryPage: React.FC = () => {
  </div>
  </div>
 
- <div className="grid grid-cols-1 gap-4">
- {sales.map(s => (
- <div 
- key={s.id} 
- onClick={() => setExpandedSaleId(expandedSaleId === s.id ? null : s.id)}
- className={cn(
- "group bg-card border border-border rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer hover: hover:border-primary/30",
- expandedSaleId === s.id ? "ring-2 ring-primary/20 border-primary/30" : ""
- )}
- >
- <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
- <div className="flex items-center gap-3 md:gap-5">
- <div className={cn(
- "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
- s.method === 'Cash' ? "bg-green-500/10 text-green-500" : "bg-primary/20 text-primary"
- )}>
- {s.method === 'Cash' ? <DollarSign size={28} /> : <CreditCard size={28} />}
- </div>
- <div className="space-y-0.5">
- <div className="flex items-center gap-2">
- <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">
- {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
- </span>
- <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
- {s.payments && s.payments.length > 1 
- ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
- : (s.method || 'Cash')}
- </span>
- </div>
- <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
- <span>{formatDisplayDate(s.dateTime)}</span>
- <span className="w-1 h-1 rounded-full bg-" />
- <span>{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
- </div>
- </div>
- </div>
+ <motion.div 
+  variants={{
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0 } }
+  }}
+  initial="hidden"
+  animate="show"
+  className="grid grid-cols-1 gap-4">
+<AnimatePresence mode="wait">{sales.map((s, index) => (
+             <motion.div 
+             key={s.id} 
+             onClick={() => setExpandedSaleId(expandedSaleId === s.id ? null : s.id)}
+             className={cn(
+             "group bg-card border border-border rounded-2xl overflow-hidden transition-colors cursor-pointer hover:border-primary/30",
+             expandedSaleId === s.id ? "ring-2 ring-primary/20 border-primary/30" : ""
+             )}
+             layout 
+             variants={{
+               hidden: { opacity: 0, y: 20, scale: 0.98 },
+               show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 350, damping: 25 } },
+               exit: { opacity: 0, scale: 0.95, transition: { duration: 0.2 } }
+             }}
+             whileHover={{ scale: 1.01 }}
+             whileTap={{ scale: 0.98 }}
+             >
+              <div className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex items-center gap-3 md:gap-5">
+              <div className={cn(
+              "w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110",
+              s.method === 'Cash' ? "bg-green-500/10 text-green-500" : "bg-primary/20 text-primary"
+              )}>
+              {s.method === 'Cash' ? <DollarSign size={28} /> : <CreditCard size={28} />}
+              </div>
+              <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+              <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">
+              {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
+              {s.payments && s.payments.length > 1 
+              ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+              : (s.method || 'Cash')}
+              </span>
+              </div>
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
+              <span>{formatDisplayDate(s.dateTime)}</span>
+              <span className="w-1 h-1 rounded-full bg-" />
+              <span>{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+              </div>
+              </div>
 
- <div className="flex items-center justify-between md:justify-end gap-3 md:-0 pt-4 md:pt-0 ">
- <div className="text-right space-y-0.5">
- <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block">Total Amount</span>
- <span className="text-2xl font-mono font-bold text-primary">{s.total.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
- </div>
- <div className="text-right space-y-0.5">
- <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block">Commission</span>
- <span className="text-lg font-mono font-bold text-green-500">{s.commission.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
- </div>
- <div className={cn(
- "w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground transition-transform duration-300",
- expandedSaleId === s.id ? "rotate-180 bg-primary/20 text-primary" : "group-hover:bg-primary/20"
- )}>
- <ChevronDown size={18} />
- </div>
- </div>
- </div>
+              <div className="flex items-center justify-between md:justify-end gap-3 md:-0 pt-4 md:pt-0 ">
+              <div className="text-right space-y-0.5">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block">Total Amount</span>
+              <span className="text-2xl font-mono font-bold text-primary">{s.total.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
+              </div>
+              <div className="text-right space-y-0.5">
+              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block">Commission</span>
+              <span className="text-lg font-mono font-bold text-green-500">{s.commission.toLocaleString()} <span className="text-xs font-sans font-normal opacity-50">Ks</span></span>
+              </div>
+              <div className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground transition-transform duration-300",
+              expandedSaleId === s.id ? "rotate-180 bg-primary/20 text-primary" : "group-hover:bg-primary/20"
+              )}>
+              <ChevronDown size={18} />
+              </div>
+              </div>
+              </div>
 
- {expandedSaleId === s.id && (
- <div className="px-4 md:px-6 pb-6 animate-in slide-in-from-top-4 duration-300">
- <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
- <div className="space-y-3">
- <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
- <div className="w-1.5 h-1.5 rounded-full bg-primary" />
- Purchased Items
- </h5>
- <div className="space-y-2">
- {s.items.map((item, idx) => (
- <div key={idx} className="bg-muted/30 p-4 rounded-2xl flex items-center justify-between group/item hover:bg-muted/50 transition-colors">
- <div className="space-y-0.5">
- <span className="text-sm font-bold text-foreground group-hover/item:text-primary transition-colors">{item.name}</span>
- <div className="text-[10px] text-muted-foreground font-mono">
- {item.qty} × {item.price.toLocaleString()} Ks
- </div>
- {(item.staffAssignments && item.staffAssignments.length > 0) ? (
- <div className="flex flex-wrap gap-1 mt-1">
- {item.staffAssignments.map((a: any, i: number) => (
- <span key={i} className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{a.name} ({a.qty})</span>
- ))}
- </div>
- ) : item.staffName ? (
- <div className="flex flex-wrap gap-1 mt-1">
- <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{item.staffName}</span>
- </div>
- ) : null}
- </div>
- <div className="text-right space-y-0.5">
- <span className="text-sm font-mono font-bold text-foreground">{(item.qty * item.price).toLocaleString()} Ks</span>
- {item.disP > 0 && (
- <span className="block text-[9px] font-bold text-red-500 uppercase tracking-tighter">
- Disc: -{item.disP}% (-{((item.qty * item.price) * item.disP / 100).toLocaleString()} Ks)
- </span>
- )}
- </div>
- </div>
- ))}
- </div>
- </div>
-
- <div className="space-y-3">
- <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
- <div className="w-1.5 h-1.5 rounded-full bg-primary" />
- Transaction Metadata
- </h5>
- <div className="bg-muted/30 p-4 rounded-2xl space-y-4">
- <div className="bg-background p-4 rounded-xl grid grid-cols-2 gap-4">
- <div className="space-y-1">
- <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Customer</span>
- <span className="text-sm font-medium text-foreground">{s.customerName || 'Walk-in Customer'}</span>
- </div>
- <div className="text-right space-y-1">
- <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Payment Method</span>
- <span className="text-sm font-medium text-foreground">
- {s.payments && s.payments.length > 1 
- ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
- : (s.method || 'Cash')}
- </span>
- </div>
- <div className="space-y-1">
- <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Transaction ID</span>
- <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px] block">{s.id}</span>
- </div>
- <div className="text-right space-y-1">
- <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Points Redeemed</span>
- <span className="text-sm font-mono font-bold text-primary">-{s.pointsRedeemed || 0}</span>
- </div>
- </div>
- <div className="pt-4 flex justify-between items-center">
- <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Net Total</span>
- <span className="text-2xl font-mono font-bold text-primary">{s.total.toLocaleString()} Ks</span>
- </div>
- </div>
- </div>
- </div>
- </div>
- )}
- </div>
- ))}
- </div>
- </div>
- ))
- )}
- </div>
- </div>
-
- <PrintPreviewModal
+              <AnimatePresence mode="wait">
+              {expandedSaleId === s.id && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1, transition: { duration: 0.18, ease: "easeInOut" } }}
+                exit={{ opacity: 0, transition: { duration: 0.18, ease: "easeInOut" } }}
+                className="px-4 md:px-6 pb-6 overflow-hidden"
+              >
+              <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-3">
+              <motion.h5 variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0 } }} initial="hidden" animate="show" className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              Purchased Items
+              </motion.h5>
+              <div className="space-y-2">
+              {s.items.map((item, idx) => (
+              <motion.div 
+                variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } } }} 
+                initial="hidden" animate="show" 
+                key={idx} 
+                className="bg-muted/30 p-4 rounded-2xl flex items-center justify-between group/item hover:bg-muted/50 transition-colors"
+                whileHover={{ scale: 1.02, backgroundColor: 'rgba(var(--muted), 0.7)' }}
+              >
+              <div className="space-y-0.5">
+              <span className="text-sm font-bold text-foreground group-hover/item:text-primary transition-colors">{item.name}</span>
+              <div className="text-[10px] text-muted-foreground font-mono">
+              {item.qty} × {item.price.toLocaleString()} Ks
+              </div>
+              {(item.staffAssignments && item.staffAssignments.length > 0) ? (
+              <div className="flex flex-wrap gap-1 mt-1">
+              {item.staffAssignments.map((a: any, i: number) => (
+              <span key={i} className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{a.name} ({a.qty})</span>
+              ))}
+              </div>
+              ) : item.staffName ? (
+              <div className="flex flex-wrap gap-1 mt-1">
+              <span className="text-[8px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest">{item.staffName}</span>
+              </div>
+              ) : null}
+              </div>
+              <div className="text-right space-y-0.5">
+              <span className="text-sm font-mono font-bold text-foreground">{(item.qty * item.price).toLocaleString()} Ks</span>
+              {item.disP > 0 && (
+              <span className="block text-[9px] font-bold text-red-500 uppercase tracking-tighter">
+              Disc: -{item.disP}% (-{((item.qty * item.price) * item.disP / 100).toLocaleString()} Ks)
+              </span>
+              )}
+              </div>
+              </motion.div>
+              ))}
+              </div>
+              </div>
+              <div className="space-y-3">
+              <h5 className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+              Transaction Metadata
+              </h5>
+              <div className="bg-muted/30 p-4 rounded-2xl space-y-4">
+              <div className="bg-background p-4 rounded-xl grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Customer</span>
+              <span className="text-sm font-medium text-foreground">{s.customerName || 'Walk-in Customer'}</span>
+              </div>
+              <div className="text-right space-y-1">
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Payment Method</span>
+              <span className="text-sm font-medium text-foreground">
+              {s.payments && s.payments.length > 1 
+              ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+              : (s.method || 'Cash')}
+              </span>
+              </div>
+              <div className="space-y-1">
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Transaction ID</span>
+              <span className="text-[10px] font-mono text-muted-foreground truncate max-w-[120px] block">{s.id}</span>
+              </div>
+              <div className="text-right space-y-1">
+              <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block">Points Redeemed</span>
+              <span className="text-sm font-mono font-bold text-primary">-{s.pointsRedeemed || 0}</span>
+              </div>
+              </div>
+              <div className="pt-4 flex justify-between items-center">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Net Total</span>
+              <span className="text-2xl font-mono font-bold text-primary">{s.total.toLocaleString()} Ks</span>
+              </div>
+              </div>
+              </div>
+              </div>
+              </motion.div>
+              )}
+              </AnimatePresence>
+              </motion.div>
+              ))}
+              </AnimatePresence>
+              </motion.div>
+              </motion.div>
+              ))
+              )}
+              </div>
+              </div>
+              <PrintPreviewModal
  isOpen={showPrintPreview}
  onClose={() => setShowPrintPreview(false)}
  text={generateConsolidatedReceiptHTML(filteredSales, shopSettings, dateFrom, dateTo)}
@@ -4513,7 +4592,7 @@ export const StaffCommissionsPage: React.FC = () => {
  </div>
  {staffAggregates.length > 0 && ['super_admin', 'owner', 'cashier'].includes(profile?.role || '') && (
  <div className="relative z-10 flex justify-center mt-4 pt-2">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleExportCSV}
  disabled={isExporting}
  className="px-4 md:px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-full hover: hover:scale-105 active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
@@ -4530,7 +4609,7 @@ export const StaffCommissionsPage: React.FC = () => {
  <span className="text-xs uppercase tracking-widest font-bold">Export Excel</span>
  </>
  )}
- </button>
+ </motion.button>
  </div>
  )}
  </div>
@@ -4547,7 +4626,7 @@ export const StaffCommissionsPage: React.FC = () => {
  </div>
  ) : (
  staffAggregates.map(a => (
- <div key={a.name} className="bg-card border border-border -l-4 border-green-500 rounded-xl p-4 flex justify-between items-center hover:translate-x-1 transition-all group">
+ <motion.div key={a.name} className="bg-card border border-border -l-4 border-green-500 rounded-xl p-4 flex justify-between items-center hover:translate-x-1 transition-all group" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="flex-1">
  <span className="font-bold text-foreground block text-lg group-hover:text-primary transition-colors">{a.name}</span>
  <span className="text-muted-foreground text-[11px] font-medium uppercase tracking-wider">{a.count} Sales | Total: {a.totalSales.toLocaleString()} Ks</span>
@@ -4556,7 +4635,7 @@ export const StaffCommissionsPage: React.FC = () => {
  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Commission</span>
  <span className="font-bold text-green-500 text-xl">{a.totalComm.toLocaleString()} Ks</span>
  </div>
- </div>
+ </motion.div>
  ))
  )}
  </div>
@@ -4574,7 +4653,7 @@ export const StaffCommissionsPage: React.FC = () => {
  </div>
  ) : (
  displaySalesDetails.map(s => (
- <div key={s.id} className="bg-card border border-border p-3.5 rounded-2xl flex justify-between items-center hover:border-primary/30 transition-all group">
+ <motion.div key={s.id} className="bg-card border border-border p-3.5 rounded-2xl flex justify-between items-center hover:border-primary/30 transition-all group" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="space-y-1">
  <div className="flex items-center gap-2">
  <span className="text-foreground font-bold text-sm group-hover:text-primary transition-colors">
@@ -4592,7 +4671,7 @@ export const StaffCommissionsPage: React.FC = () => {
  <div className="text-foreground font-bold text-sm">{s.total.toLocaleString()} Ks</div>
  <div className="text-green-500 text-[10px] font-bold uppercase tracking-tighter">Comm: {s.commission.toLocaleString()} Ks</div>
  </div>
- </div>
+ </motion.div>
  ))
  )}
  </div>
@@ -4759,6 +4838,7 @@ export const AppointmentsPage: React.FC = () => {
   const [statusUpdateAppt, setStatusUpdateAppt] = useState<Appointment | null>(null);
   
  const [statusFilter, setStatusFilter] = useState<string>('all');
+ const [customerApptTab, setCustomerApptTab] = useState<'upcoming' | 'past'>('upcoming');
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
  const [sortBy, setSortBy] = useState<'date' | 'status'>('date');
  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -5220,15 +5300,23 @@ export const AppointmentsPage: React.FC = () => {
 
  const filteredAppts = appointments
  .filter(a => {
- const matchesDate = showAllDates || a.date === filterDate;
- const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
- const matchesSearch = !apptSearch || 
- a.customerName.toLowerCase().includes(apptSearch.toLowerCase()) || 
- a.customerPhone.includes(apptSearch) ||
- a.serviceName.toLowerCase().includes(apptSearch.toLowerCase());
- const matchesUser = profile?.role !== 'customer' || a.creatorEmail === profile?.email;
- const matchesStaff = selectedStaffFilter === 'all' || a.staffEmail === selectedStaffFilter;
- return matchesDate && matchesStatus && matchesSearch && matchesUser && matchesStaff;
+ if (profile?.role === 'customer') {
+   if (a.creatorEmail !== profile?.email) return false;
+   const isPast = a.status === 'completed' || a.status === 'cancelled';
+   if (customerApptTab === 'upcoming' && isPast) return false;
+   if (customerApptTab === 'past' && !isPast) return false;
+   return true;
+ } else {
+   const matchesDate = showAllDates || a.date === filterDate;
+   const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+   const matchesSearch = !apptSearch || 
+   a.customerName.toLowerCase().includes(apptSearch.toLowerCase()) || 
+   a.customerPhone.includes(apptSearch) ||
+   a.serviceName.toLowerCase().includes(apptSearch.toLowerCase());
+   const matchesUser = profile?.role !== 'customer' || a.creatorEmail === profile?.email;
+   const matchesStaff = selectedStaffFilter === 'all' || a.staffEmail === selectedStaffFilter;
+   return matchesDate && matchesStatus && matchesSearch && matchesUser && matchesStaff;
+ }
  })
  .sort((a, b) => {
  if (sortBy === 'date') {
@@ -5444,29 +5532,29 @@ export const AppointmentsPage: React.FC = () => {
  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-muted/30 p-2.5 sm:p-3 rounded-2xl shadow-xs shrink-0">
  <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
  <div className="flex items-center gap-1.5">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={goToBack}
  className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-95 bg-background shadow-xs"
  title="Previous"
  >
  <ChevronLeft size={18} />
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={goToToday}
  className="px-3.5 py-2 bg-primary/20 text-primary [.midnight_&]:text-amber-400 hover:bg-primary/20 rounded-xl font-black text-xs uppercase tracking-wider transition-all border-primary/20 active:scale-95 shadow-xs"
  >
  Today
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={goToNext}
  className="p-2 hover:bg-muted rounded-xl transition-all text-muted-foreground hover:text-foreground active:scale-95 bg-background shadow-xs"
  title="Next"
  >
  <ChevronRight size={18} />
- </button>
+ </motion.button>
  </div>
 
  <div className="sm:hidden text-xs font-black tracking-tight text-foreground uppercase">
@@ -5480,7 +5568,7 @@ export const AppointmentsPage: React.FC = () => {
 
  <div className="flex bg-muted p-1 rounded-xl w-full sm:w-auto justify-center">
  {(['month', 'week', 'day'] as const).map((view) => (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={view}
  type="button"
  onClick={() => {
@@ -5495,7 +5583,7 @@ export const AppointmentsPage: React.FC = () => {
  )}
  >
  {view}
- </button>
+ </motion.button>
  ))}
  </div>
  </div>
@@ -5504,11 +5592,13 @@ export const AppointmentsPage: React.FC = () => {
 
  return (
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
- <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
- <div className="flex flex-col gap-1">
- <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">
- {isCustomer ? 'My Appointments' : 'Customer Appointments'}
-</h1>
+<div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-2">
+ <div className="flex flex-col gap-0.5">
+ <h1 className="text-xl md:text-2xl font-black tracking-widest text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase font-serif">
+ {isCustomer ? 'My Appointments' : 'Appointments'}</h1>
+ <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted-foreground">
+   View and manage your bookings
+ </p>
  {isCustomer && profile.points !== undefined && (
  <div className="flex items-center gap-2 mt-1">
  <span className="text-xs font-bold bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full border-primary/30 ">
@@ -5519,7 +5609,7 @@ export const AppointmentsPage: React.FC = () => {
  </div>
  
                         <div className="flex flex-wrap items-center gap-4">
-                            <button
+                            <motion.button whileTap={{ scale: 0.97 }}
                                 onClick={() => { resetForm(); setIsAdding(true); }}
                                 className="bg-primary text-white [.midnight_&]:text-slate-200 px-4 md:px-6 py-3 rounded-2xl flex items-center gap-3 hover:scale-105 transition-all shadow-primary/20 font-bold group"
                             >
@@ -5530,10 +5620,10 @@ export const AppointmentsPage: React.FC = () => {
                                     <div className="text-[9px] uppercase tracking-widest font-bold opacity-70 mb-0.5">Book</div>
                                     <div className="text-sm tracking-tight">Appointment</div>
                                 </div>
-                            </button>
+                            </motion.button>
 
                             <div className="flex bg-muted p-1 rounded-xl ">
-                                <button
+                                <motion.button whileTap={{ scale: 0.97 }}
                                     onClick={() => setViewMode('list')}
                                     className={cn(
                                         "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
@@ -5543,8 +5633,8 @@ export const AppointmentsPage: React.FC = () => {
                                     )}
                                 >
                                     List
-                                </button>
-                                <button
+                                </motion.button>
+                                <motion.button whileTap={{ scale: 0.97 }}
                                     onClick={() => setViewMode('calendar')}
                                     className={cn(
                                         "px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2",
@@ -5555,7 +5645,7 @@ export const AppointmentsPage: React.FC = () => {
                                 >
                                     <CalendarIcon size={16} />
                                     Calendar
-                                </button>
+                                </motion.button>
                             </div>
                         </div>
  </div>
@@ -5573,171 +5663,108 @@ export const AppointmentsPage: React.FC = () => {
  {statusMsg.type === 'success' ? <Check size={20} /> : <X size={20} />}
  <span className="font-bold">{statusMsg.text}</span>
  </div>
- <button onClick={() => setStatusMsg(null)} className="p-1 hover:bg-black/5 rounded-full"><X size={18} /></button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => setStatusMsg(null)} className="p-1 hover:bg-black/5 rounded-full"><X size={18} /></motion.button>
  </motion.div>
  )}
 
  {activeTab === 'appointments' ? (
  <div className="space-y-4">
  {/* Filter Card */}
- <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
- <div className="p-4 relative group">
- <input
- type="text"
- placeholder="Search customer or service..."
- value={apptSearch}
- onChange={(e) => setApptSearch(e.target.value)}
- className="w-full p-2 pl-10 border-none outline-none bg-transparent text-foreground [.midnight_&]:text-slate-200 font-bold text-sm transition-all placeholder:text-muted-foreground [.midnight_&]:placeholder-slate-400 [.midnight_&]:text-slate-300/50"
- />
- <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-primary [.midnight_&]:text-amber-400" size={16} />
- </div>
- {/* Appointments Grid */}
-<div className={cn("grid gap-3 p-3", profile?.role !== 'customer' ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-2 lg:grid-cols-3")}>
- <CustomDatePicker 
- label="FILTER DATE" 
- value={filterDate} 
- onChange={(val) => {
- setFilterDate(val);
- setShowAllDates(false);
- if (val) {
- const [y, m, d] = val.split('-').map(Number);
- if (y && m && d) setCalendarDate(new Date(y, m - 1, d));
- }
- }}
- disabled={showAllDates}
- className={cn("flex-1", showAllDates && "opacity-50")}
- />
- {profile?.role !== 'customer' && (
- <div className="flex flex-col flex-1 justify-center">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
- <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" /> STAFF
- </label>
- <CustomSelect
- value={selectedStaffFilter} 
- onChange={setSelectedStaffFilter}
- placeholder="All Staff"
- options={[
- { value: 'all', label: 'All Staff' },
- ...staff.filter(s => s.role !== 'super_admin').map(s => ({ value: s.email, label: s.name }))
- ]}
- />
- </div>
- )}
- <div className="flex flex-col flex-1 justify-center">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
- <Activity size={12} className="text-primary [.midnight_&]:text-amber-400" /> STATUS
- </label>
- <CustomSelect
-                        value={statusFilter} 
-                        onChange={setStatusFilter}
-                        placeholder="All Status"
-                        options={[
-                          { 
-                            value: 'all', 
-                            label: (
-                              <div className="flex items-center gap-2 font-black tracking-wider uppercase text-[10px]">
-                                <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full" />
-                                All Status
-                              </div>
-                            )
-                          },
-                          { 
-                            value: 'pending', 
-                            label: (
-                              <div className="flex items-center gap-2 text-yellow-600 font-black tracking-wider uppercase text-[10px]">
-                                <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.6)]" />
-                                Pending
-                              </div>
-                            ) 
-                          },
-                          { 
-                            value: 'confirmed', 
-                            label: (
-                              <div className="flex items-center gap-2 text-blue-600 font-black tracking-wider uppercase text-[10px]">
-                                <Check size={14} strokeWidth={3} className="drop-shadow-sm" />
-                                Confirmed
-                              </div>
-                            ) 
-                          },
-                          { 
-                            value: 'completed', 
-                            label: (
-                              <div className="flex items-center gap-2 text-green-600 font-black tracking-wider uppercase text-[10px]">
-                                <Check size={14} strokeWidth={3} className="drop-shadow-sm" />
-                                Completed
-                              </div>
-                            ) 
-                          },
-                          { 
-                            value: 'cancelled', 
-                            label: (
-                              <div className="flex items-center gap-2 text-red-600 font-black tracking-wider uppercase text-[10px]">
-                                <X size={14} strokeWidth={3} className="drop-shadow-sm" />
-                                Cancelled
-                              </div>
-                            ) 
-                          }
-                        ]}
-                        renderValue={(opt) => (
-                          <div className="flex items-center gap-1.5">
-                            {opt?.value === 'all' && <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full" />}
-                            {opt?.value === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(234,179,8,0.6)]" />}
-                            {opt?.value === 'confirmed' && <Check size={12} strokeWidth={3} className="drop-shadow-sm text-blue-600" />}
-                            {opt?.value === 'completed' && <Check size={12} strokeWidth={3} className="drop-shadow-sm text-green-600" />}
-                            {opt?.value === 'cancelled' && <X size={12} strokeWidth={3} className="drop-shadow-sm text-red-600" />}
-                            <span className={cn(
-                              opt?.value === 'pending' && "text-yellow-600",
-                              opt?.value === 'confirmed' && "text-blue-600",
-                              opt?.value === 'completed' && "text-green-600",
-                              opt?.value === 'cancelled' && "text-red-600",
-                              opt?.value === 'all' && "text-foreground"
-                            )}>
-                              {opt?.value === 'all' ? 'All Status' : opt?.value}
-                            </span>
-                          </div>
-                        )}
-                        dropdownClassName="p-2 space-y-1 bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-xl"
-                        buttonClassName="text-[10px] font-black uppercase tracking-widest rounded-xl px-4 py-3"
-                      />
- </div>
- <div className="flex flex-col flex-1 justify-center">
- <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
- <Settings size={12} className="text-primary [.midnight_&]:text-amber-400" /> OPTIONS
- </label>
- <div className="flex items-center gap-2">
- <button
- onClick={() => setShowAllDates(!showAllDates)}
- className={cn("px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all", showAllDates ? "bg-primary text-primary-foreground shadow-primary/20" : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground")}
- >
- {showAllDates ? 'All Dates' : 'Show All'}
- </button>
- <button
- onClick={() => setSortBy(sortBy === 'date' ? 'status' : 'date')}
- className="px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
- >
- Sort: {sortBy}
- </button>
- </div>
- </div>
- </div>
- </div>
+ {profile?.role === 'customer' ? (
+  <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 flex p-1">
+    <motion.button 
+      whileTap={{ scale: 0.97 }}
+      onClick={() => setCustomerApptTab('upcoming')}
+      className={cn("flex-1 py-3 text-sm font-bold rounded-xl transition-all", customerApptTab === 'upcoming' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground")}
+    >
+      Upcoming
+    </motion.button>
+    <motion.button 
+      whileTap={{ scale: 0.97 }}
+      onClick={() => setCustomerApptTab('past')}
+      className={cn("flex-1 py-3 text-sm font-bold rounded-xl transition-all", customerApptTab === 'past' ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground")}
+    >
+      Past / Completed
+    </motion.button>
+  </div>
+) : (
+ <div className="bg-card border border-border rounded-xl w-full mb-4 shadow-sm flex flex-col lg:flex-row items-stretch lg:items-center p-2 gap-3 z-40 relative">
+   <div className="relative flex-1 lg:max-w-md shrink-0">
+     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+     <input 
+       type="text" 
+       placeholder="Search appointments..." 
+       value={apptSearch} 
+       onChange={(e) => setApptSearch(e.target.value)} 
+       className="w-full bg-background border border-border rounded-lg pl-9 pr-3 py-2 text-sm font-medium outline-none focus:border-primary transition-all [.midnight_&]:bg-black/20" 
+     />
+   </div>
+   <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1 lg:pb-0 hide-scrollbar flex-1 justify-start lg:justify-end">
+     <div className="flex bg-muted/50 p-1 rounded-lg shrink-0">
+       {['all', 'pending', 'confirmed', 'completed', 'cancelled'].map(status => (
+         <button 
+           key={status} 
+           onClick={() => setStatusFilter(status)} 
+           className={cn("px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all", statusFilter === status ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+         >
+           {status === 'all' ? 'All' : status}
+         </button>
+       ))}
+     </div>
+     
+     <div className="flex items-center bg-muted/50 p-1 rounded-lg shrink-0">
+       <button 
+         onClick={() => setShowAllDates(!showAllDates)}
+         className={cn("px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-all", showAllDates ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+       >
+         All Dates
+       </button>
+       {!showAllDates && (
+         <input 
+           type="date" 
+           value={filterDate} 
+           onChange={(e) => { 
+             setFilterDate(e.target.value); 
+             setShowAllDates(false); 
+             if (e.target.value) {
+               const [y, m, d] = e.target.value.split('-').map(Number);
+               if (y && m && d) setCalendarDate(new Date(y, m - 1, d));
+             }
+           }} 
+           className="bg-transparent text-foreground text-[10px] font-bold px-2 py-1 uppercase tracking-widest outline-none [&::-webkit-calendar-picker-indicator]:opacity-50 [&::-webkit-calendar-picker-indicator]:cursor-pointer" 
+         />
+       )}
+     </div>
 
- <div className="p-0">
+     <select 
+       value={selectedStaffFilter} 
+       onChange={(e) => setSelectedStaffFilter(e.target.value)} 
+       className="bg-muted/50 text-foreground text-[10px] font-bold px-3 py-1.5 rounded-lg border-none uppercase tracking-widest outline-none cursor-pointer shrink-0"
+     >
+       <option value="all">ALL STAFF</option>
+       {staff.filter(s => s.role !== 'super_admin').map(s => (
+         <option key={s.email} value={s.email}>{s.name.split(' ')[0]}</option>
+       ))}
+     </select>
+   </div>
+ </div>
+)}
+
+<div className="p-0">
  {loadingAppts ? (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
- {Array.from({ length: 6 }).map((_, i) => (
- <div key={i} className="bg-card border border-border rounded-2xl p-4 transition-all group relative overflow-hidden animate-pulse h-[160px]">
- <div className="flex justify-between items-start mb-3 md:mb-6">
- <div className="w-16 h-10 bg-primary/20 rounded-xl"></div>
- <div className="w-20 h-6 bg-primary/20 rounded-full"></div>
- </div>
- <div className="space-y-3">
- <div className="w-1/2 h-5 bg-primary/20 rounded-md"></div>
- <div className="w-3/4 h-4 bg-primary/20 rounded-md"></div>
- </div>
- </div>
- ))}
- </div>
+ <AnimatePresence mode="wait">{Array.from({ length: 6 }).map((_, i) => (
+                              <motion.div key={i} className="bg-card border border-border rounded-2xl p-4 transition-all group relative overflow-hidden animate-pulse h-[160px]" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+                              <div className="flex justify-between items-start mb-3 md:mb-6">
+                              <div className="w-16 h-10 bg-primary/20 rounded-xl"></div>
+                              <div className="w-20 h-6 bg-primary/20 rounded-full"></div>
+                              </div>
+                              <div className="space-y-3">
+                              <div className="w-1/2 h-5 bg-primary/20 rounded-md"></div>
+                              <div className="w-3/4 h-4 bg-primary/20 rounded-md"></div>
+                              </div>
+                              </motion.div>
+                              ))}</AnimatePresence></div>
  ) : viewMode === 'calendar' ? (
  <div className="h-[750px] md:h-[800px] bg-card border border-border rounded-2xl p-3 sm:p-4 flex flex-col overflow-hidden w-full max-w-full">
  <style>{`
@@ -5795,155 +5822,157 @@ export const AppointmentsPage: React.FC = () => {
  />
  </div>
  ) : filteredAppts.length === 0 ? (
- <div className="text-center py-32 bg-muted/5 rounded-[3rem] border-2 border-dashed ">
- <div className="w-24 h-24 bg-muted/10 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-6">
- <CalendarIcon className="text-muted-foreground/30" size={48} />
- </div>
- <p className="text-muted-foreground text-lg font-bold italic">No appointments found matching your criteria.</p>
- <button 
- onClick={() => { resetForm(); setIsAdding(true); }}
- className="mt-6 text-primary [.midnight_&]:text-amber-400 font-black text-sm uppercase tracking-widest hover:underline flex items-center gap-2 mx-auto"
- >
- <Plus size={16} />
- Book New Appointment
- </button>
+ <div className="text-center py-24 bg-card rounded-3xl border border-border/50 shadow-sm flex flex-col items-center justify-center">
+   <div className="w-20 h-20 bg-primary/10 [.midnight_&]:bg-amber-500/10 rounded-2xl flex items-center justify-center mb-5 transform rotate-3">
+     <CalendarIcon className="text-primary [.midnight_&]:text-[#D4AF37]" size={36} strokeWidth={1.5} />
+   </div>
+   <p className="text-foreground text-lg font-bold">No bookings found</p>
+   <p className="text-muted-foreground text-sm mt-1 mb-6">There are no appointments matching your current filters.</p>
+   <motion.button 
+     whileTap={{ scale: 0.97 }} 
+     onClick={() => { resetForm(); setIsAdding(true); }}
+     className="bg-primary text-primary-foreground px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-sm flex items-center gap-2"
+   >
+     <Plus size={16} />
+     Book Appointment
+   </motion.button>
  </div>
  ) : (
  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
- {filteredAppts.map((appt) => {
-                    const customer = customers.find(c => c.id === appt.customerId);
-                    return (
-                      <motion.div 
-                        layout
-                        key={appt.id} 
-                        onClick={() => {
-                          if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
-                            startEdit(appt);
-                          }
-                        }}
-                        style={{ zIndex: openDropdownId === appt.id ? 50 : undefined }}
-                        className={cn(
-                          "bg-card border border-border rounded-3xl p-4 transition-all group relative overflow-hidden flex flex-col gap-4 shadow-sm",
-                          (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) ? "hover:border-primary/30 cursor-pointer" : "opacity-90"
-                        )}
-                      >
-                        {/* Header: Date/Time + Customer Info */}
-                        <div className="flex gap-4 items-start">
-                          <div className="flex flex-col items-center justify-center bg-primary/10 rounded-2xl px-3 py-2 min-w-[75px] border border-primary/10 shrink-0">
-                            <span className="text-sm font-black text-primary [.midnight_&]:text-amber-400">{appt.time}</span>
-                            <span className="text-[9px] font-bold text-primary/70 uppercase tracking-widest mt-0.5">{formatDisplayDate(appt.date)}</span>
-                          </div>
-                          <div className="flex-1 flex flex-col min-w-0 pt-0.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <h3 className="font-black text-foreground [.midnight_&]:text-slate-200 text-base truncate tracking-tight leading-none">
-                                {appt.customerName}
-                              </h3>
-                              {customer && (
-                                <span className="shrink-0 bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-2 py-0.5 rounded-full text-[9px] font-black border border-primary/10 tracking-widest">
-                                  {customer.points} PTS
-                               </span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 mt-2">
-                              <div className="flex items-center gap-1.5 text-muted-foreground">
-                                <Phone size={12} className="text-primary [.midnight_&]:text-amber-400" />
-                                <span className="text-xs font-bold">{appt.customerPhone}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+ <AnimatePresence mode="wait">{filteredAppts.map((appt) => {
+                                                             const customer = customers.find(c => c.id === appt.customerId);
+                                                             return (
+                                                               <motion.div 
+                                                                 layout
+                                                                 key={appt.id} 
+                                                                 onClick={() => {
+                                                                   if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
+                                                                     startEdit(appt);
+                                                                   }
+                                                                 }}
+                                                                 style={{ zIndex: openDropdownId === appt.id ? 50 : undefined }}
+                                                                 className={cn(
+                                                                   "bg-card border border-border rounded-3xl p-4 transition-all group relative overflow-hidden flex flex-col gap-4 shadow-sm",
+                                                                   (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) ? "hover:border-primary/30 cursor-pointer" : "opacity-90"
+                                                                 )} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}
+                                                               >
+                                                                 {/* Header: Date/Time + Customer Info */}
+                                                                 <div className="flex gap-4 items-start">
+                                                                   <div className="flex flex-col items-center justify-center bg-primary/10 rounded-2xl px-3 py-2 min-w-[75px] border border-primary/10 shrink-0">
+                                                                     <span className="text-sm font-black text-primary [.midnight_&]:text-amber-400">{appt.time}</span>
+                                                                     <span className="text-[9px] font-bold text-primary/70 uppercase tracking-widest mt-0.5">{formatDisplayDate(appt.date)}</span>
+                                                                   </div>
+                                                                   <div className="flex-1 flex flex-col min-w-0 pt-0.5">
+                                                                     <div className="flex items-start justify-between gap-2">
+                                                                       <h3 className="font-black text-foreground [.midnight_&]:text-slate-200 text-base truncate tracking-tight leading-none">
+                                                                         {appt.customerName}
+                                                                       </h3>
+                                                                       {customer && (
+                                                                         <span className="shrink-0 bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-2 py-0.5 rounded-full text-[9px] font-black border border-primary/10 tracking-widest">
+                                                                           {customer.points} PTS
+                                                                        </span>
+                                                                       )}
+                                                                     </div>
+                                                                     <div className="flex items-center gap-3 mt-2">
+                                                                       <div className="flex items-center gap-1.5 text-muted-foreground">
+                                                                         <Phone size={12} className="text-primary [.midnight_&]:text-amber-400" />
+                                                                         <span className="text-xs font-bold">{appt.customerPhone}</span>
+                                                                       </div>
+                                                                     </div>
+                                                                   </div>
+                                                                 </div>
 
-                        {/* Middle: Service & Staff */}
-                        <div className="grid grid-cols-2 gap-3 bg-muted/5 rounded-2xl p-3 border border-border/50">
-                          <div className="flex flex-col gap-1 min-w-0">
-                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Service</span>
-                            <span className="font-bold text-sm text-foreground truncate">{appt.serviceName}</span>
-                            {(() => {
-                              const svc = services?.find(s => s.name === appt.serviceName);
-                              if (svc && svc.price >= 0) {
-                                return <span className="text-xs font-bold text-primary [.midnight_&]:text-amber-400 mt-0.5">{svc.price > 0 ? `${svc.price.toLocaleString()} Ks` : '0 Ks'}</span>;
-                              }
-                              return null;
-                            })()}
-                          </div>
-                          <div className="flex flex-col gap-1 min-w-0 border-l border-border/50 pl-3">
-                            <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Staff</span>
-                            <span className="font-bold text-sm text-foreground truncate">{appt.staffName || 'Any'}</span>
-                            {appt.isHomeService && (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-black text-green-600 bg-green-500/10 px-1.5 py-0.5 rounded-md mt-1 w-fit">
-                                <Car size={10} /> HOME
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                                                                 {/* Middle: Service & Staff */}
+                                                                 <div className="grid grid-cols-2 gap-3 bg-muted/5 rounded-2xl p-3 border border-border/50">
+                                                                   <div className="flex flex-col gap-1 min-w-0">
+                                                                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Service</span>
+                                                                     <span className="font-bold text-sm text-foreground truncate">{appt.serviceName}</span>
+                                                                     {(() => {
+                                                                       const svc = services?.find(s => s.name === appt.serviceName);
+                                                                       if (svc && svc.price >= 0) {
+                                                                         return <span className="text-xs font-bold text-primary [.midnight_&]:text-amber-400 mt-0.5">{svc.price > 0 ? `${svc.price.toLocaleString()} Ks` : '0 Ks'}</span>;
+                                                                       }
+                                                                       return null;
+                                                                     })()}
+                                                                   </div>
+                                                                   <div className="flex flex-col gap-1 min-w-0 border-l border-border/50 pl-3">
+                                                                     <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">Staff</span>
+                                                                     <span className="font-bold text-sm text-foreground truncate">{appt.staffName || 'Any'}</span>
+                                                                     {appt.isHomeService && (
+                                                                       <span className="inline-flex items-center gap-1 text-[9px] font-black text-green-600 bg-green-500/10 px-1.5 py-0.5 rounded-md mt-1 w-fit">
+                                                                         <Car size={10} /> HOME
+                                                                       </span>
+                                                                     )}
+                                                                   </div>
+                                                                 </div>
 
-                        {/* Notes (if any) */}
-                        {appt.notes && (
-                          <div className="text-xs text-muted-foreground italic line-clamp-2 bg-primary/5 p-3 rounded-2xl border border-primary/5 font-medium leading-relaxed">
-                            <span className="text-primary [.midnight_&]:text-amber-400 font-black not-italic mr-1.5">Notes:</span>
-                            "{appt.notes}"
-                          </div>
-                        )}
+                                                                 {/* Notes (if any) */}
+                                                                 {appt.notes && (
+                                                                   <div className="text-xs text-muted-foreground italic line-clamp-2 bg-primary/5 p-3 rounded-2xl border border-primary/5 font-medium leading-relaxed">
+                                                                     <span className="text-primary [.midnight_&]:text-amber-400 font-black not-italic mr-1.5">Notes:</span>
+                                                                     "{appt.notes}"
+                                                                   </div>
+                                                                 )}
 
-                        {/* Footer: Action Buttons & Single Status Badge */}
-                        <div className="flex items-end justify-between pt-1">
-                          <div className="flex flex-col gap-2">
-                            <span className="text-[8px] text-primary/70 uppercase tracking-[0.2em] font-black">Booked By {appt.creatorName || 'SYSTEM'}</span>
-                            <div className="flex gap-2">
-                              {profile?.role !== 'customer' && (
-                                <a 
-                                  href={`https://wa.me/${appt.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello ' + appt.customerName + ',\nYour appointment for ' + appt.serviceName + ' has been ' + appt.status + ' for ' + formatDisplayDate(appt.date) + ' at ' + appt.time + '.\nThank you for choosing Nail Pro!')}`}
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="p-2.5 bg-green-500/10 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all border border-green-500/20 w-fit"
-                                  title="WhatsApp"
-                                >
-                                  <MessageCircle size={16} strokeWidth={2.5} />
-                                </a>
-                              )}
-                              {(isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) && (
-                                <>
-                                  <button onClick={(e) => { e.stopPropagation(); startEdit(appt); }} className="p-2.5 bg-muted/5 text-muted-foreground hover:bg-primary hover:text-white rounded-xl transition-all active:scale-90 border border-border" title="Edit">
-                                    <Pencil size={16} strokeWidth={2.5} />
-                                  </button>
-                                  <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteAppt(appt); }} className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-500/10 active:scale-90" title="Delete">
-                                    <Trash2 size={16} strokeWidth={2.5} />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </div>
+                                                                 {/* Footer: Action Buttons & Single Status Badge */}
+                                                                 <div className="flex items-end justify-between pt-1">
+                                                                   <div className="flex flex-col gap-2">
+                                                                     <span className="text-[8px] text-primary/70 uppercase tracking-[0.2em] font-black">Booked By {appt.creatorName || 'SYSTEM'}</span>
+                                                                     <div className="flex gap-2">
+                                                                       {profile?.role !== 'customer' && (
+                                                                         <a 
+                                                                           href={`https://wa.me/${appt.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent('Hello ' + appt.customerName + ',\nYour appointment for ' + appt.serviceName + ' has been ' + appt.status + ' for ' + formatDisplayDate(appt.date) + ' at ' + appt.time + '.\nThank you for choosing Nail Pro!')}`}
+                                                                           target="_blank" 
+                                                                           rel="noopener noreferrer"
+                                                                           onClick={(e) => e.stopPropagation()}
+                                                                           className="p-2.5 bg-green-500/10 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition-all border border-green-500/20 w-fit"
+                                                                           title="WhatsApp"
+                                                                         >
+                                                                           <MessageCircle size={16} strokeWidth={2.5} />
+                                                                         </a>
+                                                                       )}
+                                                                       {(isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) && (
+                                                                         <>
+                                                                           <motion.button whileTap={{ scale: 0.97 }} onClick={(e) => { e.stopPropagation(); startEdit(appt); }} className="p-2.5 bg-muted/5 text-muted-foreground hover:bg-primary hover:text-white rounded-xl transition-all active:scale-90 border border-border" title="Edit">
+                                                                             <Pencil size={16} strokeWidth={2.5} />
+                                                                           </motion.button>
+                                                                           <motion.button whileTap={{ scale: 0.97 }} onClick={(e) => { e.stopPropagation(); setConfirmDeleteAppt(appt); }} className="p-2.5 bg-red-500/5 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-500/10 active:scale-90" title="Delete">
+                                                                             <Trash2 size={16} strokeWidth={2.5} />
+                                                                           </motion.button>
+                                                                         </>
+                                                                       )}
+                                                                     </div>
+                                                                   </div>
 
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (profile?.role !== 'customer') {
-                                if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
-                                  setStatusUpdateAppt(appt);
-                                }
-                              }
-                            }}
-                            disabled={profile?.role === 'customer' || (!isAdmin && (appt.status === 'completed' || appt.status === 'cancelled'))}
-                            className={cn(
-                              "px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border disabled:opacity-80 active:scale-95 shadow-sm",
-                              appt.status === 'pending' && "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-                              appt.status === 'confirmed' && "bg-blue-500/10 text-blue-600 border-blue-500/30",
-                              appt.status === 'completed' && "bg-green-500/10 text-green-600 border-green-500/30",
-                              appt.status === 'cancelled' && "bg-red-500/10 text-red-600 border-red-500/30"
-                            )}
-                          >
-                            {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
-                            {appt.status === 'confirmed' && <Check size={14} strokeWidth={3} />}
-                            {appt.status === 'completed' && <Check size={14} strokeWidth={3} />}
-                            {appt.status === 'cancelled' && <X size={14} strokeWidth={3} />}
-                            {appt.status}
-                            {profile?.role !== 'customer' && <ChevronDown size={14} className="ml-1 opacity-50" />}
-                          </button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
+                                                                   <motion.button whileTap={{ scale: 0.97 }}
+                                                                     onClick={(e) => {
+                                                                       e.stopPropagation();
+                                                                       if (profile?.role !== 'customer') {
+                                                                         if (isAdmin || (appt.status !== 'completed' && appt.status !== 'cancelled')) {
+                                                                           setStatusUpdateAppt(appt);
+                                                                         }
+                                                                       }
+                                                                     }}
+                                                                     disabled={profile?.role === 'customer' || (!isAdmin && (appt.status === 'completed' || appt.status === 'cancelled'))}
+                                                                     className={cn(
+                                                                       "px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border disabled:opacity-80 active:scale-95 shadow-sm",
+                                                                       appt.status === 'pending' && "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
+                                                                       appt.status === 'confirmed' && "bg-blue-500/10 text-blue-600 border-blue-500/30",
+                                                                       appt.status === 'completed' && "bg-green-500/10 text-green-600 border-green-500/30",
+                                                                       appt.status === 'cancelled' && "bg-red-500/10 text-red-600 border-red-500/30"
+                                                                     )}
+                                                                   >
+                                                                     {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
+                                                                     {appt.status === 'confirmed' && <Check size={14} strokeWidth={3} />}
+                                                                     {appt.status === 'completed' && <Check size={14} strokeWidth={3} />}
+                                                                     {appt.status === 'cancelled' && <X size={14} strokeWidth={3} />}
+                                                                     {appt.status}
+                                                                     {profile?.role !== 'customer' && <ChevronDown size={14} className="ml-1 opacity-50" />}
+                                                                   </motion.button>
+                                                                 </div>
+                                                               </motion.div>
+                                                             );
+                                                           })}</AnimatePresence>
                   
                   <Modal
                     isOpen={!!statusUpdateAppt}
@@ -5952,7 +5981,7 @@ export const AppointmentsPage: React.FC = () => {
                   >
                     {statusUpdateAppt && (
                       <div className="flex flex-col gap-3">
-                        <button 
+                        <motion.button whileTap={{ scale: 0.97 }} 
                           onClick={() => { handleQuickStatusUpdate(statusUpdateAppt.id, 'pending'); setStatusUpdateAppt(null); }} 
                           className={cn(
                             "p-4 rounded-2xl font-black flex items-center justify-between text-base sm:text-lg uppercase tracking-widest transition-all border-2",
@@ -5964,9 +5993,9 @@ export const AppointmentsPage: React.FC = () => {
                             Pending
                           </div>
                           {statusUpdateAppt.status === 'pending' && <Check size={20} />}
-                        </button>
+                        </motion.button>
 
-                        <button 
+                        <motion.button whileTap={{ scale: 0.97 }} 
                           onClick={() => { handleQuickStatusUpdate(statusUpdateAppt.id, 'confirmed'); setStatusUpdateAppt(null); }} 
                           className={cn(
                             "p-4 rounded-2xl font-black flex items-center justify-between text-base sm:text-lg uppercase tracking-widest transition-all border-2",
@@ -5978,9 +6007,9 @@ export const AppointmentsPage: React.FC = () => {
                             Confirmed
                           </div>
                           {statusUpdateAppt.status === 'confirmed' && <Check size={20} />}
-                        </button>
+                        </motion.button>
 
-                        <button 
+                        <motion.button whileTap={{ scale: 0.97 }} 
                           onClick={() => { handleQuickStatusUpdate(statusUpdateAppt.id, 'completed'); setStatusUpdateAppt(null); }} 
                           className={cn(
                             "p-4 rounded-2xl font-black flex items-center justify-between text-base sm:text-lg uppercase tracking-widest transition-all border-2",
@@ -5992,9 +6021,9 @@ export const AppointmentsPage: React.FC = () => {
                             Completed
                           </div>
                           {statusUpdateAppt.status === 'completed' && <Check size={20} />}
-                        </button>
+                        </motion.button>
 
-                        <button 
+                        <motion.button whileTap={{ scale: 0.97 }} 
                           onClick={() => { handleQuickStatusUpdate(statusUpdateAppt.id, 'cancelled'); setStatusUpdateAppt(null); }} 
                           className={cn(
                             "p-4 rounded-2xl font-black flex items-center justify-between text-base sm:text-lg uppercase tracking-widest transition-all border-2",
@@ -6006,7 +6035,7 @@ export const AppointmentsPage: React.FC = () => {
                             Cancelled
                           </div>
                           {statusUpdateAppt.status === 'cancelled' && <Check size={20} />}
-                        </button>
+                        </motion.button>
                       </div>
                     )}
                   </Modal>
@@ -6015,7 +6044,7 @@ export const AppointmentsPage: React.FC = () => {
  </div>
  </div>
  ) : (
- <div className="space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
+ <motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="bg-card border border-border rounded-2xl p-4 transition-colors duration-300">
  <div className="flex items-center justify-between mb-4 md:mb-8">
  <div>
@@ -6137,11 +6166,11 @@ export const AppointmentsPage: React.FC = () => {
  </div>
  </div>
  </div>
- </div>
+ </motion.div>
  )}
 
  {viewingCustomerHistory && (
- <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]">
+ <motion.div className="fixed inset-0 bg-black/60 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <motion.div 
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -6152,7 +6181,7 @@ export const AppointmentsPage: React.FC = () => {
  <div className="flex items-center gap-4">
  <h3 className="text-primary [.midnight_&]:text-amber-400 font-black text-3xl tracking-tighter">{viewingCustomerHistory.name}</h3>
  {isAdmin && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => {
  setViewingCustomerHistory(null);
  navigate('/manage', { state: { activeTab: 'customers', viewCustomer: viewingCustomerHistory } });
@@ -6161,7 +6190,7 @@ export const AppointmentsPage: React.FC = () => {
  >
  <HistoryIcon size={12} />
  Full History
- </button>
+ </motion.button>
  )}
  </div>
  <div className="flex items-center gap-3 mt-1">
@@ -6169,12 +6198,12 @@ export const AppointmentsPage: React.FC = () => {
  <span className="text-[10px] bg-primary/20 text-primary [.midnight_&]:text-amber-400 px-3 py-1 rounded-full font-bold uppercase tracking-widest ">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
  </div>
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setViewingCustomerHistory(null)}
  className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
  >
  <X size={24} />
- </button>
+ </motion.button>
  </div>
  <div className="p-4 overflow-y-auto max-h-[calc(90vh-140px)] custom-scrollbar">
  <div className="space-y-10">
@@ -6212,7 +6241,7 @@ export const AppointmentsPage: React.FC = () => {
  sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name)
  .sort((a, b) => b.dateTime.localeCompare(a.dateTime))
  .map(s => (
- <div key={s.id} className="bg-card border border-border p-4 rounded-2xl flex justify-between items-center hover:border-primary/50 transition-all group">
+ <motion.div key={s.id} className="bg-card border border-border p-4 rounded-2xl flex justify-between items-center hover:border-primary/50 transition-all group" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div>
  <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{s.items.map(i => i.name).join(', ')}</div>
  <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(s.dateTime), 'MMM d, yyyy • hh:mm a')}</div>
@@ -6222,7 +6251,7 @@ export const AppointmentsPage: React.FC = () => {
  {s.pointsEarned > 0 && <div className="text-[10px] text-green-600 font-bold uppercase tracking-widest">+{s.pointsEarned} pts</div>}
  {s.pointsRedeemed > 0 && <div className="text-[10px] text-red-500 font-bold uppercase tracking-widest">-{s.pointsRedeemed} pts</div>}
  </div>
- </div>
+ </motion.div>
  ))
  )}
  </div>
@@ -6241,7 +6270,7 @@ export const AppointmentsPage: React.FC = () => {
  .filter(a => a.customerId === viewingCustomerHistory.id || a.customerPhone === viewingCustomerHistory.phone)
  .sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime())
  .map(a => (
- <div key={a.id} className="bg-card border border-border p-4 rounded-2xl flex justify-between items-center hover:border-primary/50 transition-all group">
+ <motion.div key={a.id} className="bg-card border border-border p-4 rounded-2xl flex justify-between items-center hover:border-primary/50 transition-all group" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div>
  <div className="font-bold text-foreground [.midnight_&]:text-slate-200 group-hover:text-primary [.midnight_&]:group-hover:text-amber-400 transition-colors">{a.serviceName}</div>
  <div className="text-[10px] text-muted-foreground mt-1 font-medium uppercase tracking-wider">{format(new Date(a.date + 'T' + a.time), 'MMM d, yyyy • hh:mm a')}</div>
@@ -6262,7 +6291,7 @@ export const AppointmentsPage: React.FC = () => {
  </div>
  )}
  </div>
- </div>
+ </motion.div>
  ))
  )}
  </div>
@@ -6270,11 +6299,11 @@ export const AppointmentsPage: React.FC = () => {
  </div>
  </div>
  </motion.div>
- </div>
+ </motion.div>
  )}
 
  {isAdding && (
- <div className="fixed inset-0 bg-black/60 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]">
+ <motion.div className="fixed inset-0 bg-black/60 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -6289,12 +6318,12 @@ export const AppointmentsPage: React.FC = () => {
  {editingAppointment ? 'Update existing booking details' : 'Schedule a new customer visit'}
  </p>
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={resetForm}
  className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"
  >
  <X size={24} />
- </button>
+ </motion.button>
  </div>
 
  <form onSubmit={(e) => {
@@ -6307,7 +6336,7 @@ export const AppointmentsPage: React.FC = () => {
  }} className="flex flex-col flex-1 min-h-0">
  <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
  {formStep === 1 ? (
- <div className="space-y-3 animate-in fade-in slide-in-from-left-4 duration-300">
+ <motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
  {/* Customer Section */}
  <div className="space-y-4">
@@ -6341,7 +6370,7 @@ export const AppointmentsPage: React.FC = () => {
  />
 
  {selectedCustId === 'manual' && (
- <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+ <motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <FloatingInput
  label="Customer Name"
  value={manualCustName}
@@ -6355,7 +6384,7 @@ export const AppointmentsPage: React.FC = () => {
  onChange={(val) => setManualCustPhone(val)}
  required
  />
- </div>
+ </motion.div>
  )}
  </div>
  ) : (
@@ -6502,7 +6531,7 @@ export const AppointmentsPage: React.FC = () => {
  <span className="text-xs font-bold text-foreground [.midnight_&]:text-slate-200">At Home Service</span>
  </div>
  </div>
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={() => setIsHomeService(!isHomeService)}
  className={cn(
@@ -6514,7 +6543,7 @@ export const AppointmentsPage: React.FC = () => {
  "absolute top-0.5 w-5 h-5 bg-white rounded-full transition-all ",
  isHomeService ? "left-6.5" : "left-0.5"
  )} />
- </button>
+ </motion.button>
  </div>
 
  <div className="bg-primary/20 p-4 rounded-2xl border-primary/10 space-y-3 ">
@@ -6542,13 +6571,13 @@ export const AppointmentsPage: React.FC = () => {
  }}
  className="w-full p-2 text-xs rounded-xl outline-none focus:ring-2 focus:ring-primary/20 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-bold"
  />
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={() => setPointsToRedeem(customers.find(c => c.id === selectedCustId)?.points || 0)}
  className="text-[9px] font-black text-primary [.midnight_&]:text-amber-400 hover:underline whitespace-nowrap uppercase tracking-widest"
  >
  Redeem All
- </button>
+ </motion.button>
  </div>
  </div>
  )}
@@ -6569,9 +6598,9 @@ export const AppointmentsPage: React.FC = () => {
  className="w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-primary/20 bg-input border border-border text-foreground [.midnight_&]:text-slate-200 font-medium min-h-[100px] text-sm"
  />
  </div>
- </div>
+ </motion.div>
  ) : (
- <div className="space-y-3 animate-in fade-in slide-in-from-right-4 duration-300">
+ <motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="bg-primary/20 p-4 rounded-2xl border-primary/10 space-y-3 ">
  <div className="flex items-center gap-4">
  <div className="p-4 bg-primary/20 rounded-2xl text-primary [.midnight_&]:text-amber-400 ">
@@ -6663,38 +6692,38 @@ export const AppointmentsPage: React.FC = () => {
  )}
  </div>
  </div>
- </div>
+ </motion.div>
  )}
  </div>
 
  <div className="p-4 bg-muted/5 flex justify-end gap-3 rounded-b-3xl shrink-0">
  {formStep === 1 ? (
  <>
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={resetForm}
  className="px-4 md:px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
  >
  Cancel
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  type="submit"
  className="px-4 md:px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
  >
  Next Step
  <ArrowRight size={14} />
- </button>
+ </motion.button>
  </>
  ) : (
  <>
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={() => setFormStep(1)}
  className="px-4 md:px-6 py-2.5 text-xs font-black text-muted-foreground hover:text-foreground transition-colors uppercase tracking-widest"
  >
  Back
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  type="submit"
  disabled={isSubmittingAppt}
  className="px-4 md:px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed"
@@ -6710,17 +6739,17 @@ export const AppointmentsPage: React.FC = () => {
  <Check size={14} />
  </>
  )}
- </button>
+ </motion.button>
  </>
  )}
  </div>
  </form>
  </motion.div>
- </div>
+ </motion.div>
  )}
 
  {confirmDeleteAppt && (
- <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]">
+ <motion.div className="fixed inset-0 bg-black/50 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -6734,26 +6763,26 @@ export const AppointmentsPage: React.FC = () => {
  Are you sure you want to delete the appointment for <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.customerName}</span> at <span className="text-foreground [.midnight_&]:text-slate-200 font-black">{confirmDeleteAppt.time}</span>? This action cannot be undone.
  </p>
  <div className="flex gap-4">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => setConfirmDeleteAppt(null)}
  className="flex-1 px-4 md:px-6 py-4 border-2 text-muted-foreground hover:text-foreground font-black uppercase tracking-widest rounded-2xl hover:bg-muted/10 transition-all active:scale-95"
  >
  Cancel
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={handleDeleteAppointment}
  className="flex-1 px-4 md:px-6 py-4 bg-red-600 text-foreground [.midnight_&]:text-slate-200 font-black uppercase tracking-widest rounded-2xl hover:bg-red-700 transition-all shadow-red-600/20 active:scale-95"
  >
  Delete
- </button>
+ </motion.button>
  </div>
  </motion.div>
- </div>
+ </motion.div>
  )}
 
  {/* Overlap Alert Popup */}
  {showOverlapPopup && (
- <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]">
+ <motion.div className="fixed inset-0 bg-black/50 flex items-start justify-center z-[20000] p-4 pt-[100px] sm:pt-[120px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -6767,15 +6796,15 @@ export const AppointmentsPage: React.FC = () => {
  The selected time slot overlaps with an existing appointment for this staff member. Please select a different time or staff member.
  </p>
  <div className="flex gap-4">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => setShowOverlapPopup(false)}
  className="w-full px-4 md:px-6 py-4 bg-primary text-white font-black uppercase tracking-widest rounded-2xl hover:bg-primary/90 transition-all shadow-primary/20 active:scale-95"
  >
  Okay
- </button>
+ </motion.button>
  </div>
  </motion.div>
- </div>
+ </motion.div>
  )}
  </div>
  );
@@ -6793,7 +6822,7 @@ const PrintPreviewModal: React.FC<{
 }> = ({ isOpen, onClose, text, onPrint, onSkipPrint, title = "Print Preview", printLabel = "Process & Print", skipLabel = "Complete Without Printing" }) => {
  if (!isOpen) return null;
  return (
- <div className="fixed inset-0 z-[30000] flex items-center justify-center p-4 bg-black/60 ">
+ <motion.div className="fixed inset-0 z-[80000] flex items-center justify-center p-4 bg-black/60 " initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <motion.div
  initial={{ opacity: 0, scale: 0.95, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -6804,7 +6833,7 @@ const PrintPreviewModal: React.FC<{
  <Printer size={20} className="text-primary [.midnight_&]:text-amber-400" />
  {title}
  </h3>
- <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={onClose} className="p-2 hover:bg-muted rounded-xl transition-colors"><X size={20} /></motion.button>
  </div>
  
  <div className="p-4 overflow-y-auto bg-muted/20 flex-1 flex justify-center custom-scrollbar">
@@ -6814,25 +6843,25 @@ const PrintPreviewModal: React.FC<{
  </div>
 
  <div className="p-4 bg-card border border-border shrink-0 space-y-3">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => { onPrint(); onClose(); }}
  className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]: [.midnight_&]:-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-primary/20"
  >
  <Printer size={20} />
  {printLabel}
- </button>
+ </motion.button>
  
  {onSkipPrint && (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => { onSkipPrint(); onClose(); }}
  className="w-full bg-muted text-muted-foreground hover:text-foreground py-4 rounded-2xl font-bold transition-colors"
  >
  {skipLabel}
- </button>
+ </motion.button>
  )}
  </div>
  </motion.div>
- </div>
+ </motion.div>
  );
 };
 
@@ -6845,7 +6874,7 @@ const Modal: React.FC<{
 }> = ({ isOpen, onClose, title, children, maxWidth = "max-w-sm" }) => {
  if (!isOpen) return null;
  return (
- <div className="fixed inset-0 bg-black/60 z-[20000] flex items-center justify-center p-4 ">
+ <motion.div className="fixed inset-0 bg-black/60 z-[70000] flex items-center justify-center p-4 " initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <motion.div 
  initial={{ opacity: 0, scale: 0.9, y: 20 }}
  animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -6854,13 +6883,13 @@ const Modal: React.FC<{
  <div className="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
  <div className="flex justify-between items-center shrink-0 p-4 pb-4">
  <h3 className="text-primary [.midnight_&]:text-amber-400 font-bold text-xl uppercase tracking-widest">{title}</h3>
- <button onClick={onClose} className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"><X size={24} /></button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={onClose} className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"><X size={24} /></motion.button>
  </div>
  <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pt-4 space-y-4">
  {children}
  </div>
  </motion.div>
- </div>
+ </motion.div>
  );
 };
 
@@ -7576,7 +7605,7 @@ export const ManagePage: React.FC = () => {
  { id: 'staff', label: 'Staff', icon: <UserIcon size={16} /> },
  { id: 'customers', label: 'Customers', icon: <UsersIcon size={16} /> },
  ].map(tab => (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={tab.id}
  onClick={() => setActiveTab(tab.id as any)}
  className={cn(
@@ -7588,25 +7617,25 @@ export const ManagePage: React.FC = () => {
  >
  {tab.icon}
  {tab.label}
- </button>
+ </motion.button>
  ))}
  </div>
 
  <div className="bg-card border border-border rounded-2xl p-4 space-y-3 transition-all duration-300">
 {activeTab === 'shop' && (
- <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+ <motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  {isSuperAdmin && profile?.role !== 'super_admin' && (
  <div className="bg-primary/20 p-4 rounded-2xl flex items-center justify-between gap-4">
  <div>
  <h4 className="text-primary font-black text-sm uppercase tracking-widest">First Time Setup</h4>
  <p className="text-[10px] text-muted-foreground font-bold mt-1">Assign your account the Super Admin role in Firestore.</p>
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleSetupSuperAdmin}
  className="btn-primary px-4 md:px-6 py-3 text-[10px] rounded-xl font-black tracking-widest"
  >
  SETUP ROLE
- </button>
+ </motion.button>
  </div>
  )}
  <div className="flex items-center justify-between px-1">
@@ -7693,7 +7722,7 @@ export const ManagePage: React.FC = () => {
  <div>
  <span className="block text-sm font-bold text-foreground">Hide Shop Name</span>
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={() => setShopSettings({ ...shopSettings, hideShopNameOnReceipt: !shopSettings.hideShopNameOnReceipt })}
  className={cn(
@@ -7705,13 +7734,13 @@ export const ManagePage: React.FC = () => {
  "w-4 h-4 bg-white rounded-full transition-transform duration-300",
  shopSettings.hideShopNameOnReceipt ? "translate-x-6" : "translate-x-0"
  )} />
- </button>
+ </motion.button>
  </div>
  <div className="flex items-center justify-between p-4 bg-background rounded-2xl ">
  <div>
  <span className="block text-sm font-bold text-foreground">Hide Date & Time</span>
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={() => setShopSettings({ ...shopSettings, hideDateTimeOnReceipt: !shopSettings.hideDateTimeOnReceipt })}
  className={cn(
@@ -7723,13 +7752,13 @@ export const ManagePage: React.FC = () => {
  "w-4 h-4 bg-white rounded-full transition-transform duration-300",
  shopSettings.hideDateTimeOnReceipt ? "translate-x-6" : "translate-x-0"
  )} />
- </button>
+ </motion.button>
  </div>
  <div className="flex items-center justify-between p-4 bg-background rounded-2xl ">
  <div>
  <span className="block text-sm font-bold text-foreground">Hide Staff Name</span>
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={() => setShopSettings({ ...shopSettings, hideStaffNameOnReceipt: !shopSettings.hideStaffNameOnReceipt })}
  className={cn(
@@ -7741,13 +7770,13 @@ export const ManagePage: React.FC = () => {
  "w-4 h-4 bg-white rounded-full transition-transform duration-300",
  shopSettings.hideStaffNameOnReceipt ? "translate-x-6" : "translate-x-0"
  )} />
- </button>
+ </motion.button>
  </div>
  <div className="flex items-center justify-between p-4 bg-background rounded-2xl ">
  <div>
  <span className="block text-sm font-bold text-foreground">Hide Loyalty Points</span>
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={() => setShopSettings({ ...shopSettings, hideLoyaltyPointsOnReceipt: !shopSettings.hideLoyaltyPointsOnReceipt })}
  className={cn(
@@ -7759,17 +7788,17 @@ export const ManagePage: React.FC = () => {
  "w-4 h-4 bg-white rounded-full transition-transform duration-300",
  shopSettings.hideLoyaltyPointsOnReceipt ? "translate-x-6" : "translate-x-0"
  )} />
- </button>
+ </motion.button>
  </div>
  </div>
  </div>
- <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Settings</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Settings</motion.button>
  </div>
- </div>
+ </motion.div>
  )}
  
  {activeTab === 'financials' && (
- <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+ <motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="flex items-center justify-between px-1">
  <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
@@ -7819,13 +7848,13 @@ export const ManagePage: React.FC = () => {
  <option value="oct">October - September</option>
  </select>
  </div>
- <button onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Financial Settings</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleUpdateShop} className="btn-primary w-full py-4 mt-2 uppercase tracking-widest font-black">Save Financial Settings</motion.button>
  </div>
- </div>
+ </motion.div>
  )}
 
  {activeTab === 'data' && (
- <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+ <motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="flex items-center justify-between px-1">
  <h4 className="text-primary font-bold uppercase tracking-widest text-xs flex items-center gap-2">
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
@@ -7842,7 +7871,7 @@ export const ManagePage: React.FC = () => {
  <h3 className="text-base font-black">Export All Sales Data</h3>
  <p className="text-xs text-muted-foreground font-medium mt-1">Download a complete backup of all transaction history in CSV format.</p>
  </div>
- <button onClick={handleExportSales} className="py-2 px-4 md:px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleExportSales} className="py-2 px-4 md:px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</motion.button>
  </div>
  <div className="p-4 bg-card border border-border rounded-2xl flex flex-col items-start gap-4 hover:border-primary/50 transition-all group">
  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
@@ -7852,7 +7881,7 @@ export const ManagePage: React.FC = () => {
  <h3 className="text-base font-black">Export Customer List</h3>
  <p className="text-xs text-muted-foreground font-medium mt-1">Download your complete customer database for marketing.</p>
  </div>
- <button onClick={handleExportCustomers} className="py-2 px-4 md:px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleExportCustomers} className="py-2 px-4 md:px-6 bg-primary text-primary-foreground font-bold text-xs uppercase tracking-widest rounded-xl hover:opacity-90 active:scale-95 transition-all mt-auto">Export CSV</motion.button>
  </div>
  </div>
 
@@ -7863,19 +7892,19 @@ export const ManagePage: React.FC = () => {
  Danger Zone
  </h4>
  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Use these options with extreme caution. Actions are irreversible.</p>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowClearConfirm(true)}
  className="w-full bg-red-500/10 text-red-500 border-red-500/20 font-bold py-4 rounded-2xl hover:bg-red-500 hover:text-foreground transition-all active:scale-95"
  >
  CLEAR ALL SALES HISTORY
- </button>
+ </motion.button>
  <div className="pt-6 space-y-4">
  <h4 className="text-blue-500 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
  <div className="w-1.5 h-4 bg-blue-500 rounded-full"></div>
  Debug & Diagnostics
  </h4>
  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Test your Cloud Functions connectivity and database access.</p>
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={async () => {
  try {
  const functions = getFunctions(app, 'asia-southeast1');
@@ -7889,11 +7918,11 @@ export const ManagePage: React.FC = () => {
  className="w-full bg-blue-500/10 text-blue-500 border-blue-500/20 font-bold py-4 rounded-2xl hover:bg-blue-500 hover:text-foreground transition-all active:scale-95 uppercase tracking-widest"
  >
  Test Cloud Functions
- </button>
+ </motion.button>
  </div>
  </div>
  )}
- </div>
+ </motion.div>
  )}
 {activeTab === 'categories' && (
  <div className="space-y-3">
@@ -7902,13 +7931,13 @@ export const ManagePage: React.FC = () => {
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Category Management
  </h4>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowCatForm(!showCatForm)}
  className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
  >
  {showCatForm ? <X size={14} /> : <Plus size={14} />}
  {showCatForm ? 'CANCEL' : 'ADD NEW'}
- </button>
+ </motion.button>
  </div>
 
  <Modal 
@@ -7929,7 +7958,7 @@ export const ManagePage: React.FC = () => {
  {CATEGORY_ICONS.map((item) => {
  const IconComp = item.icon;
  return (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={item.name}
  type="button"
  onClick={() => setCatIcon(item.name)}
@@ -7941,24 +7970,24 @@ export const ManagePage: React.FC = () => {
  )}
  >
  <IconComp size={20} />
- </button>
+ </motion.button>
  );
  })}
  </div>
  </div>
 
  <div className="pt-2 flex gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button" 
  onClick={() => { setShowCatForm(false); setEditingCategory(null); setCatName(''); setCatIcon('LayoutGrid'); }} 
  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
- </button>
+ </motion.button>
  {editingCategory ? (
- <button onClick={handleUpdateCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleUpdateCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update</motion.button>
  ) : (
- <button onClick={handleAddCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Add Category</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddCategory} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Add Category</motion.button>
  )}
  </div>
  </Modal>
@@ -7972,7 +8001,7 @@ export const ManagePage: React.FC = () => {
  categories.map(c => {
  const IconComp = CATEGORY_ICONS.find(i => i.name === c.icon)?.icon || LayoutGrid;
  return (
- <div key={c.id} className="flex justify-between items-center p-4 bg-background rounded-2xl group hover:border-primary/50 transition-all ">
+ <motion.div key={c.id} className="flex justify-between items-center p-4 bg-background rounded-2xl group hover:border-primary/50 transition-all " layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="flex items-center gap-3">
  <div className="p-2 bg-primary/20 rounded-lg text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
  <IconComp size={16} />
@@ -7981,25 +8010,25 @@ export const ManagePage: React.FC = () => {
  </div>
  <div className="flex gap-2">
  {isAdmin && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => { setEditingCategory(c); setCatName(c.name); setCatIcon(c.icon || 'LayoutGrid'); setShowCatForm(true); }} 
  className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors"
  title="Edit Category"
  >
  <Settings size={16} />
- </button>
+ </motion.button>
  )}
  {isAdmin && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowConfirm({ coll: 'categories', id: c.id })} 
  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
  title="Delete Category"
  >
  <Trash2 size={16} />
- </button>
+ </motion.button>
  )}
  </div>
- </div>
+ </motion.div>
  );
  })
  )}
@@ -8014,13 +8043,13 @@ export const ManagePage: React.FC = () => {
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Services Management
  </h4>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowSvcForm(!showSvcForm)}
  className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
  >
  {showSvcForm ? <X size={14} /> : <Plus size={14} />}
  {showSvcForm ? 'CANCEL' : 'ADD NEW'}
- </button>
+ </motion.button>
  </div>
 
  <Modal 
@@ -8066,7 +8095,7 @@ export const ManagePage: React.FC = () => {
  <span className="text-xs font-bold text-foreground">Enable Staff Commission</span>
  <span className="text-[10px] text-muted-foreground">Calculate commission for this service</span>
  </div>
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={() => setSvcAllowCommission(!svcAllowCommission)}
  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
@@ -8078,20 +8107,20 @@ export const ManagePage: React.FC = () => {
  svcAllowCommission ? 'translate-x-6' : 'translate-x-1'
  }`}
  />
- </button>
+ </motion.button>
  </div>
  <div className="pt-2 flex gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button" 
  onClick={() => { setShowSvcForm(false); setEditingService(null); setSvcName(''); setSvcPrice(''); setSvcDuration(''); setSvcCategory(''); setSvcAllowCommission(true); }} 
  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
- </button>
+ </motion.button>
  {editingService ? (
- <button onClick={handleUpdateService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleUpdateService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update</motion.button>
  ) : (
- <button onClick={handleAddService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Add Service</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddService} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Add Service</motion.button>
  )}
  </div>
  </Modal>
@@ -8103,7 +8132,7 @@ export const ManagePage: React.FC = () => {
  </div>
  ) : (
  services.map(s => (
- <div key={s.id} className="flex justify-between items-center p-4 bg-background rounded-2xl group hover:border-primary/50 transition-all ">
+ <motion.div key={s.id} className="flex justify-between items-center p-4 bg-background rounded-2xl group hover:border-primary/50 transition-all " layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div>
  <span className="font-bold text-foreground block group-hover:text-primary transition-colors">{s.name}</span>
  <div className="flex gap-2 items-center mt-1">
@@ -8115,7 +8144,7 @@ export const ManagePage: React.FC = () => {
  </div>
  <div className="flex gap-2">
  {isAdmin && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => { 
  setEditingService(s); 
  setSvcName(s.name); 
@@ -8129,19 +8158,19 @@ export const ManagePage: React.FC = () => {
  title="Edit Service"
  >
  <Settings size={16} />
- </button>
+ </motion.button>
  )}
  {isAdmin && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowConfirm({ coll: 'services', id: s.id })} 
  className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
  title="Delete Service"
  >
  <Trash2 size={16} />
- </button>
+ </motion.button>
  )}
  </div>
- </div>
+ </motion.div>
  ))
  )}
  </div>
@@ -8156,13 +8185,13 @@ export const ManagePage: React.FC = () => {
  Staff Management
  </h4>
  {isAdmin && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowStfForm(!showStfForm)}
  className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
  >
  {showStfForm ? <X size={14} /> : <Plus size={14} />}
  {showStfForm ? 'CANCEL' : 'ADD NEW'}
- </button>
+ </motion.button>
  )}
  </div>
 
@@ -8189,7 +8218,7 @@ export const ManagePage: React.FC = () => {
  <UserIcon size={40} className="text-muted-foreground/30" />
  )}
  </div>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => {
  const url = prompt("Enter photo URL:", stfPhotoURL);
  if (url !== null) setStfPhotoURL(url);
@@ -8198,7 +8227,7 @@ export const ManagePage: React.FC = () => {
  title="Update Photo"
  >
  <Edit2 size={14} />
- </button>
+ </motion.button>
  </div>
  <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Profile Photo</span>
  </div>
@@ -8242,7 +8271,7 @@ export const ManagePage: React.FC = () => {
  <label className="text-[10px] text-muted-foreground font-black uppercase tracking-widest ml-1">Assigned Roles</label>
  <div className="flex flex-wrap gap-2 pb-4">
  {['staff', 'cashier', 'owner', 'super_admin'].filter(role => role !== 'super_admin' || isSuperAdmin).map(roleOption => (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  key={roleOption}
  type="button"
  onClick={() => {
@@ -8265,7 +8294,7 @@ export const ManagePage: React.FC = () => {
  }`}
  >
  {roleOption.replace('_', ' ')}
- </button>
+ </motion.button>
  ))}
  </div>
  </div>
@@ -8303,7 +8332,7 @@ export const ManagePage: React.FC = () => {
  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Working Days</label>
  <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl ">
  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={day}
  onClick={() => {
  if (stfWorkingDays.includes(day)) {
@@ -8320,7 +8349,7 @@ export const ManagePage: React.FC = () => {
  )}
  >
  {day.substring(0, 3)}
- </button>
+ </motion.button>
  ))}
  </div>
  </div>
@@ -8329,7 +8358,7 @@ export const ManagePage: React.FC = () => {
  <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground px-1">Specialties</label>
  <div className="flex flex-wrap gap-2 p-3 bg-muted/5 rounded-2xl min-h-[60px]">
  {categories.map(cat => (
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  key={cat.id}
  onClick={() => {
  if (stfSpecialties.includes(cat.name)) {
@@ -8346,7 +8375,7 @@ export const ManagePage: React.FC = () => {
  )}
  >
  {cat.name}
- </button>
+ </motion.button>
  ))}
  {categories.length === 0 && (
  <p className="text-xs text-muted-foreground italic m-auto">No categories found. Please add categories first.</p>
@@ -8370,7 +8399,7 @@ export const ManagePage: React.FC = () => {
 
  </div>
  <div className="pt-4 mt-4 flex gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button" 
  onClick={() => { 
  setShowStfForm(false); 
@@ -8382,11 +8411,11 @@ export const ManagePage: React.FC = () => {
  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
- </button>
+ </motion.button>
  {editingStaff ? (
- <button onClick={handleUpdateStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update Profile</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleUpdateStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Update Profile</motion.button>
  ) : (
- <button onClick={handleAddStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Register</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddStaff} className="flex-1 btn-primary py-4 uppercase tracking-widest font-black ">Register</motion.button>
  )}
  </div>
  </Modal>
@@ -8396,115 +8425,114 @@ export const ManagePage: React.FC = () => {
  <span>Registered Staff ({staff.filter(s => s.role !== 'super_admin').length})</span>
  <UsersIcon size={14} />
  </h4>
- {staff.filter(s => s.role !== 'super_admin').map(s => (
- <div key={s.email} className="bg-background p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all">
- <div className="flex justify-between items-start">
- <div className="flex items-center gap-4">
- <div className="w-12 h-12 rounded-full bg-muted overflow-hidden ">
- {s.photoURL ? (
- <img src={s.photoURL} alt={s.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
- ) : (
- <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary font-bold text-lg">
- {s.name.charAt(0)}
- </div>
- )}
- </div>
- <div>
- <span className="block font-bold text-primary text-lg leading-tight">{s.name}</span>
- <span className="text-xs text-muted-foreground font-medium">{s.email}</span>
- </div>
- </div>
- <div className="flex items-center gap-2">
- {/* Edit Button Logic: Owners are uneditable except by master account */}
- {(isAdmin && s.role !== 'owner' && s.role !== 'super_admin') || isSuperAdmin || user?.email === s.email ? (
- <button 
- onClick={() => {
- setEditingStaff(s);
- setStfName(s.name);
- setStfEmail(s.email);
- setStfComm(s.commission.toString());
- setStfRole(s.role);
- setStfRoles(s.roles || [s.role]);
- setStfStatus(s.status || 'active');
- setStfBio(s.bio || '');
- setStfPhotoURL(s.photoURL || '');
- setStfSpecialties(s.specialties || []);
- setStfWorkingDays(s.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
- setShowStfForm(true);
- }}
- className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors"
- title="Edit Staff"
- >
- <Settings size={18} />
- </button>
- ) : null}
- 
- {/* Delete Button Logic: Owners are undeletable easily */}
- {((isSuperAdmin && s.email !== user?.email) || (isAdmin && s.email !== user?.email && s.role !== 'owner' && s.role !== 'super_admin')) && (
- <button 
- onClick={() => setShowConfirm({ coll: 'users', id: s.id || s.email })} 
- className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
- title="Delete Staff"
- >
- <Trash2 size={18} />
- </button>
- )}
- </div>
- </div>
+ <AnimatePresence mode="wait">{staff.filter(s => s.role !== 'super_admin').map(s => (
+                          <motion.div key={s.email} className="bg-background p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+                          <div className="flex justify-between items-start">
+                          <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-muted overflow-hidden ">
+                          {s.photoURL ? (
+                          <img src={s.photoURL} alt={s.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary/20 text-primary font-bold text-lg">
+                          {s.name.charAt(0)}
+                          </div>
+                          )}
+                          </div>
+                          <div>
+                          <span className="block font-bold text-primary text-lg leading-tight">{s.name}</span>
+                          <span className="text-xs text-muted-foreground font-medium">{s.email}</span>
+                          </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                          {/* Edit Button Logic: Owners are uneditable except by master account */}
+                          {(isAdmin && s.role !== 'owner' && s.role !== 'super_admin') || isSuperAdmin || user?.email === s.email ? (
+                          <motion.button whileTap={{ scale: 0.97 }} 
+                          onClick={() => {
+                          setEditingStaff(s);
+                          setStfName(s.name);
+                          setStfEmail(s.email);
+                          setStfComm(s.commission.toString());
+                          setStfRole(s.role);
+                          setStfRoles(s.roles || [s.role]);
+                          setStfStatus(s.status || 'active');
+                          setStfBio(s.bio || '');
+                          setStfPhotoURL(s.photoURL || '');
+                          setStfSpecialties(s.specialties || []);
+                          setStfWorkingDays(s.workingDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+                          setShowStfForm(true);
+                          }}
+                          className="p-2 text-primary hover:bg-primary/20 rounded-lg transition-colors"
+                          title="Edit Staff"
+                          >
+                          <Settings size={18} />
+                          </motion.button>
+                          ) : null}
+                          
+                          {/* Delete Button Logic: Owners are undeletable easily */}
+                          {((isSuperAdmin && s.email !== user?.email) || (isAdmin && s.email !== user?.email && s.role !== 'owner' && s.role !== 'super_admin')) && (
+                          <motion.button whileTap={{ scale: 0.97 }} 
+                          onClick={() => setShowConfirm({ coll: 'users', id: s.id || s.email })} 
+                          className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                          title="Delete Staff"
+                          >
+                          <Trash2 size={18} />
+                          </motion.button>
+                          )}
+                          </div>
+                          </div>
 
- {s.bio && (
- <p className="text-xs text-muted-foreground line-clamp-2 italic px-1">
- "{s.bio}"
- </p>
- )}
+                          {s.bio && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 italic px-1">
+                          "{s.bio}"
+                          </p>
+                          )}
 
- <div className="flex flex-wrap gap-2">
- <div className={cn(
- "px-3 py-1.5 rounded-xl flex items-center gap-2",
- s.status === 'active' ? "bg-green-500/10 border-green-500/30" :
- s.status === 'on_leave' ? "bg-yellow-500/10 border-yellow-500/30" :
- "bg-red-500/10 border-red-500/30"
- )}>
- <div className={cn(
- "w-1.5 h-1.5 rounded-full",
- s.status === 'active' ? "bg-green-500 animate-pulse" :
- s.status === 'on_leave' ? "bg-yellow-500" :
- "bg-red-500"
- )}></div>
- <b className={cn(
- "text-[10px] uppercase tracking-widest",
- s.status === 'active' ? "text-green-500" :
- s.status === 'on_leave' ? "text-yellow-500" :
- "text-red-500"
- )}>
- {s.status || 'active'}
- </b>
- </div>
+                          <div className="flex flex-wrap gap-2">
+                          <div className={cn(
+                          "px-3 py-1.5 rounded-xl flex items-center gap-2",
+                          s.status === 'active' ? "bg-green-500/10 border-green-500/30" :
+                          s.status === 'on_leave' ? "bg-yellow-500/10 border-yellow-500/30" :
+                          "bg-red-500/10 border-red-500/30"
+                          )}>
+                          <div className={cn(
+                          "w-1.5 h-1.5 rounded-full",
+                          s.status === 'active' ? "bg-green-500 animate-pulse" :
+                          s.status === 'on_leave' ? "bg-yellow-500" :
+                          "bg-red-500"
+                          )}></div>
+                          <b className={cn(
+                          "text-[10px] uppercase tracking-widest",
+                          s.status === 'active' ? "text-green-500" :
+                          s.status === 'on_leave' ? "text-yellow-500" :
+                          "text-red-500"
+                          )}>
+                          {s.status || 'active'}
+                          </b>
+                          </div>
 
- <div className="bg-muted/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
- <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Comm:</span> 
- <b className="text-green-500 text-xs">{s.commission}%</b>
- </div>
- <div className="bg-muted/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
- <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Role:</span> 
- <b className="text-primary text-xs uppercase">
- {s.roles && s.roles.length > 0 ? s.roles.map(r => r === 'super_admin' ? 'Admin' : r).join(', ') : (s.role === 'super_admin' ? 'Admin' : s.role)}
- </b>
- </div>
- </div>
+                          <div className="bg-muted/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Comm:</span> 
+                          <b className="text-green-500 text-xs">{s.commission}%</b>
+                          </div>
+                          <div className="bg-muted/10 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Role:</span> 
+                          <b className="text-primary text-xs uppercase">
+                          {s.roles && s.roles.length > 0 ? s.roles.map(r => r === 'super_admin' ? 'Admin' : r).join(', ') : (s.role === 'super_admin' ? 'Admin' : s.role)}
+                          </b>
+                          </div>
+                          </div>
 
- {s.specialties && s.specialties.length > 0 && (
- <div className="flex flex-wrap gap-1.5 pt-1">
- {s.specialties.map(spec => (
- <span key={spec} className="text-[9px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">
- {spec}
- </span>
- ))}
- </div>
- )}
- </div>
- ))}
- </div>
+                          {s.specialties && s.specialties.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                          {s.specialties.map(spec => (
+                          <span key={spec} className="text-[9px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          {spec}
+                          </span>
+                          ))}
+                          </div>
+                          )}
+                          </motion.div>
+                          ))}</AnimatePresence></div>
  </div>
  )}
 
@@ -8517,13 +8545,13 @@ export const ManagePage: React.FC = () => {
  <div className="w-1.5 h-4 bg-primary rounded-full"></div>
  Customer Management
  </h4>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowCustForm(!showCustForm)}
  className="btn-primary px-4 py-2 text-[10px] rounded-xl flex items-center gap-2"
  >
  {showCustForm ? <X size={14} /> : <Plus size={14} />}
  {showCustForm ? 'CANCEL' : 'ADD NEW'}
- </button>
+ </motion.button>
  </div>
 
  <Modal 
@@ -8538,19 +8566,19 @@ export const ManagePage: React.FC = () => {
  <FloatingInput label="Address" value={custAddr} onChange={setCustAddr} />
  <FloatingInput label="Notes" value={custNotes} onChange={setCustNotes} />
  <div className="pt-2 flex gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button" 
  onClick={() => { setShowCustForm(false); setCustName(''); setCustPhone(''); setCustEmail(''); setCustAddr(''); setCustNotes(''); }}
  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
- </button>
- <button 
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleAddCustomer}
  className="flex-1 btn-primary py-4 uppercase tracking-widest font-black "
  >
  Save
- </button>
+ </motion.button>
  </div>
  </div>
  </Modal>
@@ -8566,7 +8594,7 @@ export const ManagePage: React.FC = () => {
  </div>
  ) : (
  customers.map(c => (
- <div key={c.id} className="bg-background p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all group">
+ <motion.div key={c.id} className="bg-background p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all group" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="flex justify-between items-start">
  <div>
  <h5 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">{c.name}</h5>
@@ -8574,7 +8602,7 @@ export const ManagePage: React.FC = () => {
  <p className="text-primary text-sm font-bold">{c.phone}</p>
  <div className="flex items-center gap-1">
  <span className="text-[10px] bg-primary/20 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest ">{(c.points || 0).toLocaleString()} pts</span>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => {
  setQuickEditingPoints(c);
  setQuickPointsValue(String(c.points || 0));
@@ -8583,12 +8611,12 @@ export const ManagePage: React.FC = () => {
  title="Quick Edit Points"
  >
  <Coins size={12} />
- </button>
+ </motion.button>
  </div>
  </div>
  </div>
  <div className="flex gap-2">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => {
  setEditingCustomer(c);
  setCustName(c.name);
@@ -8602,25 +8630,25 @@ export const ManagePage: React.FC = () => {
  title="Edit Customer"
  >
  <Settings size={18} />
- </button>
- <button 
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowConfirm({ coll: 'customers', id: c.id })}
  className="p-2.5 bg-red-500/10 text-red-500 rounded-xl border-red-500/20 hover:bg-red-500 hover:text-foreground transition-all"
  title="Delete Customer"
  >
  <Trash2 size={18} />
- </button>
+ </motion.button>
  </div>
  </div>
  
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setViewingCustomerHistory(c)}
  className="w-full bg-muted/5 text-muted-foreground py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:border-primary hover:text-primary hover:bg-primary/20 transition-all flex items-center justify-center gap-2"
  >
  <FileText size={14} />
  VIEW HISTORY
- </button>
- </div>
+ </motion.button>
+ </motion.div>
  ))
  )}
  </div>
@@ -8642,19 +8670,19 @@ export const ManagePage: React.FC = () => {
  <FloatingInput label="Notes" value={custNotes} onChange={setCustNotes} />
  <FloatingInput label="Loyalty Points" type="number" value={custPoints} onChange={setCustPoints} />
  <div className="pt-2 flex gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button" 
  onClick={() => setEditingCustomer(null)}
  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-4 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
- </button>
- <button 
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleUpdateCustomer}
  className="flex-1 btn-primary py-4 shadow-primary/20 uppercase tracking-widest font-black"
  >
  Update
- </button>
+ </motion.button>
  </div>
  </div>
  </Modal>
@@ -8679,26 +8707,26 @@ export const ManagePage: React.FC = () => {
  onFocusClear
  />
  <div className="pt-2 flex gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button" 
  onClick={() => setQuickEditingPoints(null)}
  className="flex-1 bg-muted text-muted-foreground hover:text-foreground py-3 rounded-xl uppercase tracking-widest font-black transition-colors"
  >
  Cancel
- </button>
- <button 
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleQuickUpdatePoints}
  className="flex-1 btn-primary py-3 shadow-primary/20 uppercase tracking-widest font-black"
  >
  Save Points
- </button>
+ </motion.button>
  </div>
  </div>
  </Modal>
 
  {/* Customer History Modal */}
  {viewingCustomerHistory && (
- <div className="fixed inset-0 bg-background z-[25000] flex flex-col p-4">
+ <motion.div className="fixed inset-0 bg-background z-[25000] flex flex-col p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="flex justify-between items-center mb-4 md:mb-8 max-w-4xl mx-auto w-full">
  <div>
  <h3 className="text-primary font-bold text-2xl tracking-tight">{viewingCustomerHistory.name}</h3>
@@ -8707,7 +8735,7 @@ export const ManagePage: React.FC = () => {
  <span className="text-[10px] bg-primary/20 text-primary px-2.5 py-1 rounded-full font-bold uppercase tracking-widest ">{(viewingCustomerHistory.points || 0).toLocaleString()} pts</span>
  </div>
  </div>
- <button onClick={() => setViewingCustomerHistory(null)} className="p-3 bg-card border border-border rounded-2xl text-foreground hover:border-primary transition-all"><X size={24} /></button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => setViewingCustomerHistory(null)} className="p-3 bg-card border border-border rounded-2xl text-foreground hover:border-primary transition-all"><X size={24} /></motion.button>
  </div>
  
  <div className="flex-1 overflow-y-auto space-y-4 pb-10 max-w-4xl mx-auto w-full">
@@ -8721,19 +8749,18 @@ export const ManagePage: React.FC = () => {
  </div>
  ) : (
  sales.filter(s => s.customerPhone === viewingCustomerHistory.phone || s.customerName === viewingCustomerHistory.name).map(s => (
- <div key={s.id} className="bg-card border border-border p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all group">
+ <motion.div key={s.id} className="bg-card border border-border p-4 rounded-2xl space-y-4 hover:border-primary/30 transition-all group" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="flex justify-between items-center">
  <span className="text-muted-foreground text-xs font-bold uppercase tracking-widest">{new Date(s.dateTime).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
  <span className="text-primary font-bold text-lg">{s.total.toLocaleString()} Ks</span>
  </div>
  <div className="space-y-2">
- {s.items.map((item, idx) => (
- <div key={idx} className="flex justify-between text-sm items-center">
- <span className="text-foreground font-medium">{item.name} <span className="text-muted-foreground text-xs ml-1">x{item.qty}</span></span>
- {item.disP > 0 && <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold">-{item.disP}%</span>}
- </div>
- ))}
- </div>
+ <AnimatePresence mode="wait">{s.items.map((item, idx) => (
+              <motion.div key={idx} className="flex justify-between text-sm items-center" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+              <span className="text-foreground font-medium">{item.name} <span className="text-muted-foreground text-xs ml-1">x{item.qty}</span></span>
+              {item.disP > 0 && <span className="bg-red-500/10 text-red-500 text-[9px] px-2 py-0.5 rounded-full font-bold">-{item.disP}%</span>}
+              </motion.div>
+              ))}</AnimatePresence></div>
  <div className="pt-4 flex justify-between items-center text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
  <span className="flex items-center gap-1.5">
  <UserIcon size={10} className="text-primary" />
@@ -8745,11 +8772,11 @@ export const ManagePage: React.FC = () => {
  : (s.method || 'Cash')}
  </span>
  </div>
- </div>
+ </motion.div>
  ))
  )}
  </div>
- </div>
+ </motion.div>
  )}
 
  {/* Status Message Toast */}
@@ -8767,7 +8794,7 @@ export const ManagePage: React.FC = () => {
  >
  {statusMsg.type === 'success' ? <div className="p-1 bg-white/20 rounded-full"><Check size={16} /></div> : <div className="p-1 bg-white/20 rounded-full"><X size={16} /></div>}
  <span className="font-bold text-sm tracking-tight">{statusMsg.text}</span>
- <button onClick={() => setStatusMsg(null)} className="ml-2 p-1 hover:bg-muted rounded-full transition-colors"><X size={16} /></button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => setStatusMsg(null)} className="ml-2 p-1 hover:bg-muted rounded-full transition-colors"><X size={16} /></motion.button>
  </motion.div>
  </div>
  )}
@@ -8785,20 +8812,20 @@ export const ManagePage: React.FC = () => {
  </div>
  <p className="text-muted-foreground text-sm font-bold leading-relaxed">This will permanently delete every single sale record. This cannot be undone.</p>
  <div className="flex flex-col gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  disabled={isClearing}
  onClick={handleClearHistory}
  className="w-full bg-red-500 text-foreground font-black py-4 rounded-2xl shadow-red-500/20 disabled:opacity-50 uppercase tracking-widest"
  >
  {isClearing ? "CLEARING..." : "YES, DELETE EVERYTHING"}
- </button>
- <button 
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }} 
  disabled={isClearing}
  onClick={() => setShowClearConfirm(false)}
  className="w-full bg-muted/20 text-foreground font-black py-4 rounded-2xl hover:bg-muted/30 transition-all uppercase tracking-widest"
  >
  CANCEL
- </button>
+ </motion.button>
  </div>
  </div>
  </Modal>
@@ -8816,19 +8843,19 @@ export const ManagePage: React.FC = () => {
  </div>
  <p className="text-muted-foreground text-sm font-bold">This action cannot be undone.</p>
  <div className="grid grid-cols-2 gap-3">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowConfirm(null)}
  className="bg-muted/20 text-foreground font-black py-3 rounded-xl hover:bg-muted/30 transition-all uppercase tracking-widest text-xs"
  >
  CANCEL
- </button>
- <button 
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }} 
  disabled={isDeleting}
  onClick={() => handleDelete(showConfirm!.coll, showConfirm!.id)}
  className="bg-red-500 text-foreground font-black py-3 rounded-xl shadow-red-500/20 uppercase tracking-widest text-xs disabled:opacity-50"
  >
  {isDeleting ? "DELETING..." : "DELETE"}
- </button>
+ </motion.button>
  </div>
  </div>
  </Modal>
@@ -8939,20 +8966,20 @@ const ForcePasswordChangePage: React.FC = () => {
  </div>
 
  <div className="flex flex-col gap-3 pt-4">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  type="submit"
  disabled={loading || success}
  className="w-full py-4 px-4 md:px-6 rounded-2xl bg-primary text-white hover:opacity-90 transition-all font-black text-xs tracking-widest uppercase shadow-primary/20 disabled:opacity-50 active:scale-95"
  >
  {loading ? 'Updating...' : 'Update Password'}
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={logout}
  className="w-full py-4 px-4 md:px-6 rounded-2xl hover:bg-muted transition-all font-black text-xs tracking-widest uppercase active:scale-95 text-foreground [.midnight_&]:text-[#E6DFD9] [.midnight_&]:bg-[#221C18] [.midnight_&]:border [.midnight_&]:border-[#3D322C] [.midnight_&]:hover:bg-[#2A231E]"
  >
  Logout
- </button>
+ </motion.button>
  </div>
  </form>
  </div>
@@ -9093,7 +9120,7 @@ const SettingsPage: React.FC = () => {
             <span className="text-sm font-bold text-foreground">App Theme</span>
             <div className="flex items-center gap-2">
               {(['gold', 'rose', 'midnight'] as const).map(t => (
-                <button
+                <motion.button whileTap={{ scale: 0.97 }}
                   key={t}
                   onClick={() => setTheme(t)}
                   className={cn(
@@ -9110,7 +9137,7 @@ const SettingsPage: React.FC = () => {
                     "bg-gradient-to-br from-slate-700 to-slate-900"
                   )} />
                   {t}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -9164,7 +9191,7 @@ const SettingsPage: React.FC = () => {
               <span className="text-sm font-bold text-foreground">Push Notifications</span>
               <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">Receive alerts on your device.</span>
             </div>
-            <button
+            <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => handleUpdatePreferences({ pushNotifications: !preferences.pushNotifications })}
               className={cn("relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors",
                 preferences.pushNotifications ? "bg-primary" : "bg-muted-foreground/30"
@@ -9173,14 +9200,14 @@ const SettingsPage: React.FC = () => {
               <div className={cn("pointer-events-none inline-block h-5 w-5 transform rounded-full ring-0 transition duration-200 ease-in-out bg-white shadow-sm",
                 preferences.pushNotifications ? "translate-x-2.5" : "-translate-x-2.5"
               )}></div>
-            </button>
+            </motion.button>
           </div>
           <div className="flex flex-row items-center justify-between px-4 py-3 min-h-[52px]">
             <div className="flex flex-col pr-4">
               <span className="text-sm font-bold text-foreground">Email Alerts</span>
               <span className="text-[10px] text-muted-foreground mt-0.5 leading-tight">Receive weekly reports and alerts via email.</span>
             </div>
-            <button
+            <motion.button whileTap={{ scale: 0.97 }}
               onClick={() => handleUpdatePreferences({ emailAlerts: !preferences.emailAlerts })}
               className={cn("relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors",
                 preferences.emailAlerts ? "bg-primary" : "bg-muted-foreground/30"
@@ -9189,7 +9216,7 @@ const SettingsPage: React.FC = () => {
               <div className={cn("pointer-events-none inline-block h-5 w-5 transform rounded-full ring-0 transition duration-200 ease-in-out bg-white shadow-sm",
                 preferences.emailAlerts ? "translate-x-2.5" : "-translate-x-2.5"
               )}></div>
-            </button>
+            </motion.button>
           </div>
         </div>
       </div>
@@ -9198,7 +9225,7 @@ const SettingsPage: React.FC = () => {
       <div className="space-y-2">
         <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-4">Security</h3>
         <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden flex flex-col divide-y divide-border/50">
-          <button 
+          <motion.button whileTap={{ scale: 0.97 }} 
             onClick={() => {
               setCurrentPassword('');
               setNewPassword('');
@@ -9215,7 +9242,7 @@ const SettingsPage: React.FC = () => {
               <span className="text-[10px] text-muted-foreground mt-0.5">Update security credentials</span>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground opacity-50" />
-          </button>
+          </motion.button>
         </div>
       </div>
 
@@ -9227,28 +9254,28 @@ const SettingsPage: React.FC = () => {
             <span className="text-sm font-bold text-foreground">Version</span>
             <span className="text-sm text-muted-foreground font-medium">{CURRENT_VERSION} (Stable)</span>
           </div>
-          <button 
+          <motion.button whileTap={{ scale: 0.97 }} 
             onClick={checkForUpdates}
             className="flex flex-row items-center justify-center px-4 py-3 min-h-[52px] text-primary font-bold hover:bg-primary/5 transition-colors active:bg-primary/10 w-full"
           >
             Check for Updates
-          </button>
+          </motion.button>
         </div>
       </div>
       
       {user && (
         <div className="px-2 md:px-0">
-          <button
+          <motion.button whileTap={{ scale: 0.97 }}
             onClick={logout}
             className="w-full bg-white rounded-2xl border border-rose-100 shadow-sm overflow-hidden mt-6 flex items-center justify-center px-4 py-3.5 min-h-[44px] active:bg-stone-50 transition-colors"
           >
             <span className="text-rose-600 font-bold text-sm">Log Out</span>
-          </button>
+          </motion.button>
         </div>
       )}
 
       {isPasswordModalOpen && (
- <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+ <motion.div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70  fade-in" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="bg-card border border-border w-full max-w-md rounded-2xl p-4 flex flex-col animate-in zoom-in-95 duration-300 relative overflow-hidden">
  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
  <div className="relative z-10">
@@ -9256,7 +9283,7 @@ const SettingsPage: React.FC = () => {
  <div className="w-14 h-14 bg-primary/20 rounded-2xl flex items-center justify-center border-primary/20 ">
  <Lock size={28} className="text-primary" />
  </div>
- <button onClick={() => setIsPasswordModalOpen(false)} className="p-2.5 bg-muted/50 hover:bg-muted rounded-full transition-colors active:scale-95"><X size={20} /></button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => setIsPasswordModalOpen(false)} className="p-2.5 bg-muted/50 hover:bg-muted rounded-full transition-colors active:scale-95"><X size={20} /></motion.button>
  </div>
  
  <h3 className="text-2xl font-black tracking-tight mb-2 text-foreground [.midnight_&]:text-[#D4AF37]">Change Password</h3>
@@ -9285,9 +9312,9 @@ const SettingsPage: React.FC = () => {
  <div className="space-y-1.5">
  <div className="flex items-center justify-between">
  <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Current Password</label>
- <button type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-[10px] font-bold text-primary hover:underline disabled:opacity-50 transition-all">
+ <motion.button whileTap={{ scale: 0.97 }} type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-[10px] font-bold text-primary hover:underline disabled:opacity-50 transition-all">
  {resetLoading ? 'Sending...' : 'Forgot password?'}
- </button>
+ </motion.button>
  </div>
  <div className="relative">
  <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="w-full p-3.5 rounded-xl bg-input border border-border focus:ring-2 focus:ring-primary outline-none transition-all font-bold text-sm pl-10" required placeholder="••••••••" />
@@ -9311,13 +9338,13 @@ const SettingsPage: React.FC = () => {
  </div>
  </div>
 
- <button type="submit" disabled={pwdLoading || resetLoading} className="w-full py-4 px-4 md:px-6 rounded-2xl bg-primary text-primary-foreground font-black text-[11px] tracking-widest uppercase shadow-primary/25 hover:opacity-95 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all mt-6 flex items-center justify-center gap-2">
+ <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={pwdLoading || resetLoading} className="w-full py-4 px-4 md:px-6 rounded-2xl bg-primary text-primary-foreground font-black text-[11px] tracking-widest uppercase shadow-primary/25 hover:opacity-95 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all mt-6 flex items-center justify-center gap-2">
  {pwdLoading ? 'Updating...' : 'Update Password'}
- </button>
+ </motion.button>
  </form>
  </div>
  </div>
- </div>
+ </motion.div>
  )}
 
  {updateMsg && updateMsg.type !== 'info' && (
@@ -9346,7 +9373,7 @@ const SettingsPage: React.FC = () => {
  )}
 
  {isUpdateModalOpen && (
- <div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md animate-in fade-in">
+ <motion.div className="fixed inset-0 z-[50000] flex items-center justify-center p-4 bg-black/70  fade-in" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="bg-card border border-border w-full max-w-md rounded-2xl p-4 border-primary/30 space-y-3 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 pointer-events-none" />
  
@@ -9388,22 +9415,22 @@ const SettingsPage: React.FC = () => {
  </div>
 
  <div className="space-y-3 relative z-10 pt-2">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={forceUpdate}
  className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-primary/25 hover:opacity-95 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2.5 uppercase"
  >
  <Download size={18} />
  Install Update Now
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => setIsUpdateModalOpen(false)}
  className="w-full bg-muted/60 text-muted-foreground font-bold text-xs tracking-widest uppercase py-3.5 rounded-2xl hover:bg-muted active:scale-95 transition-all"
  >
  Remind Me Later
- </button>
+ </motion.button>
  </div>
  </div>
- </div>
+ </motion.div>
  )}
  </div>
  );
@@ -9414,7 +9441,7 @@ const ResetPasswordPage: React.FC = () => {
  <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
  <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase mb-4">Reset Password</h2>
  <p className="text-muted-foreground mb-4">Password reset is handled via Identity Reset or Admin panel.</p>
- <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</motion.button>
  </div>
  );
 };
@@ -9424,7 +9451,7 @@ const IdentityResetPage: React.FC = () => {
  <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
  <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase mb-4">Identity Reset</h2>
  <p className="text-muted-foreground mb-4">Please contact an admin to reset your password or identity details.</p>
- <button onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</button>
+ <motion.button whileTap={{ scale: 0.97 }} onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</motion.button>
  </div>
  );
 };
@@ -9594,11 +9621,11 @@ const LoginPage: React.FC = () => {
  };
 
  return (
- <div 
+ <motion.div 
  className="fixed inset-0 z-[99999] overflow-hidden overscroll-none transition-colors duration-500 ease-in-out text-foreground [.midnight_&]:text-slate-200 select-none bg-cover bg-center"
- style={{ backgroundImage: `url(${nailSalonBg})` }}
+ style={{ backgroundImage: `url(${nailSalonBg})` }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}
  >
- <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+ <div className="absolute inset-0 bg-black/40 [2px]" />
  <div className="h-screen w-full flex flex-col items-center justify-center overflow-hidden relative z-10">
  <div className="relative w-full flex flex-col justify-center z-10 shrink-0 h-full">
  <AnimatePresence mode="wait">
@@ -9609,7 +9636,7 @@ const LoginPage: React.FC = () => {
  animate={{ opacity: 1, scale: 1 }}
  exit={{ opacity: 0, scale: 0.95 }}
  transition={{ duration: 0.4, delay: 0.2 }}
- className="w-full h-full flex flex-col items-center justify-center space-y-3 bg-black/30 backdrop-blur-md p-4 sm:p-16 "
+ className="w-full h-full flex flex-col items-center justify-center space-y-3 bg-black/30  p-4 sm:p-16 "
  >
  {/* Header */}
  <div className="text-center shrink-0 w-full flex flex-col items-center">
@@ -9625,18 +9652,18 @@ const LoginPage: React.FC = () => {
  </div>
 
  <div className="w-full flex flex-row gap-4 pt-10">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => { setViewState('login'); setError(null); }}
  className="flex-1 bg-white text-[#4A2E31] font-black py-4 px-4 md:px-8 rounded-xl hover: hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
  >
  SIGN IN
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => { setViewState('signup'); setError(null); }}
  className="flex-1 bg-transparent border-2 border-white text-white font-black py-4 px-4 md:px-8 rounded-xl hover:bg-white/10 hover:scale-[1.02] active:scale-[0.98] transition-all text-[10px] sm:text-xs tracking-[0.2em]"
  >
  CREATE ACCOUNT
- </button>
+ </motion.button>
  </div>
  </motion.div>
  )}
@@ -9648,14 +9675,14 @@ const LoginPage: React.FC = () => {
  animate={{ opacity: 1, x: 0 }}
  exit={{ opacity: 0, x: -20 }}
  transition={{ duration: 0.3 }}
- className="bg-black/40 backdrop-blur-md text-white p-4 sm:p-4 shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto"
+ className="bg-black/40  text-white p-4 sm:p-4 shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto"
  >
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => setViewState('welcome')}
  className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest"
  >
  <ArrowLeft size={14} /> Back
- </button>
+ </motion.button>
  
  <div className="w-full max-w-md mx-auto">
  <div className="text-center mb-3 md:mb-6 mt-4">
@@ -9674,8 +9701,8 @@ const LoginPage: React.FC = () => {
  )}
 
  {/* Auth Method Selector */}
- <div className="flex p-1 bg-white/10 rounded-xl mb-5 border-white/20 backdrop-blur-sm">
- <button
+ <div className="flex p-1 bg-white/10 rounded-xl mb-5 border-white/20 ">
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={() => { setLoginMethod('phone'); setIdentifier(''); setError(null); }}
  className={cn(
@@ -9687,8 +9714,8 @@ const LoginPage: React.FC = () => {
  <motion.div layoutId="activeTabLogin" className="absolute inset-0 bg-primary rounded-xl z-0" />
  )}
  <span className="relative z-10">Phone</span>
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={() => { setLoginMethod('email'); setIdentifier(''); setError(null); }}
  className={cn(
@@ -9700,7 +9727,7 @@ const LoginPage: React.FC = () => {
  <motion.div layoutId="activeTabLogin" className="absolute inset-0 bg-primary rounded-xl z-0" />
  )}
  <span className="relative z-10">Email</span>
- </button>
+ </motion.button>
  </div>
 
  <form onSubmit={handleLoginSubmit} className="space-y-4">
@@ -9727,13 +9754,13 @@ const LoginPage: React.FC = () => {
  <div className="space-y-1">
  <div className="flex justify-between items-center px-1">
  <label className="text-[9px] text-muted-foreground font-black uppercase tracking-widest">Password</label>
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={() => navigate('/identity-reset')}
  className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-bold hover:underline"
  >
  Forgot?
- </button>
+ </motion.button>
  </div>
  <div className="relative">
  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" size={16} />
@@ -9744,34 +9771,34 @@ const LoginPage: React.FC = () => {
  placeholder="••••••••"
  className="w-full bg-white/10 border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
  />
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={() => setShowPassword(!showPassword)}
  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
  >
  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
- </button>
+ </motion.button>
  </div>
  </div>
 
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="submit"
  disabled={isSubmitting}
  className="w-full bg-white text-[#4A2E31] font-black py-3 mt-2 rounded-xl hover: active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
  >
  {isSubmitting ? "PROCESSING..." : "SIGN IN"}
- </button>
+ </motion.button>
  </form>
 
  {hasBiometric && (
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleBiometricLogin}
  disabled={isSubmitting}
- className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 mt-4 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 mt-4 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 "
  >
  <Zap size={18} />
  <span className="text-[10px] font-black uppercase tracking-widest">1-Tap Login</span>
- </button>
+ </motion.button>
  )}
 
  <div className="mt-5 space-y-4">
@@ -9782,24 +9809,24 @@ const LoginPage: React.FC = () => {
  <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-transparent">Or continue with</span>
  </div>
 
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleGoogleLogin}
  disabled={isSubmitting}
- className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 "
  >
  <span className="text-xs tracking-wider">Continue with Google</span>
- </button>
+ </motion.button>
  </div>
  
  </div>
  <div className="pt-6 text-center">
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={() => setShowHelp(!showHelp)}
  className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.2em] hover:text-white transition-colors flex items-center justify-center gap-2 mx-auto"
  >
  <HelpCircle size={12} />
  Need help?
- </button>
+ </motion.button>
  
  {showHelp && (
  <motion.div 
@@ -9824,14 +9851,14 @@ const LoginPage: React.FC = () => {
  animate={{ opacity: 1, x: 0 }}
  exit={{ opacity: 0, x: -20 }}
  transition={{ duration: 0.3 }}
- className="bg-black/40 backdrop-blur-md text-white p-4 sm:p-4 shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto custom-scrollbar"
+ className="bg-black/40  text-white p-4 sm:p-4 shrink-0 relative w-full h-full flex flex-col justify-center items-center overflow-y-auto custom-scrollbar"
  >
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => setViewState('welcome')}
  className="absolute top-4 left-4 p-2 text-muted-foreground hover:text-white transition-colors flex items-center gap-1 text-[10px] font-black uppercase tracking-widest z-20"
  >
  <ArrowLeft size={14} /> Back
- </button>
+ </motion.button>
  
  <div className="w-full max-w-md mx-auto">
  <div className="text-center mb-3 md:mb-6 mt-4">
@@ -9846,8 +9873,8 @@ const LoginPage: React.FC = () => {
  </div>
  )}
 
- <div className="flex p-1 bg-white/10 rounded-xl mb-5 border-white/20 backdrop-blur-sm">
- <button
+ <div className="flex p-1 bg-white/10 rounded-xl mb-5 border-white/20 ">
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={() => { setSignUpMethod('phone'); setSignUpIdentifier(''); setError(null); }}
  className={cn(
@@ -9859,8 +9886,8 @@ const LoginPage: React.FC = () => {
  <motion.div layoutId="signUpActiveTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
  )}
  <span className="relative z-10">Phone</span>
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  type="button"
  onClick={() => { setSignUpMethod('email'); setSignUpIdentifier(''); setError(null); }}
  className={cn(
@@ -9872,7 +9899,7 @@ const LoginPage: React.FC = () => {
  <motion.div layoutId="signUpActiveTab" className="absolute inset-0 bg-primary rounded-xl z-0" />
  )}
  <span className="relative z-10">Email</span>
- </button>
+ </motion.button>
  </div>
 
  <form onSubmit={handleSignUpSubmit} className="space-y-4">
@@ -9933,13 +9960,13 @@ const LoginPage: React.FC = () => {
  placeholder="••••••••"
  className="w-full bg-white/10 border-white/20 rounded-xl p-3 pl-10 pr-10 text-white text-sm focus:-white/50 outline-none transition-all placeholder:text-white/50"
  />
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="button"
  onClick={() => setSignUpShowPassword(!signUpShowPassword)}
  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition-colors"
  >
  {signUpShowPassword ? <EyeOff size={16} /> : <Eye size={16} />}
- </button>
+ </motion.button>
  </div>
  </div>
 
@@ -9959,13 +9986,13 @@ const LoginPage: React.FC = () => {
  </div>
  )}
 
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  type="submit"
  disabled={isSubmitting}
  className="w-full bg-white text-[#4A2E31] font-black py-3 mt-4 rounded-xl hover: active:scale-[0.98] transition-all disabled:opacity-50 text-[10px] tracking-[0.2em]"
  >
  {isSubmitting ? "PROCESSING..." : "CREATE ACCOUNT"}
- </button>
+ </motion.button>
  </form>
 
  <div className="mt-5 space-y-4">
@@ -9976,21 +10003,20 @@ const LoginPage: React.FC = () => {
  <span className="relative px-4 text-[8px] font-black text-muted-foreground uppercase tracking-widest bg-transparent">Or continue with</span>
  </div>
 
- <button 
+ <motion.button whileTap={{ scale: 0.97 }} 
  onClick={handleGoogleLogin}
  disabled={isSubmitting}
- className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 backdrop-blur-sm"
+ className="w-full flex items-center justify-center gap-3 bg-white/10 border-white/20 text-white font-bold py-3 rounded-xl hover:bg-white/20 transition-all active:scale-[0.98] disabled:opacity-50 "
  >
  <span className="text-xs tracking-wider">Continue with Google</span>
- </button>
+ </motion.button>
  </div>
  </div>
  </motion.div>
  )}
- </AnimatePresence>
+ </AnimatePresence></div>
  </div>
- </div>
- </div>
+ </motion.div>
  );
 };
 
@@ -10065,18 +10091,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  const renderExitConfirm = () => {
  if (!showExitConfirm) return null;
  return (
- <div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-300 select-none">
+ <motion.div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4  select-none" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="bg-card border border-border p-4 rounded-2xl w-full max-w-[320px] text-center space-y-3 ">
  <h3 className="text-xl font-black text-foreground uppercase tracking-widest font-serif">Exit App</h3>
  <p className="text-muted-foreground text-sm">Are you sure you want to exit the app?</p>
  <div className="flex gap-3">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => setShowExitConfirm(false)}
  className="flex-1 bg-muted text-foreground font-bold py-3 rounded-xl hover:bg-muted/80 transition-all text-xs tracking-wider"
  >
  NO
- </button>
- <button
+ </motion.button>
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => {
  setShowExitConfirm(false);
  if (Capacitor.isNativePlatform()) {
@@ -10088,17 +10114,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  className="flex-1 bg-primary text-primary-foreground font-bold py-3 rounded-xl hover:bg-primary/90 transition-all text-xs tracking-wider "
  >
  YES
- </button>
+ </motion.button>
  </div>
  </div>
- </div>
+ </motion.div>
  );
  };
 
  const renderNeedsUpdate = () => {
  if (!needsUpdate || !updateInfo?.updateUrl) return null;
  return (
- <div className="fixed inset-0 z-[60000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in">
+ <motion.div className="fixed inset-0 z-[60000] flex items-center justify-center p-4 bg-black/60  fade-in" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="bg-card border border-border w-full max-w-sm rounded-2xl p-4 border-primary/20 space-y-3 text-center animate-in zoom-in-95 duration-300 relative overflow-hidden">
  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
  <div className="w-20 h-20 bg-primary/20 rounded-full flex items-center justify-center mx-auto relative z-10 border-primary/20">
@@ -10109,23 +10135,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  <p className="text-muted-foreground text-sm font-medium px-4">A new version of the application is available. Please update to continue using all features securely.</p>
  </div>
  <div className="space-y-4 relative z-10">
- <button
+ <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => { window.location.href = updateInfo.updateUrl; }}
  className="w-full bg-primary text-primary-foreground font-black tracking-widest text-xs py-4 rounded-2xl shadow-primary/20 hover:opacity-90 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 uppercase"
  >
  <Download size={18} />
  UPDATE NOW
- </button>
+ </motion.button>
  </div>
  </div>
- </div>
+ </motion.div>
  );
  };
 
  if (loading) return (
- <div className="fixed inset-0 flex items-center justify-center bg-background transition-colors duration-300 select-none">
+ <motion.div className="fixed inset-0 flex items-center justify-center bg-background transition-colors duration-300 select-none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="w-12 h-12 border-4 border-primary border-transparent rounded-full animate-spin" />
- </div>
+ </motion.div>
  );
 
  if (!user) {
@@ -10155,7 +10181,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  const isPos = location.pathname === '/pos';
 
  return (
- <div className={`${isPos ? 'h-screen w-full flex flex-col overflow-hidden' : 'min-h-screen pb-10'} bg-background text-foreground transition-colors duration-300 select-none animate-in fade-in duration-500`}>
+ <motion.div className={`${isPos ? 'h-screen w-full flex flex-col overflow-hidden' : 'min-h-screen pb-10'} bg-background text-foreground transition-colors select-none `} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  {renderNeedsUpdate()}
  {renderExitConfirm()}
  <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
@@ -10169,7 +10195,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  </PullToRefresh>
  )}
  </main>
- </div>
+ </motion.div>
  );
 };
 

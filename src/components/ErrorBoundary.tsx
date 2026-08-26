@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { motion, AnimatePresence } from "motion/react";
 
 interface Props {
   children: React.ReactNode;
@@ -46,12 +47,12 @@ class ErrorBoundary extends React.Component<Props, State> {
             </div>
             <h2 className="text-[#ff4444] text-xl font-bold">Application Error</h2>
             <p className="text-[#888] text-sm break-words">{errorMessage}</p>
-            <button 
+            <motion.button whileTap={{ scale: 0.97 }} 
               onClick={() => window.location.reload()}
               className="w-full bg-[#ff4444] text-white font-bold py-3 rounded-xl shadow-lg active:scale-[0.98] transition-all"
             >
               RELOAD APP
-            </button>
+            </motion.button>
           </div>
         </div>
       );

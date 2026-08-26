@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { HashRouter } from 'react-router-dom';
 import AppErrorBoundary from './AppErrorBoundary';
+import { motion, AnimatePresence } from "motion/react";
 
 const AppCore = React.lazy(() => import('./AppCore'));
 

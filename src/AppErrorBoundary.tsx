@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { motion, AnimatePresence } from "motion/react";
 
 interface Props {
   children: ReactNode;
@@ -26,12 +27,12 @@ class AppErrorBoundary extends Component<Props, State> {
       return (
         <div style={{ padding: '20px', textAlign: 'center', fontFamily: 'sans-serif' }}>
           <h2>Something went wrong loading the app.</h2>
-          <button 
+          <motion.button whileTap={{ scale: 0.97 }} 
             onClick={() => window.location.reload()}
             style={{ padding: '10px 20px', marginTop: '10px' }}
           >
             Reload App
-          </button>
+          </motion.button>
         </div>
       );
     }

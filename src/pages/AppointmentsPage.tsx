@@ -1,2 +1,4 @@
 import { AppointmentsPage } from '../AppCore';
+import { motion, AnimatePresence } from "motion/react";
+
 export default AppointmentsPage;

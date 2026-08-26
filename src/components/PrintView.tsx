@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sale, ShopSettings } from '../types';
+import { motion, AnimatePresence } from "motion/react";
 
 export const PrintView: React.FC<{
   sale?: Omit<Sale, 'id'>;
