@@ -710,7 +710,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  
  if (Capacitor.isNativePlatform()) {
  try {
- GoogleAuth.initialize();
+ const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || import.meta.env.VITE_FIREBASE_CLIENT_ID || '';
+ if (!clientId || clientId.trim() === '') {
+ console.error("Google Auth Error: Missing Google Client ID");
+ setError("Google Sign-In is unavailable on this device configuration.");
+ return;
+ }
+ GoogleAuth.initialize({
+ clientId: clientId,
+ scopes: ['profile', 'email'],
+ grantOfflineAccess: true,
+ });
  const googleUser = await GoogleAuth.signIn();
  if (googleUser && googleUser.authentication && googleUser.authentication.idToken) {
  const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
@@ -719,8 +729,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  throw new Error('Google Auth did not return an ID token');
  }
  } catch (nativeErr) {
- console.error("Capacitor Google Auth error");
- throw nativeErr;
+ console.error("Google Auth Error:", nativeErr);
+ setError("Google Sign-In is unavailable on this device configuration.");
+ return; // Exit early to prevent propagating the error which might cause issues
  }
  } else {
  await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
@@ -4869,7 +4880,18 @@ export const AppointmentsPage: React.FC = () => {
  const [apptDuration, setApptDuration] = useState(30);
  const [formStep, setFormStep] = useState<1 | 2>(1);
 
- // Validate that selected staff works on the chosen date
+ 
+  useEffect(() => {
+    if (apptTime && apptDuration !== undefined) {
+      const [hours, minutes] = apptTime.split(':').map(Number);
+      const totalMinutes = hours * 60 + minutes + apptDuration;
+      const endHours = Math.floor(totalMinutes / 60) % 24;
+      const endMins = totalMinutes % 60;
+      setApptEndTime(`${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`);
+    }
+  }, [apptTime, apptDuration]);
+
+  // Validate that selected staff works on the chosen date
  useEffect(() => {
  if (!selectedStaffEmail) return;
  const s = staff.find(member => member.email === selectedStaffEmail);
@@ -4978,27 +5000,16 @@ export const AppointmentsPage: React.FC = () => {
  if (selectedSvcId && selectedSvcId !== 'manual') {
  const s = services.find(s => s.id === selectedSvcId);
  if (s) {
- setWillEarnPoints(Math.floor(s.price / 1000));
- if (s.duration) {
- setApptDuration(s.duration);
- }
+ setWillEarnPoints(Math.floor((s.price || 0) / 1000));
+ setApptDuration(s.duration || 0);
  }
  } else {
  setWillEarnPoints(0);
+ setApptDuration(30); // Default to 30 mins for manual services
  }
  }, [selectedSvcId, services]);
 
- useEffect(() => {
- if (apptTime && apptDuration) {
- const [hours, minutes] = apptTime.split(':').map(Number);
- const date = new Date();
- date.setHours(hours);
- date.setMinutes(minutes + apptDuration);
- const endHours = date.getHours().toString().padStart(2, '0');
- const endMinutes = date.getMinutes().toString().padStart(2, '0');
- setApptEndTime(`${endHours}:${endMinutes}`);
- }
- }, [apptTime, apptDuration]);
+ 
 
  const checkOverlap = (date: string, time: string, duration: number, staffEmail: string, excludeId?: string) => {
  return appointments.some(a => {
@@ -5736,18 +5747,51 @@ export const AppointmentsPage: React.FC = () => {
        )}
      </div>
 
-     <select 
+     </div>
+  <div className="shrink-0">
+    <CustomSelect 
        value={selectedStaffFilter} 
-       onChange={(e) => setSelectedStaffFilter(e.target.value)} 
-       className="bg-muted/50 text-foreground text-[10px] font-bold px-3 py-1.5 rounded-lg border-none uppercase tracking-widest outline-none cursor-pointer shrink-0"
-     >
-       <option value="all">ALL STAFF</option>
-       {staff.filter(s => s.role !== 'super_admin').map(s => (
-         <option key={s.email} value={s.email}>{s.name.split(' ')[0]}</option>
-       ))}
-     </select>
-   </div>
- </div>
+       onChange={setSelectedStaffFilter}
+       options={[
+         { value: 'all', label: 'ALL STAFF' },
+         ...staff.filter(s => s.role !== 'super_admin').map(s => {
+           const initials = s.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+           return {
+             value: s.email,
+             label: (
+               <div className="flex items-center gap-3 py-0.5">
+                 <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 border border-primary/20">
+                   {initials}
+                 </div>
+                 <div className="flex flex-col">
+                   <span className="font-bold text-sm text-foreground">{s.name}</span>
+                   <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">{s.role.replace('_', ' ')}</span>
+                 </div>
+               </div>
+             )
+           };
+         })
+       ]}
+       renderValue={(opt) => {
+         if (!opt || opt.value === 'all') return 'ALL STAFF';
+         const staffMember = staff.find(s => s.email === opt.value);
+         if (!staffMember) return 'ALL STAFF';
+         const initials = staffMember.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+         const shortName = staffMember.name.split(' ')[0] + (staffMember.name.split(' ')[1] ? ' ' + staffMember.name.split(' ')[1][0] + '.' : '');
+         return (
+           <div className="flex items-center gap-1.5">
+             <div className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[9px] border border-primary/20">
+               {initials}
+             </div>
+             <span>{shortName}</span>
+           </div>
+         );
+       }}
+       buttonClassName="bg-muted/50 text-foreground text-[10px] font-bold px-3 py-1.5 rounded-lg border-none uppercase tracking-widest outline-none cursor-pointer shrink-0 min-h-[30px]"
+       dropdownClassName="min-w-[240px] p-2 bg-card border-border/50 shadow-2xl rounded-2xl right-0 w-auto left-auto"
+     />
+  </div>
+</div>
 )}
 
 <div className="p-0">
@@ -6312,10 +6356,10 @@ export const AppointmentsPage: React.FC = () => {
  <div className="p-4 bg-muted/5 flex justify-between items-center shrink-0">
  <div>
  <h3 className="text-foreground [.midnight_&]:text-slate-200 font-black text-2xl sm:text-3xl tracking-tighter">
- {editingAppointment ? 'Edit Appointment' : 'Book Appointment'}
+ {editingAppointment ? 'Edit Appointment' : (formStep === 2 ? 'Booking Summary' : 'Book Appointment')}
  </h3>
  <p className="text-muted-foreground text-[10px] font-black uppercase tracking-[0.2em] mt-1">
- {editingAppointment ? 'Update existing booking details' : 'Schedule a new customer visit'}
+ {editingAppointment ? 'Update existing booking details' : (formStep === 2 ? 'Review and confirm details' : 'Schedule a new customer visit')}
  </p>
  </div>
  <motion.button whileTap={{ scale: 0.97 }} 
@@ -6501,10 +6545,11 @@ export const AppointmentsPage: React.FC = () => {
 
  {/* Status & Points Section */}
  <div className="space-y-4">
+ {profile?.role !== 'customer' && (
  <label className="text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em] flex items-center gap-2">
- <Star size={14} className="text-primary [.midnight_&]:text-amber-400" />
- Status & Rewards
+ <Star size={14} className="text-primary [.midnight_&]:text-amber-400" /> Status & Rewards
  </label>
+ )}
  
  <div className="space-y-3">
  {profile?.role !== 'customer' && (
@@ -6600,98 +6645,102 @@ export const AppointmentsPage: React.FC = () => {
  </div>
  </motion.div>
  ) : (
- <motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
- <div className="bg-primary/20 p-4 rounded-2xl border-primary/10 space-y-3 ">
- <div className="flex items-center gap-4">
- <div className="p-4 bg-primary/20 rounded-2xl text-primary [.midnight_&]:text-amber-400 ">
- <Check size={32} strokeWidth={3} />
- </div>
- <div>
- <h3 className="text-2xl font-black text-foreground [.midnight_&]:text-slate-200 tracking-tighter">
- Booking Confirmation
- </h3>
- <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Review your appointment details</p>
- </div>
- </div>
- 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4">
- <div className="space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
- Customer
- </div>
- <div className="bg-card border border-border p-4 rounded-xl ">
- <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualCustName || 'N/A'}</p>
- <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
- <Phone size={12} />
- {manualCustPhone || 'N/A'}
- </p>
- </div>
- </div>
+<motion.div className="space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+ {(() => {
+   const displayCustName = profile?.role === 'customer' ? profile.name : (selectedCustId === 'manual' ? manualCustName : customers.find(c => c.id === selectedCustId)?.name);
+   const displayCustPhone = profile?.role === 'customer' ? (profile.phone || profile.email) : (selectedCustId === 'manual' ? manualCustPhone : customers.find(c => c.id === selectedCustId)?.phone);
+   const displaySvcName = selectedSvcId === 'manual' ? manualSvcName : services.find(s => s.id === selectedSvcId)?.name;
+   const selectedStaff = staff.find(s => s.email === selectedStaffEmail);
 
- <div className="space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <Briefcase size={12} className="text-primary [.midnight_&]:text-amber-400" />
- Service
- </div>
- <div className="bg-card border border-border p-4 rounded-xl ">
- <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-xl tracking-tight leading-none">{manualSvcName || 'N/A'}</p>
- <p className="text-xs text-muted-foreground font-bold mt-1.5 flex items-center gap-1.5">
- <HistoryIcon size={12} />
- {apptDuration} mins ({apptTime} - {apptEndTime})
- </p>
- </div>
- </div>
+   const formatTimeAMPM = (timeStr) => {
+     if (!timeStr) return '';
+     const [h, m] = timeStr.split(':');
+     let hh = parseInt(h);
+     const ampm = hh >= 12 ? 'PM' : 'AM';
+     hh = hh % 12 || 12;
+     return `${hh}:${m.toString().padStart(2, '0')} ${ampm}`;
+   };
 
- <div className="space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <UserIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
- Staff Member
- </div>
- <div className="bg-card border border-border p-4 rounded-xl ">
- <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">
- {staff.find(s => s.email === selectedStaffEmail)?.name || 'Any Staff (Auto)'}
- </p>
- <p className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Professional Stylist</p>
- </div>
- </div>
+   return (
+     <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden relative">
+       {/* Decorative Gold Accent */}
+       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/40 via-primary to-primary/40" />
 
- <div className="space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <CalendarIcon size={12} className="text-primary [.midnight_&]:text-amber-400" />
- Scheduled Date
- </div>
- <div className="bg-card border border-border p-4 rounded-xl ">
- <p className="font-black text-foreground [.midnight_&]:text-slate-200 text-lg tracking-tight">{format(new Date(apptDate), 'EEEE, MMMM d, yyyy')}</p>
- <p className="text-[9px] text-primary [.midnight_&]:text-amber-400 font-black uppercase tracking-widest mt-0.5">Mark your calendar</p>
- </div>
- </div>
+       
 
- {isHomeService && (
- <div className="col-span-full bg-green-500/10 p-4 rounded-2xl border-green-500/20 flex items-center gap-4 ">
- <div className="p-3 bg-green-600 text-foreground [.midnight_&]:text-slate-200 rounded-xl ">
- <Car size={20} strokeWidth={2.5} />
- </div>
- <div className="flex flex-col">
- <span className="text-[10px] font-black text-green-600 uppercase tracking-widest">Service Location</span>
- <span className="text-sm font-black text-foreground [.midnight_&]:text-slate-200">At Home Service Requested</span>
- </div>
- </div>
- )}
+       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+         <div className="space-y-1">
+           <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+             <UserIcon size={12} className="text-primary" /> Customer
+           </div>
+           <div>
+             <p className="font-bold text-foreground text-base tracking-tight leading-none">{displayCustName || 'N/A'}</p>
+             <p className="text-xs text-muted-foreground font-medium mt-1 flex items-center gap-1.5">
+               <Phone size={12} /> {displayCustPhone || 'N/A'}
+             </p>
+           </div>
+         </div>
 
- {apptNotes && (
- <div className="col-span-full space-y-3">
- <div className="flex items-center gap-2 text-[10px] font-black text-foreground [.midnight_&]:text-slate-200 uppercase tracking-[0.2em]">
- <FileText size={12} className="text-primary [.midnight_&]:text-amber-400" />
- Additional Notes
- </div>
- <div className="bg-card border border-border p-4 rounded-xl italic text-muted-foreground font-medium text-xs">
- "{apptNotes}"
- </div>
- </div>
- )}
- </div>
- </div>
+         <div className="space-y-1">
+           <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+             <Briefcase size={12} className="text-primary" /> Service
+           </div>
+           <div>
+             <p className="font-bold text-foreground text-base tracking-tight leading-none">{displaySvcName || 'N/A'}</p>
+             <p className="text-xs text-muted-foreground font-medium mt-1 flex items-center gap-1.5">
+               <HistoryIcon size={12} /> {apptDuration} mins ({formatTimeAMPM(apptTime)} - {formatTimeAMPM(apptEndTime)})
+             </p>
+           </div>
+         </div>
+
+         <div className="space-y-1">
+           <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+             <UserIcon size={12} className="text-primary" /> Staff Member
+           </div>
+           <div>
+             <p className="font-bold text-foreground text-base tracking-tight">
+               {selectedStaff?.name || 'Any Staff (Auto)'}
+             </p>
+             <p className="text-[10px] text-primary/80 font-bold uppercase tracking-widest mt-0.5">{selectedStaff?.role?.replace('_', ' ') || 'Professional'}</p>
+           </div>
+         </div>
+
+         <div className="space-y-1">
+           <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+             <CalendarIcon size={12} className="text-primary" /> Scheduled Date
+           </div>
+           <div>
+             <p className="font-bold text-foreground text-base tracking-tight">{format(new Date(apptDate || new Date()), 'EEEE, MMMM d, yyyy')}</p>
+             <p className="text-[10px] text-primary/80 font-bold uppercase tracking-widest mt-0.5">Mark your calendar</p>
+           </div>
+         </div>
+
+         {isHomeService && (
+           <div className="col-span-full bg-green-500/5 p-4 rounded-xl border border-green-500/20 flex items-center gap-4 mt-2">
+             <div className="p-2.5 bg-green-500/10 text-green-600 rounded-lg">
+               <Car size={18} strokeWidth={2.5} />
+             </div>
+             <div className="flex flex-col">
+               <span className="text-[10px] font-black text-green-600 uppercase tracking-[0.1em]">Service Location</span>
+               <span className="text-sm font-bold text-foreground">At Home Service Requested</span>
+             </div>
+           </div>
+         )}
+
+         {apptNotes && (
+           <div className="col-span-full space-y-2 mt-2 pt-4 border-t border-border/30">
+             <div className="flex items-center gap-1.5 text-[10px] font-black text-muted-foreground uppercase tracking-[0.15em]">
+               <FileText size={12} className="text-primary" /> Additional Notes
+             </div>
+             <div>
+               <p className="text-sm font-medium text-foreground italic">"{apptNotes}"</p>
+             </div>
+           </div>
+         )}
+       </div>
+     </div>
+   );
+ })()}
  </motion.div>
  )}
  </div>
@@ -6706,13 +6755,28 @@ export const AppointmentsPage: React.FC = () => {
  >
  Cancel
  </motion.button>
- <motion.button whileTap={{ scale: 0.97 }}
- type="submit"
- className="px-4 md:px-8 py-2.5 bg-primary text-white rounded-xl font-black text-xs hover:bg-primary/90 transition-all hover:shadow-primary/20 flex items-center gap-2 uppercase tracking-widest"
- >
- Next Step
- <ArrowRight size={14} />
- </motion.button>
+ 
+ {(() => {
+   const isCustValid = profile?.role === 'customer' || (selectedCustId === 'manual' ? (manualCustName.trim() !== '' && manualCustPhone.trim() !== '') : selectedCustId !== '');
+   const isSvcValid = selectedSvcId === 'manual' ? manualSvcName.trim() !== '' : selectedSvcId !== '';
+   const isDateValid = apptDate !== '';
+   const isTimeValid = apptTime !== '';
+   const isFormValid = isCustValid && isSvcValid && isDateValid && isTimeValid;
+
+   return (
+     <motion.button whileTap={{ scale: isFormValid ? 0.97 : 1 }}
+       type="submit"
+       disabled={!isFormValid}
+       className={cn(
+         "px-4 md:px-8 py-2.5 rounded-xl font-black text-xs flex items-center gap-2 uppercase tracking-widest transition-all",
+         isFormValid ? "bg-primary text-white hover:bg-primary/90 shadow-primary/20 hover:shadow-lg" : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+       )}
+     >
+       Next Step <ArrowRight size={14} />
+     </motion.button>
+   );
+ })()}
+
  </>
  ) : (
  <>
