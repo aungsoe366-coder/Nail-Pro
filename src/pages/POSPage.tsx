@@ -1,4 +1,1 @@
-import { POSPage } from '../AppCore';
-import { motion, AnimatePresence } from "motion/react";
-
-export default POSPage;
+import { POSPage } from '../AppCore'; export default POSPage;

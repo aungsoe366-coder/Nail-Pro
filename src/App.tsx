@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 const AppCore = React.lazy(() => import('./AppCore'));
 
-export default function App() {
+console.log("App Core init"); export default function App() {
   return (
     <AppErrorBoundary>
       <HashRouter>

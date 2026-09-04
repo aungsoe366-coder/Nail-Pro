@@ -1,0 +1,11 @@
+ const [isLoyaltyDiscountActive, setIsLoyaltyDiscountActive] = useState(false);
+ const [showPrintPreview, setShowPrintPreview] = useState(false);
+ const [pendingSaleParams, setPendingSaleParams] = useState<{sale: Omit<Sale, 'id'>, overridePayments?: typeof payments} | null>(null);
+ const [loadingPOS, setLoadingPOS] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+ const [currentStep, setCurrentStep] = useState<'services' | 'cart' | 'checkout'>('services');
+
+ const LOYALTY_THRESHOLD = 500;
+ const LOYALTY_DISCOUNT = 10; // 10%
+
+ useEffect(() => {

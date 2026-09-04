@@ -27,4 +27,4 @@ const replacement = `              <span className="text-2xl font-mono font-bold
 code = code.replace(target, replacement);
 
 fs.writeFileSync('src/AppCore.tsx', code);
-console.log("Removed extra div for real");
+console.log("Removed extra div");

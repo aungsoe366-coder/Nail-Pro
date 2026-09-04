@@ -585,13 +585,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  unsubProfile = null;
  }
 
- if (u) { setLoading(true); setUser(u); const email = u.email!.toLowerCase();
+ if (u) {
+ setLoading(true);
+ setUser(u);
+ const email = u.email!.toLowerCase();
  const docRef = doc(db, 'users', email);
  let initDone = false;
+ 
+ const LOCAL_STORAGE_KEY = `cached_profile_${email}`;
+ let cachedProfileData = null;
+ try {
+ const cachedStr = localStorage.getItem(LOCAL_STORAGE_KEY);
+ if (cachedStr) {
+ cachedProfileData = JSON.parse(cachedStr);
+ setProfile(cachedProfileData);
+ }
+ } catch (e) {}
 
  getDocFromCache(docRef).then(docSnap => {
  if (docSnap.exists()) {
- setProfile(docSnap.data() as UserProfile);
+ const data = docSnap.data();
+ localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+ setProfile(data as UserProfile);
  setLoading(false);
  setIsAuthReady(true);
  }
@@ -602,8 +617,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  if (!docSnap.exists()) {
  if (!initDone) {
  initDone = true;
+ 
+ // OFFLINE GUARD: If we are offline (cache) and have a local profile, do NOT overwrite
+ if ((docSnap as any).metadata.fromCache && cachedProfileData) {
+ console.log("Offline mode: Preventing role reset by using locally cached profile.");
+ setProfile(cachedProfileData as UserProfile);
+ setLoading(false);
+ setIsAuthReady(true);
+ return; // Exit to prevent rewriting to Firestore
+ }
+ 
  const now = new Date().toISOString();
- let currentRole = (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) ? 'super_admin' : 'customer';
+ let currentRole = (email === (import.meta.env.VITE_SUPER_ADMIN_EMAIL || '')) ? 'super_admin' : (cachedProfileData?.role || 'customer');
  const profileData: any = {
  name: u.displayName || (currentRole === 'super_admin' ? 'Admin' : 'Customer'),
  email: email,
@@ -637,11 +662,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  }
  
  // Optimistically set profile to allow app load
+ localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(profileData));
  setProfile(profileData as UserProfile);
  }
  } else {
  const data = docSnap.data();
  if (data?.status === 'deleted') {
+ localStorage.removeItem(LOCAL_STORAGE_KEY);
  signOut(auth);
  setUser(null);
  setProfile(null);
@@ -649,6 +676,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
  setIsAuthReady(true);
  return;
  }
+ localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
  setProfile(data as UserProfile);
  
  // Background admin/uid sync
@@ -1860,24 +1888,49 @@ export const DashboardPage: React.FC = () => {
 };
 
 
-const ServiceCard = React.memo(({ service, isInCart, addToCart }: any) => (
-  <motion.button 
-    whileTap={{ scale: 0.97 }} 
-    onClick={() => addToCart(service)} 
-    className={`text-left bg-card border border-border p-3.5 rounded-xl transition-all active:scale-95 group relative overflow-hidden flex flex-col justify-between min-h-[90px] ${ isInCart ? '-primary bg-primary/20 ring-2 ring-primary/20 shadow-primary/10' : ' hover:border-primary/50 hover:' }`} 
-  > 
-    {isInCart && ( 
-      <div className="absolute top-2 right-2 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center transition-transform scale-110"> 
-        <Check size={12} strokeWidth={3} /> 
+const ServiceCard = React.memo(({ service, cartQty, onIncrement, onDecrement }: any) => {
+  return (
+    <div 
+      className={`text-left bg-card border border-border p-3.5 rounded-xl transition-all group relative overflow-hidden flex flex-col justify-between min-h-[90px] ${cartQty > 0 ? 'border-primary ring-1 ring-primary/20 shadow-sm bg-primary/5' : 'hover:border-primary/50 hover:shadow-sm'}`} 
+    > 
+      <div className="space-y-0.5 mt-1 pr-6 flex-1 cursor-pointer" onClick={() => cartQty === 0 && onIncrement(service)}> 
+        <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-80 truncate">{service.category}</p> 
+        <h3 className="text-sm font-bold text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">{service.name}</h3> 
       </div> 
-    )} 
-    <div className="space-y-0.5 mt-1 pr-6"> 
-      <p className="text-[10px] font-black text-primary uppercase tracking-widest opacity-80 truncate">{service.category}</p> 
-      <h3 className="text-sm font-bold text-foreground leading-snug group-hover:text-primary transition-colors line-clamp-2">{service.name}</h3> 
-    </div> 
-    <p className="text-sm font-black text-foreground mt-2">{service.price.toLocaleString()} Ks</p> 
-  </motion.button>
-));
+      <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/50">
+        <p className="text-sm font-black text-foreground">{service.price.toLocaleString()} Ks</p>
+        
+        {cartQty === 0 ? (
+          <motion.button 
+            whileTap={{ scale: 0.9 }}
+            onClick={() => onIncrement(service)}
+            className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm hover:opacity-90"
+          >
+            <Plus size={16} strokeWidth={3} />
+          </motion.button>
+        ) : (
+          <div className="flex items-center justify-between bg-muted/60 rounded-full p-1 shadow-sm w-[90px]">
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={() => onDecrement(service)}
+              className="w-7 h-7 rounded-full bg-background text-foreground flex items-center justify-center shadow-sm hover:opacity-90"
+            >
+              <Minus size={14} strokeWidth={3} />
+            </motion.button>
+            <span className="text-sm font-bold w-6 text-center">{cartQty}</span>
+            <motion.button 
+              whileTap={{ scale: 0.9 }}
+              onClick={() => onIncrement(service)}
+              className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm hover:opacity-90"
+            >
+              <Plus size={14} strokeWidth={3} />
+            </motion.button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
 
 export const POSPage: React.FC = () => {
  const { profile, isAdmin, isStaff, isStaffMember, isCustomer } = useAuth();
@@ -1905,10 +1958,28 @@ export const POSPage: React.FC = () => {
  const [showPrintPreview, setShowPrintPreview] = useState(false);
  const [pendingSaleParams, setPendingSaleParams] = useState<{sale: Omit<Sale, 'id'>, overridePayments?: typeof payments} | null>(null);
  const [loadingPOS, setLoadingPOS] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
  const [currentStep, setCurrentStep] = useState<'services' | 'cart' | 'checkout'>('services');
 
  const LOYALTY_THRESHOLD = 500;
  const LOYALTY_DISCOUNT = 10; // 10%
+
+ useEffect(() => {
+  let backButtonListener: any = null;
+  const setupBackButton = async () => {
+    if (currentStep === 'cart' || currentStep === 'checkout') {
+      backButtonListener = await CapApp.addListener('backButton', () => {
+        setCurrentStep('services');
+      });
+    }
+  };
+  setupBackButton();
+  return () => {
+    if (backButtonListener && typeof backButtonListener.remove === 'function') {
+      backButtonListener.remove();
+    }
+  };
+ }, [currentStep]);
 
  useEffect(() => {
  if (!isStaff) return;
@@ -1995,18 +2066,30 @@ export const POSPage: React.FC = () => {
  return matchesCategory && matchesSearch;
  });
 
- const addToCart = useCallback((service: Service) => {
- setCart(prev => {
- const existing = prev.find(item => item.id === service.id);
- if (existing) {
- // Second click: unselect / remove from cart
- return prev.filter(item => item.id !== service.id);
- }
- // First click: select / add to cart
- const initialDiscount = isLoyaltyDiscountActive ? LOYALTY_DISCOUNT : 0;
- return [...prev, { ...service, qty: 1, disP: initialDiscount }];
+ const incrementCartItem = useCallback((service: Service) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === service.id);
+      if (existing) {
+        return prev.map(item => item.id === service.id ? { ...item, qty: item.qty + 1 } : item);
+      }
+      const initialDiscount = isLoyaltyDiscountActive ? LOYALTY_DISCOUNT : 0;
+      return [...prev, { ...service, qty: 1, disP: initialDiscount }];
     });
   }, [isLoyaltyDiscountActive]);
+
+  const decrementCartItem = useCallback((service: Service) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.id === service.id);
+      if (existing) {
+        if (existing.qty > 1) {
+          return prev.map(item => item.id === service.id ? { ...item, qty: item.qty - 1 } : item);
+        } else {
+          return prev.filter(item => item.id !== service.id);
+        }
+      }
+      return prev;
+    });
+  }, []);
 
  const updateCartItem = (index: number, updates: Partial<CartItem>) => {
  setCart(prev => prev.map((item, i) => i === index ? { ...item, ...updates } : item));
@@ -2217,9 +2300,12 @@ export const POSPage: React.FC = () => {
  };
 
  const confirmCheckout = async (print: boolean) => {
- if (!pendingSaleParams) return;
- const { sale } = pendingSaleParams;
- try {
+    if (isSubmitting) return;
+    if (!pendingSaleParams) return;
+    
+    setIsSubmitting(true);
+    const { sale } = pendingSaleParams;
+    try {
  await addDoc(collection(db, 'sales'), sale);
  const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
  if (selectedCustomer) {
@@ -2261,6 +2347,7 @@ export const POSPage: React.FC = () => {
  }
  setCart([]);
  setSelectedCustomerId('');
+ setCustomerSearch('');
  setSelectedAppointmentId('');
  setAppointmentSearch('');
  setPointsToRedeem(0);
@@ -2268,10 +2355,16 @@ export const POSPage: React.FC = () => {
  setPayments([{ method: 'Cash', amount: 0 }]);
  setShowPrintPreview(false);
  setPendingSaleParams(null);
+ setSearch('');
+ setSelectedCategory('All');
+ setSelectedStaffEmail('');
  alert("Sale saved successfully!");
- } catch (error) {
- handleFirestoreError(error, OperationType.CREATE, 'sales');
- }
+ setCurrentStep('services');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'sales');
+    } finally {
+      setIsSubmitting(false);
+    }
  };
 
  const paymentMethods = [
@@ -2406,11 +2499,12 @@ export const POSPage: React.FC = () => {
  ) : (
  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
  {filteredServices.map(service => (
-  <ServiceCard 
-    key={service.id} 
-    service={service} 
-    isInCart={cart.some(c => c.id === service.id)} 
-    addToCart={addToCart} 
+  <ServiceCard
+    key={service.id}
+    service={service}
+    cartQty={cart.find(c => c.id === service.id)?.qty || 0}
+    onIncrement={incrementCartItem}
+    onDecrement={decrementCartItem}
   />
 ))}
  </div>
@@ -2427,6 +2521,14 @@ export const POSPage: React.FC = () => {
       <motion.div 
         className="bg-background w-full sm:max-w-xl sm:rounded-3xl rounded-t-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]"
         initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 30, stiffness: 350, mass: 0.8 }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.2 }}
+        onDragEnd={(e, info) => {
+          if (info.offset.y > 100 || info.velocity.y > 500) {
+            setCurrentStep('services');
+          }
+        }}
       >
         <div className="flex justify-between items-center p-4 border-b border-border bg-card sticky top-0 z-10 shrink-0">
           <motion.button whileTap={{ scale: 0.97 }} onClick={() => setCurrentStep('services')} className="flex items-center gap-2 text-primary font-bold hover:underline">
@@ -2515,7 +2617,7 @@ export const POSPage: React.FC = () => {
                                                            const val = e.target.value;
                                                            updateCartItem(index, { qty: val === '' ? ('' as any) : parseInt(val) || 1 });
                                                          }}
-                                                         onFocus={() => updateCartItem(index, { qty: '' as any })}
+                                                         onFocus={(e) => e.target.select()}
                                                          onBlur={(e) => {
                                                            if (!e.target.value || parseInt(e.target.value) < 1)
                                                              updateCartItem(index, { qty: 1 });
@@ -2688,13 +2790,12 @@ export const POSPage: React.FC = () => {
             className="w-full bg-primary text-primary-foreground px-4 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
           >
             PROCEED TO PAY / CHECKOUT <ChevronRight size={18} />
-          </motion.button>
+                    </motion.button>
         </div>
+            </motion.div>
       </motion.div>
-    </motion.div>
-  )}
-  </AnimatePresence>
-
+    )}
+    </AnimatePresence>
       {currentStep === 'checkout' && cart.length > 0 && (
  <motion.div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  
@@ -3031,10 +3132,10 @@ export const POSPage: React.FC = () => {
             <div className="flex-1 sm:flex-none flex justify-end">
               <motion.button whileTap={{ scale: 0.97 }} 
                 onClick={() => handleCheckout()} 
-                disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid}
+                disabled={cart.length === 0 || remainingAmount !== 0 || !isCartValid || isSubmitting}
                 className="w-full sm:w-auto bg-primary text-primary-foreground px-4 md:px-8 py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-sm hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
               >
-                COMPLETE SALE <ChevronRight size={18} />
+                {isSubmitting ? "PROCESSING..." : "COMPLETE SALE"} <ChevronRight size={18} />
               </motion.button>
             </div>
           </div>
@@ -3044,7 +3145,8 @@ export const POSPage: React.FC = () => {
       
       {showPrintPreview && pendingSaleParams && (
  <PrintPreviewModal
- isOpen={true}
+                isOpen={true}
+                isSubmitting={isSubmitting}
  onClose={() => {
  setShowPrintPreview(false);
  setPendingSaleParams(null);
@@ -3465,14 +3567,14 @@ export const ExpenseListPage: React.FC = () => {
  label="Note (Description)"
  value={expDesc}
  onChange={setExpDesc}
- onFocusClear
+ 
  />
  <FloatingInput 
  label="Amount (Ks)"
  type="number"
  value={expAmt}
  onChange={setExpAmt}
- onFocusClear
+ 
  />
  <motion.button whileTap={{ scale: 0.97 }} onClick={handleAddExpense} className="w-full bg-primary text-white font-bold py-4 rounded-2xl mt-2 hover:opacity-90 transition-all active:scale-95 shadow-primary/20 uppercase tracking-widest [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Add Expense</motion.button>
  </div>
@@ -3489,7 +3591,7 @@ export const ExpenseListPage: React.FC = () => {
  label={editingExpenseCategory ? "Edit Category Name" : "New Category Name"}
  value={expCatName}
  onChange={setExpCatName}
- onFocusClear
+ 
  />
  {editingExpenseCategory ? (
  <motion.button whileTap={{ scale: 0.97 }} onClick={handleUpdateExpenseCategory} className="w-full bg-primary text-white py-4 mt-2 uppercase tracking-widest font-black rounded-xl hover:opacity-90 [.midnight_&]:bg-[#3A2F28] [.midnight_&]:text-[#D4AF37] [.midnight_&]: [.midnight_&]:border-[#D4AF37]">Update Category</motion.button>
@@ -4225,7 +4327,7 @@ export const HistoryPage: React.FC = () => {
  </div>
  ) : (
  groupedSales.map(([date, sales]) => (
- <motion.div key={date} className="space-y-4" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+ <motion.div key={date} className="space-y-4" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="sticky top-20 z-20 flex items-center gap-4 py-3 bg-background ">
  <div className="flex items-center gap-3 px-3 md:px-5 py-2 bg-primary/20 rounded-2xl shadow-primary/5">
  <CalendarIcon size={14} className="text-primary" />
@@ -4257,7 +4359,6 @@ export const HistoryPage: React.FC = () => {
              "group bg-card border border-border rounded-2xl overflow-hidden transition-colors cursor-pointer hover:border-primary/30",
              expandedSaleId === s.id ? "ring-2 ring-primary/20 border-primary/30" : ""
              )}
-             layout 
              variants={{
                hidden: { opacity: 0, y: 20, scale: 0.98 },
                show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 350, damping: 25 } },
@@ -4311,15 +4412,14 @@ export const HistoryPage: React.FC = () => {
               </div>
               </div>
 
-              <AnimatePresence mode="wait">
-              {expandedSaleId === s.id && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1, transition: { duration: 0.18, ease: "easeInOut" } }}
-                exit={{ opacity: 0, transition: { duration: 0.18, ease: "easeInOut" } }}
-                className="px-4 md:px-6 pb-6 overflow-hidden"
+              <div 
+                className={cn(
+                  "grid transition-[grid-template-rows] duration-300 ease-in-out w-full",
+                  expandedSaleId === s.id ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0 pointer-events-none"
+                )}
               >
-              <div className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="overflow-hidden w-full px-4 md:px-6">
+                  <div className="pb-6 pt-6 grid grid-cols-1 md:grid-cols-2 gap-3 w-full whitespace-normal border-t border-border/10">
               <div className="space-y-3">
               <motion.h5 variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0 } }} initial="hidden" animate="show" className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-primary" />
@@ -4398,9 +4498,8 @@ export const HistoryPage: React.FC = () => {
               </div>
               </div>
               </div>
-              </motion.div>
-              )}
-              </AnimatePresence>
+              </div>
+              </div>
               </motion.div>
               ))}
               </AnimatePresence>
@@ -4787,11 +4886,11 @@ const FloatingInput: React.FC<{
  type?: string;
  value: string | number;
  onChange: (val: string) => void;
- onFocusClear?: boolean;
+ 
  placeholder?: string;
  required?: boolean;
  className?: string;
-}> = ({ label, type = "text", value, onChange, onFocusClear, placeholder, required, className }) => {
+}> = ({ label, type = "text", value, onChange, placeholder, required, className }) => {
  const [isFocused, setIsFocused] = useState(false);
  const id = React.useId();
 
@@ -4805,7 +4904,7 @@ const FloatingInput: React.FC<{
  required={required}
  onFocus={() => {
  setIsFocused(true);
- if (onFocusClear) onChange("");
+ 
  }}
  onBlur={() => setIsFocused(false)}
  placeholder=" "
@@ -5324,7 +5423,7 @@ export const AppointmentsPage: React.FC = () => {
    a.customerName.toLowerCase().includes(apptSearch.toLowerCase()) || 
    a.customerPhone.includes(apptSearch) ||
    a.serviceName.toLowerCase().includes(apptSearch.toLowerCase());
-   const matchesUser = profile?.role !== 'customer' || a.creatorEmail === profile?.email;
+   const matchesUser = true;
    const matchesStaff = selectedStaffFilter === 'all' || a.staffEmail === selectedStaffFilter;
    return matchesDate && matchesStatus && matchesSearch && matchesUser && matchesStaff;
  }
@@ -6883,7 +6982,8 @@ const PrintPreviewModal: React.FC<{
  title?: string;
  printLabel?: string;
  skipLabel?: string;
-}> = ({ isOpen, onClose, text, onPrint, onSkipPrint, title = "Print Preview", printLabel = "Process & Print", skipLabel = "Complete Without Printing" }) => {
+  isSubmitting?: boolean;
+}> = ({ isOpen, onClose, text, onPrint, onSkipPrint, title = "Print Preview", printLabel = "Process & Print", skipLabel = "Complete Without Printing", isSubmitting = false }) => {
  if (!isOpen) return null;
  return (
  <motion.div className="fixed inset-0 z-[80000] flex items-center justify-center p-4 bg-black/60 " initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
@@ -6909,20 +7009,22 @@ const PrintPreviewModal: React.FC<{
  <div className="p-4 bg-card border border-border shrink-0 space-y-3">
  <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => { onPrint(); onClose(); }}
- className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]: [.midnight_&]:-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-primary/20"
+ disabled={isSubmitting}
+            className="w-full bg-primary text-white [.midnight_&]:bg-secondary [.midnight_&]:text-primary [.midnight_&]: [.midnight_&]:-primary py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95 transition-all shadow-primary/20 disabled:opacity-50 disabled:pointer-events-none"
  >
  <Printer size={20} />
- {printLabel}
- </motion.button>
+            {isSubmitting ? "Processing..." : printLabel}
+          </motion.button>
  
  {onSkipPrint && (
  <motion.button whileTap={{ scale: 0.97 }}
  onClick={() => { onSkipPrint(); onClose(); }}
- className="w-full bg-muted text-muted-foreground hover:text-foreground py-4 rounded-2xl font-bold transition-colors"
+ disabled={isSubmitting}
+            className="w-full bg-muted text-muted-foreground hover:text-foreground py-4 rounded-2xl font-bold transition-colors disabled:opacity-50 disabled:pointer-events-none"
  >
- {skipLabel}
- </motion.button>
- )}
+ {isSubmitting ? "Processing..." : skipLabel}
+          </motion.button>
+        )}
  </div>
  </motion.div>
  </motion.div>
@@ -7715,32 +7817,32 @@ export const ManagePage: React.FC = () => {
  label="Shop Name"
  value={shopSettings.name}
  onChange={(val) => setShopSettings({ ...shopSettings, name: val })}
- onFocusClear
+ 
  />
  <FloatingInput 
  label="Business Registration No."
  value={shopSettings.businessRegNo || ''}
  onChange={(val) => setShopSettings({ ...shopSettings, businessRegNo: val })}
- onFocusClear
+ 
  />
  <FloatingInput 
  label="Phone"
  value={shopSettings.ph}
  onChange={(val) => setShopSettings({ ...shopSettings, ph: val })}
- onFocusClear
+ 
  />
  <FloatingInput 
  label="Email Address"
  value={shopSettings.email || ''}
  onChange={(val) => setShopSettings({ ...shopSettings, email: val })}
- onFocusClear
+ 
  />
  <div className="md:col-span-2">
  <FloatingInput 
  label="Address"
  value={shopSettings.addr}
  onChange={(val) => setShopSettings({ ...shopSettings, addr: val })}
- onFocusClear
+ 
  />
  </div>
  <div className="md:col-span-2">
@@ -7748,7 +7850,7 @@ export const ManagePage: React.FC = () => {
  label="Website"
  value={shopSettings.website || ''}
  onChange={(val) => setShopSettings({ ...shopSettings, website: val })}
- onFocusClear
+ 
  />
  </div>
  </div>
@@ -7763,20 +7865,20 @@ export const ManagePage: React.FC = () => {
  label="Receipt Header"
  value={shopSettings.receiptHeader || ''}
  onChange={(val) => setShopSettings({ ...shopSettings, receiptHeader: val })}
- onFocusClear
+ 
  />
  <FloatingInput 
  label="Receipt Footer / Thank You Message"
  value={shopSettings.receiptFooter || ''}
  onChange={(val) => setShopSettings({ ...shopSettings, receiptFooter: val })}
- onFocusClear
+ 
  />
  <div className="md:col-span-2">
  <FloatingInput 
  label="Return Policy"
  value={shopSettings.returnPolicy || ''}
  onChange={(val) => setShopSettings({ ...shopSettings, returnPolicy: val })}
- onFocusClear
+ 
  />
  </div>
  </div>
@@ -8013,7 +8115,7 @@ export const ManagePage: React.FC = () => {
  label="Category Name"
  value={catName}
  onChange={setCatName}
- onFocusClear
+ 
  />
  
  <div className="space-y-3">
@@ -8125,21 +8227,21 @@ export const ManagePage: React.FC = () => {
  label="Service Name"
  value={svcName}
  onChange={setSvcName}
- onFocusClear
+ 
  />
  <FloatingInput 
  label="Price (Ks)"
  type="number"
  value={svcPrice}
  onChange={setSvcPrice}
- onFocusClear
+ 
  />
  <FloatingInput 
  label="Duration (Minutes)"
  type="number"
  value={svcDuration}
  onChange={setSvcDuration}
- onFocusClear
+ 
  />
  <div className="space-y-1.5">
  <label className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest ml-1">Category</label>
@@ -8768,7 +8870,7 @@ export const ManagePage: React.FC = () => {
  type="number" 
  value={quickPointsValue} 
  onChange={setQuickPointsValue} 
- onFocusClear
+ 
  />
  <div className="pt-2 flex gap-3">
  <motion.button whileTap={{ scale: 0.97 }} 
@@ -10264,18 +10366,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 
-const LazyDashboardPage = React.lazy(() => import('./pages/DashboardPage'));
-const LazyCustomerDashboardPage = React.lazy(() => import('./pages/CustomerDashboardPage'));
-const LazyPOSPage = React.lazy(() => import('./pages/POSPage'));
-const LazyAppointmentsPage = React.lazy(() => import('./pages/AppointmentsPage'));
-const LazyHistoryPage = React.lazy(() => import('./pages/HistoryPage'));
-const LazyStaffCommissionsPage = React.lazy(() => import('./pages/StaffCommissionsPage'));
-const LazyMonthlySummaryPage = React.lazy(() => import('./pages/MonthlySummaryPage'));
-const LazySalesReportPage = React.lazy(() => import('./pages/SalesReportPage'));
-const LazyExpenseListPage = React.lazy(() => import('./pages/ExpenseListPage'));
-const LazyManagePage = React.lazy(() => import('./pages/ManagePage'));
-const LazyBusinessAnalysisPage = React.lazy(() => import('./pages/BusinessAnalysisPage'));
 
+const LazyBusinessAnalysisPage = React.lazy(() => import("./pages/BusinessAnalysisPage"));
 const AppRoutes = () => {
  const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
  
@@ -10287,20 +10379,20 @@ const AppRoutes = () => {
  </div>
  }>
  <Routes>
- <Route path="/" element={isCustomer ? <LazyCustomerDashboardPage /> : <LazyDashboardPage />} />
- <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <LazyPOSPage />} />
- <Route path="/appointments" element={<LazyAppointmentsPage />} />
- <Route path="/history" element={!isStaff ? <Navigate to="/appointments" /> : <LazyHistoryPage />} />
- <Route path="/staff-commissions" element={!(isAdmin || isCashier || isStaffMember) ? <Navigate to="/appointments" /> : <LazyStaffCommissionsPage />} />
- <Route path="/monthly" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazyMonthlySummaryPage />} />
- <Route path="/sales-report" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazySalesReportPage />} />
+ <Route path="/" element={isCustomer ? <CustomerDashboardPage /> : <DashboardPage />} />
+ <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <POSPage />} />
+ <Route path="/appointments" element={<AppointmentsPage />} />
+ <Route path="/history" element={!isStaff ? <Navigate to="/appointments" /> : <HistoryPage />} />
+ <Route path="/staff-commissions" element={!(isAdmin || isCashier || isStaffMember) ? <Navigate to="/appointments" /> : <StaffCommissionsPage />} />
+ <Route path="/monthly" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <MonthlySummaryPage />} />
+ <Route path="/sales-report" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <SalesReportPage />} />
  <Route path="/business-analysis" element={!isAdmin ? <Navigate to="/appointments" /> : <LazyBusinessAnalysisPage />} />
  <Route path="/settings" element={<SettingsPage />} />
  <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
  <Route path="/reset-password" element={<ResetPasswordPage />} />
  <Route path="/identity-reset" element={<IdentityResetPage />} />
- <Route path="/expenses" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <LazyExpenseListPage />} />
- <Route path="/manage" element={!isAdmin ? <Navigate to="/appointments" /> : <LazyManagePage />} />
+ <Route path="/expenses" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <ExpenseListPage />} />
+ <Route path="/manage" element={!isAdmin ? <Navigate to="/appointments" /> : <ManagePage />} />
  <Route path="*" element={<Navigate to="/" />} />
  </Routes>
  </React.Suspense>
