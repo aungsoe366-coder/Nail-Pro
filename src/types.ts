@@ -29,6 +29,7 @@ export interface Sale {
   staffEmail: string;
   staffNames?: string[];
   staffNamesArray?: string[];
+  makerName?: string;
   customerName?: string;
   customerPhone?: string;
   total: number;

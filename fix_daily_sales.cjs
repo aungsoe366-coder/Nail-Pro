@@ -1,22 +1,6 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/AppCore.tsx', 'utf8');
 
-// 1. Add makerName to sale object
-if (!code.includes('makerName: profile?.displayName')) {
-  code = code.replace(
-    "staffEmail: globalStaff.email,",
-    "staffEmail: globalStaff.email, makerName: profile?.displayName || profile?.name || profile?.email || 'System',"
-  );
-}
-
-// 2. Fix UI in Daily Sales
-code = code.replace(
-  /<span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">/g,
-  '<span className="text-xl font-sans font-semibold not-italic text-foreground group-hover:text-primary transition-colors">'
-);
-
-// We also need to add Maker: {transaction.makerName || 'System'}
-// Because the previous replacement might not match perfectly if formatting changed, I will find the precise string.
 const targetDailySales = `              <div className="space-y-0.5">
               <div className="flex items-center gap-2">
               <span className="text-xl font-sans font-semibold not-italic text-foreground group-hover:text-primary transition-colors">
@@ -48,11 +32,6 @@ const replaceDailySales = `              <div className="space-y-1">
               </div>
               <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">`;
 
-if (code.includes(targetDailySales)) {
-  code = code.replace(targetDailySales, replaceDailySales);
-} else {
-  console.log("Could not find exact block to replace Daily Sales!");
-}
-
+code = code.replace(targetDailySales, replaceDailySales);
 fs.writeFileSync('src/AppCore.tsx', code);
-console.log("Done");
+console.log("Done Daily Sales");

@@ -1637,7 +1637,7 @@ export const CustomerDashboardPage: React.FC = () => {
  <div className="bg-gradient-to-r from-amber-100 via-amber-50 to-orange-100 border border-amber-200 p-4 rounded-2xl relative overflow-hidden [.midnight_&]:from-amber-900/30 [.midnight_&]:via-amber-800/20 [.midnight_&]:to-orange-900/30 [.midnight_&]:border-amber-700/50">
  <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/40 [.midnight_&]:bg-amber-500/10 rounded-full blur-3xl"></div>
  <div className="relative z-10 space-y-2">
- <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Welcome back, {profile?.name || 'Beautiful'}!</h2>
+ <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Welcome back, {profile?.name || 'Beautiful'}!</h2>
  <p className="text-amber-800/80 [.midnight_&]:text-amber-200/80 font-medium">Ready for your next salon experience?</p>
  </div>
  </div>
@@ -1738,7 +1738,7 @@ export const DashboardPage: React.FC = () => {
  <motion.div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-6" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-4">
           <div className="space-y-0.5">
-            <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Dashboard</h3>
+            <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Dashboard</h3>
             <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Overview • {formatFullDate(new Date())}</p>
           </div>
           <div className="grid grid-cols-2 gap-3 w-full md:w-[400px]">
@@ -2283,7 +2283,7 @@ export const POSPage: React.FC = () => {
  staff: finalSaleStaffName,
  staffNames: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
  staffNamesArray: uniqueSaleStaffNames.length > 0 ? uniqueSaleStaffNames : [globalStaff.name],
- staffEmail: globalStaff.email,
+ staffEmail: globalStaff.email, makerName: profile?.displayName || profile?.name || profile?.email || 'System',
  customerName: selectedCustomer?.name || '',
  customerPhone: selectedCustomer?.phone || '',
  total: netTotal,
@@ -3270,7 +3270,7 @@ export const MonthlySummaryPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
  <div className="space-y-1">
- <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Monthly <span className="italic font-serif">Summary</span></h3>
+ <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Monthly Summary</h3>
  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Financial Performance Overview</p>
  </div>
  <div className="flex items-center gap-4 bg-card border border-border p-2 rounded-2xl ">
@@ -3633,7 +3633,7 @@ export const ExpenseListPage: React.FC = () => {
 <div className="flex flex-col gap-6 pb-6">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                     <div className="space-y-1 flex-1 min-w-0">
-                        <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Shop <span className="italic font-serif">Expenses</span></h3>
+                        <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Shop Expenses</h3>
                         <p className="text-xs text-muted-foreground font-bold uppercase tracking-[0.2em] mb-4">Operating Cost Management</p>
                     </div> 
                     
@@ -4179,7 +4179,7 @@ export const HistoryPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
  <div className="flex flex-col md:flex-row md:items-end justify-between gap-3 pb-6 ">
  <div className="space-y-1">
- <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Daily <span className="italic font-serif">Sales List</span></h3>
+ <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Daily Sales List</h3>
  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
  </div>
  
@@ -4250,7 +4250,7 @@ export const HistoryPage: React.FC = () => {
  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Total Cash</span>
  <span className="text-sm font-mono font-bold text-green-600">{totalCash.toLocaleString()} Ks</span>
  </div>
- <div className="w-px h-6 bg-/50"></div>
+ <div className="text-muted-foreground/30 font-light mx-1">|</div>
  <div className="text-center">
  <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest block mb-0.5">Total KPay/Digital</span>
  <span className="text-sm font-mono font-bold text-blue-600">{totalDigital.toLocaleString()} Ks</span>
@@ -4375,17 +4375,22 @@ export const HistoryPage: React.FC = () => {
               )}>
               {s.method === 'Cash' ? <DollarSign size={28} /> : <CreditCard size={28} />}
               </div>
-              <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-              <span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">
-              {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
-              {s.payments && s.payments.length > 1 
-              ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
-              : (s.method || 'Cash')}
-              </span>
-              </div>
+              <div className="space-y-1">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg font-sans font-semibold not-italic text-foreground group-hover:text-primary transition-colors">
+                      {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
+                      {s.payments && s.payments.length > 1
+                        ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ')
+                        : (s.method || 'Cash')}
+                    </span>
+                  </div>
+                  <div className="text-xs font-sans font-semibold text-muted-foreground">
+                    Maker: {s.makerName || (s as any).createdBy || 'System'}
+                  </div>
+                </div>
               <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
               <span>{formatDisplayDate(s.dateTime)}</span>
               <span className="w-1 h-1 rounded-full bg-" />
@@ -4658,7 +4663,7 @@ export const StaffCommissionsPage: React.FC = () => {
 
  return (
  <div className="w-full px-3 py-4 md:p-6 space-y-3">
- <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Staff Commissions</h3>
+ <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Staff Commissions</h3>
  
  <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
  {/* Commissions Grid */}
@@ -4765,17 +4770,22 @@ export const StaffCommissionsPage: React.FC = () => {
  displaySalesDetails.map(s => (
  <motion.div key={s.id} className="bg-card border border-border p-3.5 rounded-2xl flex justify-between items-center hover:border-primary/30 transition-all group" layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  <div className="space-y-1">
- <div className="flex items-center gap-2">
- <span className="text-foreground font-bold text-sm group-hover:text-primary transition-colors">
- {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
- </span>
- <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
- </div>
- <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
- {s.payments && s.payments.length > 1 
- ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
- : (s.method || 'Cash')}
- </div>
+  <div className="flex flex-col gap-0.5">
+   <div className="flex items-center gap-2">
+    <span className="text-foreground font-sans font-semibold not-italic text-sm group-hover:text-primary transition-colors">
+    {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
+    </span>
+    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-tighter">{new Date(s.dateTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+   </div>
+   <div className="text-[10px] font-sans font-semibold text-muted-foreground">
+     Maker: {s.makerName || (s as any).createdBy || 'System'}
+   </div>
+  </div>
+  <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">
+  {s.payments && s.payments.length > 1 
+   ? s.payments.map(p => `${p.method}: ${p.amount.toLocaleString()}`).join(' | ') 
+   : (s.method || 'Cash')}
+  </div>
  </div>
  <div className="text-right">
  <div className="text-foreground font-bold text-sm">{s.total.toLocaleString()} Ks</div>
@@ -4829,7 +4839,7 @@ export const SalesReportPage: React.FC = () => {
 
  return (
  <div className="w-full px-3 py-4 md:p-6 space-y-3 relative">
- <h3 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Sales Report</h3>
+ <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Sales Report</h3>
  
  <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative group">
  <div className="absolute inset-0 bg-primary/[0.02] opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none" />
@@ -5704,7 +5714,7 @@ export const AppointmentsPage: React.FC = () => {
  <div className="w-full max-w-7xl mx-auto px-3 py-4 md:p-6 space-y-3">
 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4 mb-2">
  <div className="flex flex-col gap-0.5">
- <h1 className="text-xl md:text-2xl font-black tracking-widest text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase font-serif">
+ <h1 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">
  {isCustomer ? 'My Appointments' : 'Appointments'}</h1>
  <p className="text-[10px] md:text-xs font-bold uppercase tracking-widest text-muted-foreground">
    View and manage your bookings
@@ -9075,7 +9085,7 @@ const ForcePasswordChangePage: React.FC = () => {
  <AlertTriangle className="w-6 h-6 text-primary" />
  </div>
  <div>
- <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Security Update</h2>
+ <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Security Update</h2>
  <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-60">Password Change Required</p>
  </div>
  </div>
@@ -9274,7 +9284,7 @@ const SettingsPage: React.FC = () => {
  return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20 pt-2 px-2 md:px-0">
       <div className="px-2 md:px-0 mb-4">
-         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase">Settings</h1>
+         <h1 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Settings</h1>
          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">Manage your preferences</p>
       </div>
 
@@ -9605,7 +9615,7 @@ const SettingsPage: React.FC = () => {
 const ResetPasswordPage: React.FC = () => {
  return (
  <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
- <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase mb-4">Reset Password</h2>
+ <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] mb-4">Reset Password</h2>
  <p className="text-muted-foreground mb-4">Password reset is handled via Identity Reset or Admin panel.</p>
  <motion.button whileTap={{ scale: 0.97 }} onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</motion.button>
  </div>
@@ -9615,7 +9625,7 @@ const ResetPasswordPage: React.FC = () => {
 const IdentityResetPage: React.FC = () => {
  return (
  <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
- <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] uppercase mb-4">Identity Reset</h2>
+ <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37] mb-4">Identity Reset</h2>
  <p className="text-muted-foreground mb-4">Please contact an admin to reset your password or identity details.</p>
  <motion.button whileTap={{ scale: 0.97 }} onClick={() => window.location.href = '/'} className="mt-4 py-3 px-4 md:px-6 bg-primary text-white rounded-xl font-bold">Back to Login</motion.button>
  </div>
@@ -9812,8 +9822,8 @@ const LoginPage: React.FC = () => {
  transition={{ duration: 0.6 }}
  className="flex flex-col items-center w-full"
  >
- <h1 className="text-5xl sm:text-6xl font-serif text-white tracking-[0.25em] leading-none mb-4 uppercase ml-4 text-">NAIL PRO</h1>
- <p className="text-xs sm:text-sm font-medium text-white/90 uppercase tracking-[0.5em] ml-2 font-serif">Beauty Studio Management</p>
+ <h1 className="text-5xl sm:text-6xl font-bold uppercase tracking-tight text-white mb-4 ml-4">NAIL PRO</h1>
+ <p className="text-xs sm:text-sm font-medium text-white/90 uppercase tracking-[0.5em] ml-2">Beauty Studio Management</p>
  </motion.div>
  </div>
 
@@ -9852,7 +9862,7 @@ const LoginPage: React.FC = () => {
  
  <div className="w-full max-w-md mx-auto">
  <div className="text-center mb-3 md:mb-6 mt-4">
- <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Welcome Back</h2>
+ <h2 className="text-2xl font-bold uppercase tracking-tight text-white">Welcome Back</h2>
  </div>
 
  {error && (
@@ -10028,7 +10038,7 @@ const LoginPage: React.FC = () => {
  
  <div className="w-full max-w-md mx-auto">
  <div className="text-center mb-3 md:mb-6 mt-4">
- <h2 className="text-xl font-black text-white tracking-widest uppercase font-serif">Create Account</h2>
+ <h2 className="text-2xl font-bold uppercase tracking-tight text-white">Create Account</h2>
  <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-[0.2em] mt-1">Join Nail Pro Studio</p>
  </div>
 
@@ -10259,7 +10269,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  return (
  <motion.div className="fixed inset-0 bg-black/60 z-[999999] flex items-center justify-center p-4  select-none" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
  <div className="bg-card border border-border p-4 rounded-2xl w-full max-w-[320px] text-center space-y-3 ">
- <h3 className="text-xl font-black text-foreground uppercase tracking-widest font-serif">Exit App</h3>
+ <h3 className="text-2xl font-bold uppercase tracking-tight text-foreground">Exit App</h3>
  <p className="text-muted-foreground text-sm">Are you sure you want to exit the app?</p>
  <div className="flex gap-3">
  <motion.button whileTap={{ scale: 0.97 }}
