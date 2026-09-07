@@ -35,21 +35,7 @@ import {
  signInWithPopup,
  browserPopupRedirectResolver
 } from 'firebase/auth';
-import { 
- collection, 
- doc, 
- getDoc, getDocFromCache, 
- getDocs, 
- setDoc, 
- addDoc, 
- updateDoc, 
- deleteDoc, 
- onSnapshot, 
- query, 
- where, 
- orderBy,
- getDocFromServer
-} from 'firebase/firestore';
+import {  collection,  doc,  getDoc, getDocFromCache,  getDocs,  setDoc,  addDoc,  updateDoc,  deleteDoc,  onSnapshot,  query,  where,  orderBy, or, getDocFromServer} from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { auth, db, app, OperationType, handleFirestoreError } from './firebase';
 import { 
@@ -256,6 +242,97 @@ function formatDateToMDY(dateStr: string) {
  const [y, m, d] = dateStr.split('-');
  return `${m}/${d}/${y}`;
 }
+
+
+const QuickDateFilterBar: React.FC<{
+  dateFrom: string;
+  dateTo: string;
+  setDateFrom: (val: string) => void;
+  setDateTo: (val: string) => void;
+  children?: React.ReactNode;
+}> = ({ dateFrom, dateTo, setDateFrom, setDateTo, children }) => {
+  const [forceCustom, setForceCustom] = useState(false);
+  const getMode = () => {
+    if (forceCustom) return 'custom';
+    const t = new Date();
+    const getIs = (f, to) => dateFrom === f && dateTo === to;
+    let f = '', to = '';
+    f = to = getLocalISODate(t);
+    if (getIs(f, to)) return 'today';
+    const y = new Date(t); y.setDate(y.getDate() - 1);
+    f = to = getLocalISODate(y);
+    if (getIs(f, to)) return 'yesterday';
+    const tw = new Date(t);
+    const day = tw.getDay();
+    const diff = tw.getDate() - day + (day === 0 ? -6 : 1);
+    tw.setDate(diff);
+    const lw = new Date(tw); lw.setDate(lw.getDate() + 6);
+    if (getIs(getLocalISODate(tw), getLocalISODate(lw))) return 'this_week';
+    const tm = new Date(t.getFullYear(), t.getMonth(), 1);
+    const lm = new Date(t.getFullYear(), t.getMonth() + 1, 0);
+    if (getIs(getLocalISODate(tm), getLocalISODate(lm))) return 'this_month';
+    return 'custom';
+  };
+  const currentMode = getMode();
+  const handleFilter = (type) => {
+    const t = new Date();
+    let f = '', to = '';
+    if (type === 'today') {
+      f = to = getLocalISODate(t);
+    } else if (type === 'yesterday') {
+      t.setDate(t.getDate() - 1);
+      f = to = getLocalISODate(t);
+    } else if (type === 'this_week') {
+      const tw = new Date(t);
+      const day = tw.getDay();
+      const diff = tw.getDate() - day + (day === 0 ? -6 : 1);
+      tw.setDate(diff);
+      const lw = new Date(tw); lw.setDate(lw.getDate() + 6);
+      f = getLocalISODate(tw); to = getLocalISODate(lw);
+    } else if (type === 'this_month') {
+      const tm = new Date(t.getFullYear(), t.getMonth(), 1);
+      const lm = new Date(t.getFullYear(), t.getMonth() + 1, 0);
+      f = getLocalISODate(tm); to = getLocalISODate(lm);
+    }
+    if (type === 'custom') {
+      setForceCustom(true);
+    } else {
+      setForceCustom(false);
+      if (f && to) {
+        setDateFrom(f); setDateTo(to);
+      }
+    }
+  };
+  return (
+    <div className="flex flex-col gap-3 w-full mb-3">
+      <div className="flex flex-row flex-nowrap overflow-x-auto whitespace-nowrap items-center gap-2 custom-scrollbar pb-2">
+        {[
+          { label: 'Today', type: 'today' },
+          { label: 'Yesterday', type: 'yesterday' },
+          { label: 'This Week', type: 'this_week' },
+          { label: 'This Month', type: 'this_month' },
+          { label: 'Custom', type: 'custom' }
+        ].map(filter => {
+          const isActive = currentMode === filter.type;
+          return (
+            <button
+              key={filter.type}
+              onClick={() => handleFilter(filter.type)}
+              className={`px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-widest transition-all ${isActive ? 'bg-slate-900 text-white [.midnight_&]:bg-[#D4AF37] [.midnight_&]:text-slate-900 shadow-md' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
+            >
+              {filter.label}
+            </button>
+          );
+        })}
+      </div>
+      {currentMode === 'custom' && children && (
+        <div className="grid grid-cols-2 gap-3 w-full">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CustomDatePicker: React.FC<{
  label: string;
@@ -1407,7 +1484,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  { id: 'staff-commissions', label: 'Commissions', icon: <UserIcon size={18} />, path: '/staff-commissions', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
  { id: 'monthly', label: 'Monthly Summary', icon: <LayoutGrid size={18} />, path: '/monthly', roles: ['super_admin', 'owner', 'cashier'] },
  { id: 'sales-report', label: 'Sales Report', icon: <FileText size={18} />, path: '/sales-report', roles: ['super_admin', 'owner', 'cashier'] },
- { id: 'expenses', label: 'Expenses', icon: <TrendingDown size={18} />, path: '/expenses', roles: ['super_admin', 'owner', 'cashier'] },
+ { id: 'expenses', label: 'Expenses', icon: <TrendingDown size={18} />, path: '/expenses', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
  { id: 'manage', label: 'Admin Management', icon: <Database size={18} />, path: '/manage', roles: ['super_admin', 'owner'] },
  { id: 'settings', label: 'Settings', icon: <Settings size={18} />, path: '/settings', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
  ];
@@ -1725,11 +1802,7 @@ export const DashboardPage: React.FC = () => {
 
  const stats = [
     { label: "Today's Sales", value: totalSales.toLocaleString(), suffix: "Ks", icon: <DollarSign size={24} strokeWidth={2.5} />, color: "text-amber-600", bg: "bg-amber-500/10" },
-    ...((isAdmin || isCashier) ? [
-    { label: "Today's Expenses", value: totalExpenses.toLocaleString(), suffix: "Ks", icon: <TrendingDown size={24} strokeWidth={2.5} />, color: "text-rose-600", bg: "bg-rose-500/10" },
-    { label: "Net Profit", value: netProfit.toLocaleString(), suffix: "Ks", icon: <TrendingUp size={24} strokeWidth={2.5} />, color: "text-emerald-600", bg: "bg-emerald-500/10" },
-    ] : []),
-    { label: "Appointments", value: pendingAppts.toString(), suffix: "", icon: <CalendarIcon size={24} strokeWidth={2.5} />, color: "text-indigo-600", bg: "bg-indigo-500/10" },
+    { label: "Today's Expenses", value: totalExpenses.toLocaleString(), suffix: "Ks", icon: <TrendingDown size={24} strokeWidth={2.5} />, color: "text-rose-600", bg: "bg-rose-500/10" }
   ];
 
 
@@ -1787,10 +1860,13 @@ export const DashboardPage: React.FC = () => {
  {/* Recent Sales */}
  <div className="bg-white [.midnight_&]:bg-[#221C18] rounded-2xl border border-stone-100 [.midnight_&]:border-[#3D322C] shadow-sm overflow-hidden mb-4 flex flex-col">
               <div className="px-4 py-3 flex justify-between items-center border-b border-stone-100">
-                <h4 className="text-xs font-bold tracking-wider text-stone-400 [.midnight_&]:text-[#D4AF37] uppercase">
-                  Recent Sales
-                </h4>
- <motion.button whileTap={{ scale: 0.97 }} onClick={() => navigate('/history')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW ALL</motion.button>
+                <h4 className="text-xs font-bold tracking-wider text-stone-400 [.midnight_&]:text-[#D4AF37] uppercase flex items-center gap-2">
+    Recent Sales
+  </h4>
+  <div className="flex items-center gap-3">
+    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">{sales.length} SALES</span>
+    <motion.button whileTap={{ scale: 0.97 }} onClick={() => navigate('/history')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW ALL</motion.button>
+  </div>
  </div>
  <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
  {sales.length === 0 ? (
@@ -1834,9 +1910,10 @@ export const DashboardPage: React.FC = () => {
  {/* Upcoming Appointments */}
  <div className="bg-white [.midnight_&]:bg-[#221C18] rounded-2xl border border-stone-100 [.midnight_&]:border-[#3D322C] shadow-sm overflow-hidden mb-4 flex flex-col">
               <div className="px-4 py-3 flex justify-between items-center border-b border-stone-100">
-                <h4 className="text-xs font-bold tracking-wider text-stone-400 [.midnight_&]:text-[#D4AF37] uppercase">
-                  Today's Appointments
-                </h4>
+                <h4 className="text-xs font-bold tracking-wider text-stone-400 [.midnight_&]:text-[#D4AF37] uppercase flex items-center gap-2">
+    Today's Appointments
+    <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full">{appointments.length}</span>
+  </h4>
  <motion.button whileTap={{ scale: 0.97 }} onClick={() => navigate('/appointments')} className="text-[10px] font-black text-primary hover:underline tracking-widest">VIEW CALENDAR</motion.button>
  </div>
  <div className="flex-1 overflow-y-auto max-h-[400px] scrollbar-hide">
@@ -1860,7 +1937,10 @@ export const DashboardPage: React.FC = () => {
                                   <div className="flex items-center gap-4">
                                   <div className={cn(
                                   "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
-                                  a.status === 'confirmed' ? "bg-green-500/10 text-green-500" : "bg-yellow-500/10 text-yellow-500"
+                                  a.status === 'confirmed' ? "bg-blue-50 text-blue-700 [.midnight_&]:bg-blue-500/10 [.midnight_&]:text-blue-400" :
+                                  a.status === 'completed' ? "bg-emerald-50 text-emerald-700 [.midnight_&]:bg-emerald-500/10 [.midnight_&]:text-emerald-400" :
+                                  a.status === 'cancelled' ? "bg-rose-50 text-rose-700 [.midnight_&]:bg-rose-500/10 [.midnight_&]:text-rose-400" :
+                                  "bg-amber-50 text-amber-700 [.midnight_&]:bg-amber-500/10 [.midnight_&]:text-amber-400"
                                   )}>
                                   {a.time}
                                   </div>
@@ -1872,7 +1952,10 @@ export const DashboardPage: React.FC = () => {
                                   <div className="text-right">
                                   <span className={cn(
                                   "text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full ",
-                                  a.status === 'confirmed' ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                  a.status === 'confirmed' ? "bg-blue-50 text-blue-700 border-blue-200 [.midnight_&]:bg-blue-500/10 [.midnight_&]:text-blue-400 [.midnight_&]:border-blue-500/30" :
+                                  a.status === 'completed' ? "bg-emerald-50 text-emerald-700 border-emerald-200 [.midnight_&]:bg-emerald-500/10 [.midnight_&]:text-emerald-400 [.midnight_&]:border-emerald-500/30" :
+                                  a.status === 'cancelled' ? "bg-rose-50 text-rose-700 border-rose-200 [.midnight_&]:bg-rose-500/10 [.midnight_&]:text-rose-400 [.midnight_&]:border-rose-500/30" :
+                                  "bg-amber-50 text-amber-700 border-amber-200 [.midnight_&]:bg-amber-500/10 [.midnight_&]:text-amber-400 [.midnight_&]:border-amber-500/30"
                                   )}>
                                   {a.status}
                                   </span>
@@ -3330,7 +3413,7 @@ export const MonthlySummaryPage: React.FC = () => {
  {monthlyData.map((d, i) => (
  <tr key={i} className="hover:bg-primary/[0.02] transition-colors group">
  <td className="px-4 md:px-8 py-4 md:py-6">
- <span className="text-lg font-serif italic text-foreground group-hover:text-primary transition-colors">{d.mName}</span>
+ <span className="text-lg font-sans font-medium not-italic text-foreground group-hover:text-primary transition-colors">{d.mName}</span>
  </td>
  <td className="px-4 md:px-8 py-4 md:py-6 text-right">
  <span className="font-mono text-base text-foreground">{d.income.toLocaleString()}</span>
@@ -3373,8 +3456,9 @@ export const MonthlySummaryPage: React.FC = () => {
 };
 
 export const ExpenseListPage: React.FC = () => {
- const { profile, isAdmin, isCashier } = useAuth();
- if (!isAdmin && !isCashier) return <Navigate to="/" />;
+ const { profile, isAdmin, isCashier, isStaffMember } = useAuth();
+ const isStaff = isAdmin || isCashier || isStaffMember;
+ if (!isStaff) return <Navigate to="/" />;
  const [expenses, setExpenses] = useState<Expense[]>([]);
  const [expenseCategories, setExpenseCategories] = useState<ExpenseCategory[]>([]);
  const [staffList, setStaffList] = useState<UserProfile[]>([]);
@@ -3398,7 +3482,7 @@ export const ExpenseListPage: React.FC = () => {
  const [showConfirm, setShowConfirm] = useState<{coll: string, id: string} | null>(null);
 
  useEffect(() => {
- if (!isAdmin && !isCashier) return;
+ if (!isStaff) return;
  const q = query(collection(db, 'expenses'), orderBy('date', 'desc'));
  const unsubscribe = onSnapshot(q, (snapshot) => {
  setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense)));
@@ -3659,19 +3743,25 @@ export const ExpenseListPage: React.FC = () => {
                         <Filter size={14} />
                         <span className="text-[10px] font-bold uppercase tracking-[0.2em]">Filter Records</span>
                     </div>
-                    <div className={cn("grid grid-cols-2 gap-3", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
-                        <CustomDatePicker 
-                            label="START DATE" 
-                            value={dateFrom} 
-                            onChange={setDateFrom} 
-                            iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
-                        />
-                        <CustomDatePicker 
-                            label="END DATE" 
-                            value={dateTo} 
-                            onChange={setDateTo} 
-                            iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
-                        />
+                    <div className="mb-4">
+                        <QuickDateFilterBar dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo}>
+                            <CustomDatePicker 
+                                label="START DATE" 
+                                value={dateFrom} 
+                                onChange={setDateFrom} 
+                                className="flex-1"
+                                iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
+                            />
+                            <CustomDatePicker 
+                                label="END DATE" 
+                                value={dateTo} 
+                                onChange={setDateTo} 
+                                className="flex-1"
+                                iconColor="text-primary [.midnight_&]:text-[#D4AF37]"
+                            />
+                        </QuickDateFilterBar>
+                    </div>
+                    <div className={cn("grid gap-3", (expFilterCat === 'Staff Salary' || expFilterCat === 'Advance Pay') ? "grid-cols-2" : "grid-cols-1")}>
                         <div className="flex flex-col justify-center">
                             <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2 px-2">
                                 <Settings size={12} className="text-primary [.midnight_&]:text-[#D4AF37]" /> CATEGORY
@@ -4182,22 +4272,25 @@ export const HistoryPage: React.FC = () => {
  <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Daily Sales List</h3>
  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-[0.2em]">Transaction Ledger & Revenue Tracking</p>
  </div>
- 
- <div className="bg-card border border-border rounded-2xl w-full z-50 relative">
- {/* Daily Sales Grid */}
-<div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-3">
+ </div>
+
+ <QuickDateFilterBar dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo}>
  <CustomDatePicker 
- label="FROM" 
- value={dateFrom} 
- onChange={setDateFrom} 
- className="flex-1"
+  label="FROM" 
+  value={dateFrom} 
+  onChange={setDateFrom} 
+  className="flex-1"
  />
  <CustomDatePicker 
- label="TO" 
- value={dateTo} 
- onChange={setDateTo} 
- className="flex-1"
+  label="TO" 
+  value={dateTo} 
+  onChange={setDateTo} 
+  className="flex-1"
  />
+</QuickDateFilterBar>
+<div className="bg-card border border-border rounded-2xl w-full z-50 relative">
+{/* Daily Sales Grid */}
+<div className="grid grid-cols-2 lg:grid-cols-2 gap-3 p-3">
  <div className="flex flex-col flex-1 justify-center">
  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
  <UserIcon size={12} className="text-primary" /> STAFF
@@ -4231,7 +4324,6 @@ export const HistoryPage: React.FC = () => {
  { value: 'Split', label: 'Split / Mixed' }
  ]}
  />
- </div>
  </div>
  </div>
  </div>
@@ -4665,21 +4757,23 @@ export const StaffCommissionsPage: React.FC = () => {
  <div className="w-full px-3 py-4 md:p-6 space-y-3">
  <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Staff Commissions</h3>
  
- <div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
+ <QuickDateFilterBar dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo}>
+ <CustomDatePicker 
+  label="FROM" 
+  value={dateFrom} 
+  onChange={setDateFrom} 
+  className="flex-1"
+ />
+ <CustomDatePicker 
+  label="TO" 
+  value={dateTo} 
+  onChange={setDateTo} 
+  className="flex-1"
+ />
+</QuickDateFilterBar>
+<div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
  {/* Commissions Grid */}
-<div className={cn("grid gap-3 p-3", isStaff ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3")}>
- <CustomDatePicker 
- label="FROM" 
- value={dateFrom} 
- onChange={setDateFrom} 
- className="flex-1"
- />
- <CustomDatePicker 
- label="TO" 
- value={dateTo} 
- onChange={setDateTo} 
- className="flex-1"
- />
+<div className={cn("grid gap-3 p-3", isStaff ? "hidden" : "grid-cols-1")}>
  {!isStaff && (
  <div className="flex flex-col flex-1 justify-center">
  <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2 mb-2">
@@ -5034,7 +5128,11 @@ export const AppointmentsPage: React.FC = () => {
  if (!profile) return;
 
  const apptsQuery = isCustomer
- ? query(collection(db, 'appointments'), where('creatorEmail', '==', profile.email))
+ ? query(collection(db, 'appointments'), or(
+     where('creatorEmail', '==', profile.email),
+     where('customerEmail', '==', profile.email),
+     where('customerPhone', '==', profile.phone || 'none')
+   ))
  : query(collection(db, 'appointments'));
 
  const unsubAppts = onSnapshot(apptsQuery, (snapshot) => {
@@ -5183,7 +5281,10 @@ export const AppointmentsPage: React.FC = () => {
  if (selectedCustId && selectedCustId !== 'manual') {
  newAppt.customerId = selectedCustId;
  const c = customers.find(c => c.id === selectedCustId);
- if (c && c.email) newAppt.customerEmail = c.email;
+ if (c) {
+   if (c.email) newAppt.customerEmail = c.email;
+   if (c.phone) newAppt.customerPhone = c.phone;
+ }
  } else {
  delete newAppt.customerId;
  }
@@ -5267,6 +5368,11 @@ export const AppointmentsPage: React.FC = () => {
 
  if (selectedCustId && selectedCustId !== 'manual') {
  updatedAppt.customerId = selectedCustId;
+ const c = customers.find(c => c.id === selectedCustId);
+ if (c) {
+   if (c.email) updatedAppt.customerEmail = c.email;
+   if (c.phone) updatedAppt.customerPhone = c.phone;
+ }
  } else {
  updatedAppt.customerId = null; // Use null to remove it if needed
  }
@@ -5421,7 +5527,8 @@ export const AppointmentsPage: React.FC = () => {
  const filteredAppts = appointments
  .filter(a => {
  if (profile?.role === 'customer') {
-   if (a.creatorEmail !== profile?.email) return false;
+   const isOwner = a.creatorEmail === profile?.email || a.customerEmail === profile?.email || (profile?.phone && a.customerPhone === profile?.phone);
+   if (!isOwner) return false;
    const isPast = a.status === 'completed' || a.status === 'cancelled';
    if (customerApptTab === 'upcoming' && isPast) return false;
    if (customerApptTab === 'past' && !isPast) return false;
@@ -6109,13 +6216,13 @@ export const AppointmentsPage: React.FC = () => {
                                                                      disabled={profile?.role === 'customer' || (!isAdmin && (appt.status === 'completed' || appt.status === 'cancelled'))}
                                                                      className={cn(
                                                                        "px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all border disabled:opacity-80 active:scale-95 shadow-sm",
-                                                                       appt.status === 'pending' && "bg-yellow-500/10 text-yellow-600 border-yellow-500/30",
-                                                                       appt.status === 'confirmed' && "bg-blue-500/10 text-blue-600 border-blue-500/30",
-                                                                       appt.status === 'completed' && "bg-green-500/10 text-green-600 border-green-500/30",
-                                                                       appt.status === 'cancelled' && "bg-red-500/10 text-red-600 border-red-500/30"
+                                                                       appt.status === 'pending' && "bg-amber-50 text-amber-700 border-amber-200 [.midnight_&]:bg-amber-500/10 [.midnight_&]:text-amber-400 [.midnight_&]:border-amber-500/30",
+                                                                       appt.status === 'confirmed' && "bg-blue-50 text-blue-700 border-blue-200 [.midnight_&]:bg-blue-500/10 [.midnight_&]:text-blue-400 [.midnight_&]:border-blue-500/30",
+                                                                       appt.status === 'completed' && "bg-emerald-50 text-emerald-700 border-emerald-200 [.midnight_&]:bg-emerald-500/10 [.midnight_&]:text-emerald-400 [.midnight_&]:border-emerald-500/30",
+                                                                       appt.status === 'cancelled' && "bg-rose-50 text-rose-700 border-rose-200 [.midnight_&]:bg-rose-500/10 [.midnight_&]:text-rose-400 [.midnight_&]:border-rose-500/30"
                                                                      )}
                                                                    >
-                                                                     {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full animate-pulse" />}
+                                                                     {appt.status === 'pending' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />}
                                                                      {appt.status === 'confirmed' && <Check size={14} strokeWidth={3} />}
                                                                      {appt.status === 'completed' && <Check size={14} strokeWidth={3} />}
                                                                      {appt.status === 'cancelled' && <X size={14} strokeWidth={3} />}
@@ -6138,11 +6245,11 @@ export const AppointmentsPage: React.FC = () => {
                           onClick={() => { handleQuickStatusUpdate(statusUpdateAppt.id, 'pending'); setStatusUpdateAppt(null); }} 
                           className={cn(
                             "p-4 rounded-2xl font-black flex items-center justify-between text-base sm:text-lg uppercase tracking-widest transition-all border-2",
-                            statusUpdateAppt.status === 'pending' ? "bg-yellow-500 text-white border-yellow-500 shadow-lg shadow-yellow-500/20" : "bg-card border-border text-yellow-600 hover:border-yellow-500/50"
+                            statusUpdateAppt.status === 'pending' ? "bg-amber-100 text-amber-800 border-amber-400 shadow-lg shadow-amber-500/20 [.midnight_&]:bg-amber-900/40 [.midnight_&]:text-amber-400 [.midnight_&]:border-amber-500" : "bg-card border-border text-amber-600 hover:border-amber-500/50"
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={cn("w-2 h-2 rounded-full", statusUpdateAppt.status === 'pending' ? "bg-white animate-pulse" : "bg-yellow-500")} />
+                            <div className={cn("w-2 h-2 rounded-full", statusUpdateAppt.status === 'pending' ? "bg-amber-500 animate-pulse" : "bg-amber-500")} />
                             Pending
                           </div>
                           {statusUpdateAppt.status === 'pending' && <Check size={20} />}
@@ -6152,11 +6259,11 @@ export const AppointmentsPage: React.FC = () => {
                           onClick={() => { handleQuickStatusUpdate(statusUpdateAppt.id, 'confirmed'); setStatusUpdateAppt(null); }} 
                           className={cn(
                             "p-4 rounded-2xl font-black flex items-center justify-between text-base sm:text-lg uppercase tracking-widest transition-all border-2",
-                            statusUpdateAppt.status === 'confirmed' ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/20" : "bg-card border-border text-blue-600 hover:border-blue-500/50"
+                            statusUpdateAppt.status === 'confirmed' ? "bg-blue-100 text-blue-800 border-blue-400 shadow-lg shadow-blue-500/20 [.midnight_&]:bg-blue-900/40 [.midnight_&]:text-blue-400 [.midnight_&]:border-blue-500" : "bg-card border-border text-blue-600 hover:border-blue-500/50"
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <Check size={18} strokeWidth={3} className={statusUpdateAppt.status === 'confirmed' ? "text-white" : "text-blue-600"} />
+                            <Check size={18} strokeWidth={3} className={statusUpdateAppt.status === 'confirmed' ? "text-blue-600 [.midnight_&]:text-blue-400" : "text-blue-600"} />
                             Confirmed
                           </div>
                           {statusUpdateAppt.status === 'confirmed' && <Check size={20} />}
@@ -6166,11 +6273,11 @@ export const AppointmentsPage: React.FC = () => {
                           onClick={() => { handleQuickStatusUpdate(statusUpdateAppt.id, 'completed'); setStatusUpdateAppt(null); }} 
                           className={cn(
                             "p-4 rounded-2xl font-black flex items-center justify-between text-base sm:text-lg uppercase tracking-widest transition-all border-2",
-                            statusUpdateAppt.status === 'completed' ? "bg-green-600 text-white border-green-600 shadow-lg shadow-green-600/20" : "bg-card border-border text-green-600 hover:border-green-500/50"
+                            statusUpdateAppt.status === 'completed' ? "bg-emerald-100 text-emerald-800 border-emerald-400 shadow-lg shadow-emerald-500/20 [.midnight_&]:bg-emerald-900/40 [.midnight_&]:text-emerald-400 [.midnight_&]:border-emerald-500" : "bg-card border-border text-emerald-600 hover:border-emerald-500/50"
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <Check size={18} strokeWidth={3} className={statusUpdateAppt.status === 'completed' ? "text-white" : "text-green-600"} />
+                            <Check size={18} strokeWidth={3} className={statusUpdateAppt.status === 'completed' ? "text-emerald-600 [.midnight_&]:text-emerald-400" : "text-emerald-600"} />
                             Completed
                           </div>
                           {statusUpdateAppt.status === 'completed' && <Check size={20} />}
@@ -6180,11 +6287,11 @@ export const AppointmentsPage: React.FC = () => {
                           onClick={() => { handleQuickStatusUpdate(statusUpdateAppt.id, 'cancelled'); setStatusUpdateAppt(null); }} 
                           className={cn(
                             "p-4 rounded-2xl font-black flex items-center justify-between text-base sm:text-lg uppercase tracking-widest transition-all border-2",
-                            statusUpdateAppt.status === 'cancelled' ? "bg-red-600 text-white border-red-600 shadow-lg shadow-red-600/20" : "bg-card border-border text-red-600 hover:border-red-500/50"
+                            statusUpdateAppt.status === 'cancelled' ? "bg-rose-100 text-rose-800 border-rose-400 shadow-lg shadow-rose-500/20 [.midnight_&]:bg-rose-900/40 [.midnight_&]:text-rose-400 [.midnight_&]:border-rose-500" : "bg-card border-border text-rose-600 hover:border-rose-500/50"
                           )}
                         >
                           <div className="flex items-center gap-3">
-                            <X size={18} strokeWidth={3} className={statusUpdateAppt.status === 'cancelled' ? "text-white" : "text-red-600"} />
+                            <X size={18} strokeWidth={3} className={statusUpdateAppt.status === 'cancelled' ? "text-rose-600 [.midnight_&]:text-rose-400" : "text-rose-600"} />
                             Cancelled
                           </div>
                           {statusUpdateAppt.status === 'cancelled' && <Check size={20} />}
@@ -10401,7 +10508,7 @@ const AppRoutes = () => {
  <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
  <Route path="/reset-password" element={<ResetPasswordPage />} />
  <Route path="/identity-reset" element={<IdentityResetPage />} />
- <Route path="/expenses" element={!(isAdmin || isCashier) ? <Navigate to="/appointments" /> : <ExpenseListPage />} />
+ <Route path="/expenses" element={!isStaff ? <Navigate to="/appointments" /> : <ExpenseListPage />} />
  <Route path="/manage" element={!isAdmin ? <Navigate to="/appointments" /> : <ManagePage />} />
  <Route path="*" element={<Navigate to="/" />} />
  </Routes>

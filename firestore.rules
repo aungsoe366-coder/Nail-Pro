@@ -9,6 +9,14 @@ service cloud.firestore {
              ? request.auth.token.email 
              : "unknown";
     }
+
+    function getUserPhone() {
+      let email = getUserEmail();
+      let userPath = /databases/$(database)/documents/users/$(email);
+      let userDoc = exists(userPath) ? get(userPath).data : null;
+      return (userDoc != null && 'phone' in userDoc) ? userDoc.phone : "unknown";
+    }
+    
     function hasRole(allowedRoles) {
       let email = getUserEmail();
       let userPath = /databases/$(database)/documents/users/$(email);
@@ -42,12 +50,12 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
     match /expenses/{id} {
-      allow read, write: if isCashier();
+      allow read, write: if isStaff();
     }
     match /appointments/{id} {
-      allow read: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail()));
+      allow read: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail() || (resource.data.customerPhone != null && resource.data.customerPhone == getUserPhone())));
       allow create: if isAuthenticated();
-      allow update: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail()));
+      allow update: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail() || (resource.data.customerPhone != null && resource.data.customerPhone == getUserPhone())));
       allow delete: if isStaff();
     }
     match /categories/{id} {
@@ -59,8 +67,7 @@ service cloud.firestore {
       allow write: if isOwner();
     }
     match /expense_categories/{id} {
-      allow read: if isStaff();
-      allow write: if isOwner();
+      allow read, write: if isStaff();
     }
     match /app_config/{id} {
       allow read: if true;

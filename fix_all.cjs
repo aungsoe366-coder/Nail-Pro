@@ -1,58 +1,52 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/AppCore.tsx', 'utf8');
 
-// 1. Add makerName to sale object
-if (!code.includes('makerName: profile?.displayName')) {
-  code = code.replace(
-    "staffEmail: globalStaff.email,",
-    "staffEmail: globalStaff.email, makerName: profile?.displayName || profile?.name || profile?.email || 'System',"
-  );
-}
+// 1. Fix QuickDateFilterBar layout
+const filterOld = `<div className="flex flex-wrap items-center gap-2">`;
+const filterNew = `<div className="flex flex-row flex-nowrap overflow-x-auto whitespace-nowrap items-center gap-2 custom-scrollbar pb-2">`;
+code = code.replace(filterOld, filterNew);
 
-// 2. Fix UI in Daily Sales
-code = code.replace(
-  /<span className="text-xl font-serif italic text-foreground group-hover:text-primary transition-colors">/g,
-  '<span className="text-xl font-sans font-semibold not-italic text-foreground group-hover:text-primary transition-colors">'
-);
+const customChildrenOld = `<div className="flex flex-col sm:flex-row items-center gap-3 w-full">`;
+const customChildrenNew = `<div className="grid grid-cols-2 gap-3 w-full">`;
+code = code.replace(customChildrenOld, customChildrenNew);
 
-// We also need to add Maker: {transaction.makerName || 'System'}
-// Because the previous replacement might not match perfectly if formatting changed, I will find the precise string.
-const targetDailySales = `              <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-              <span className="text-xl font-sans font-semibold not-italic text-foreground group-hover:text-primary transition-colors">
-              {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
-              {s.payments && s.payments.length > 1 
-               ? s.payments.map(p => \`\${p.method}: \${p.amount.toLocaleString()}\`).join(' | ') 
-               : (s.method || 'Cash')}
-              </span>
-              </div>
-              <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">`;
 
-const replaceDailySales = `              <div className="space-y-1">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg font-sans font-semibold not-italic text-foreground group-hover:text-primary transition-colors">
-                  {s.staffNames && s.staffNames.length > 0 ? s.staffNames.join(' + ') : (Array.from(new Set(s.items?.flatMap(i => (i.staffAssignments && i.staffAssignments.length > 0) ? i.staffAssignments.map(a => a.name) : [i.staffName || s.staff]).filter(Boolean))).join(' + ') || s.staff)}
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full bg-muted text-[9px] font-bold uppercase tracking-widest text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px] md:max-w-none">
-                  {s.payments && s.payments.length > 1 
-                   ? s.payments.map(p => \`\${p.method}: \${p.amount.toLocaleString()}\`).join(' | ') 
-                   : (s.method || 'Cash')}
-                  </span>
-                </div>
-                <div className="text-xs font-sans font-medium text-muted-foreground">
-                  Maker: {s.makerName || (s as any).createdBy || 'System'}
-                </div>
-              </div>
-              <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-mono uppercase tracking-wider">`;
+// 2. Fix Staff Commissions
+const targetCommissions = `<div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
+ {/* Commissions Grid */}
+<div className={cn("grid gap-3 p-3", isStaff ? "grid-cols-2" : "grid-cols-2 lg:grid-cols-3")}>
+ <CustomDatePicker 
+  label="FROM" 
+  value={dateFrom} 
+  onChange={setDateFrom} 
+  className="flex-1"
+ />
+ <CustomDatePicker 
+  label="TO" 
+  value={dateTo} 
+  onChange={setDateTo} 
+  className="flex-1"
+ />`;
 
-if (code.includes(targetDailySales)) {
-  code = code.replace(targetDailySales, replaceDailySales);
-} else {
-  console.log("Could not find exact block to replace Daily Sales!");
-}
+const replacementCommissions = `<QuickDateFilterBar dateFrom={dateFrom} dateTo={dateTo} setDateFrom={setDateFrom} setDateTo={setDateTo}>
+ <CustomDatePicker 
+  label="FROM" 
+  value={dateFrom} 
+  onChange={setDateFrom} 
+  className="flex-1"
+ />
+ <CustomDatePicker 
+  label="TO" 
+  value={dateTo} 
+  onChange={setDateTo} 
+  className="flex-1"
+ />
+</QuickDateFilterBar>
+<div className="bg-card border border-border rounded-2xl w-full mb-3 md:mb-6 z-50 relative">
+ {/* Commissions Grid */}
+<div className={cn("grid gap-3 p-3", isStaff ? "hidden" : "grid-cols-1")}>`;
+
+code = code.replace(targetCommissions, replacementCommissions);
 
 fs.writeFileSync('src/AppCore.tsx', code);
-console.log("Done");
+console.log("Fixed successfully.");

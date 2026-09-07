@@ -125,3 +125,12 @@
   @page { margin: 0; }
 }
 
+
+/* Custom Scrollbar for horizontal lists */
+.custom-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.custom-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
