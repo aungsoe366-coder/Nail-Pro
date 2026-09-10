@@ -1,5 +1,6 @@
+import { Modal } from './components/Modal';
 import { Filter } from "lucide-react";
-import { Minus, Percent } from 'lucide-react';
+import { Minus, Percent, PackageOpen, ShoppingBag, MapPin } from 'lucide-react';
 import nailSalonBg from './assets/images/nail_salon_background_1784539561011.jpg';
 import React, { useState, useEffect, createContext, useContext, useMemo, useRef, useCallback } from 'react';
 import { SplashScreen } from '@capacitor/splash-screen';
@@ -1477,6 +1478,7 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  const menuItems = [
  { id: 'customer-home', label: 'Home', icon: <Home size={18} />, path: '/', roles: ['customer'] },
  { id: 'dashboard', label: 'Dashboard', icon: <Home size={18} />, path: '/', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
+  { id: 'gallery', label: 'Nail Gallery & Shop', icon: <Sparkles size={18} />, path: '/gallery', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
  { id: 'pos', label: 'Point of Sale', icon: <ShoppingCart size={18} />, path: '/pos', roles: ['super_admin', 'owner', 'cashier', 'staff'] },
  { id: 'business-analysis', label: 'Business Analysis', icon: <TrendingUp size={18} />, path: '/business-analysis', roles: ['super_admin', 'owner'] },
  { id: 'appointments', label: 'Appointments', icon: <Calendar size={18} />, path: '/appointments', roles: ['super_admin', 'owner', 'cashier', 'staff', 'customer'] },
@@ -1573,18 +1575,20 @@ const Sidebar: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, o
  );
 };
 
-const Header: React.FC<{ onMenuClick: () => void, className?: string }> = ({ onMenuClick, className }) => {
+const Header: React.FC<{ onMenuClick: () => void, className?: string, isCustomer?: boolean, profile?: any }> = ({ onMenuClick, className, isCustomer, profile }) => {
  const navigate = useNavigate();
- 
+
  return (
  <header className={cn("sticky top-0 z-[1000] flex justify-between items-center px-4 md:px-6 py-4 bg-card  border-b border-border transition-all duration-500", className)}>
  <div className="flex items-center gap-3">
- <motion.button whileTap={{ scale: 0.97 }} 
- onClick={onMenuClick} 
- className="text-primary hover:scale-110 active:scale-90 transition-all p-2 bg-primary/20 rounded-xl border-primary/10"
- >
- <Menu size={20} />
- </motion.button>
+ {!isCustomer && (
+   <motion.button whileTap={{ scale: 0.97 }} 
+   onClick={onMenuClick} 
+   className="text-primary hover:scale-110 active:scale-90 transition-all p-2 bg-primary/20 rounded-xl border-primary/10 md:hidden"
+   >
+   <Menu size={20} />
+   </motion.button>
+ )}
  <div 
  onClick={() => navigate('/')} 
  className="flex flex-col cursor-pointer group"
@@ -1594,6 +1598,19 @@ const Header: React.FC<{ onMenuClick: () => void, className?: string }> = ({ onM
  </div>
  </div>
  <div className="flex items-center gap-4">
+    {isCustomer && profile && (
+       <motion.button 
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate('/settings')}
+          className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/40 border-2 border-amber-200 dark:border-amber-700/50 flex items-center justify-center overflow-hidden cursor-pointer"
+       >
+          {profile.photoURL ? (
+             <img src={profile.photoURL} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+             <span className="text-amber-700 dark:text-amber-400 font-bold text-lg">{profile.name?.charAt(0).toUpperCase() || 'U'}</span>
+          )}
+       </motion.button>
+    )}
  </div>
  </header>
  );
@@ -1706,46 +1723,173 @@ const PullToRefresh: React.FC<{ children: React.ReactNode; onRefresh: () => Prom
 };
 
 export const CustomerDashboardPage: React.FC = () => {
- const { profile } = useAuth();
+ const { user, profile } = useAuth();
  const navigate = useNavigate();
+ 
+ const [upcomingAppt, setUpcomingAppt] = useState<any>(null);
+ const [activeOrder, setActiveOrder] = useState<any>(null);
+
+ useEffect(() => {
+   if (!user) return;
+   
+   // Fetch Upcoming Appointment
+   let apptConditions = [];
+   if (profile?.email) {
+     apptConditions.push(where('customerEmail', '==', profile.email));
+     apptConditions.push(where('creatorEmail', '==', profile.email));
+   }
+   if (profile?.phone) {
+     apptConditions.push(where('customerPhone', '==', profile.phone));
+   }
+   
+   const fetchTrackers = async () => {
+     try {
+       let unsubAppt = () => {};
+       if (apptConditions.length > 0) {
+         const apptQuery = query(collection(db, 'appointments'), or(...apptConditions));
+         unsubAppt = onSnapshot(apptQuery, (snap) => {
+           const appts = snap.docs.map(doc => ({id: doc.id, ...doc.data()} as any))
+             .filter(a => ['pending', 'confirmed'].includes(a.status));
+           // sort by date asc
+           appts.sort((a,b) => (a.date + ' ' + a.time).localeCompare(b.date + ' ' + b.time));
+           setUpcomingAppt(appts.length > 0 ? appts[0] : null);
+         });
+       }
+       
+       // Fetch Active Order
+       const orderQuery = query(collection(db, 'orders'), where('customerId', '==', user.uid));
+       const unsubOrder = onSnapshot(orderQuery, (snap) => {
+         const orders = snap.docs.map(doc => ({id: doc.id, ...doc.data()} as any))
+           .filter(o => ['Pending', 'Confirmed', 'In Production', 'Ready for Delivery'].includes(o.status));
+         orders.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+         setActiveOrder(orders.length > 0 ? orders[0] : null);
+       });
+       
+       return () => { unsubAppt(); unsubOrder(); };
+     } catch (e) {
+       console.error("Error fetching tracker data", e);
+     }
+   };
+   
+   fetchTrackers();
+ }, [user, profile]);
 
  return (
- <motion.div className="w-full max-w-4xl mx-auto px-3 py-4 md:p-6 space-y-3" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
- <div className="bg-gradient-to-r from-amber-100 via-amber-50 to-orange-100 border border-amber-200 p-4 rounded-2xl relative overflow-hidden [.midnight_&]:from-amber-900/30 [.midnight_&]:via-amber-800/20 [.midnight_&]:to-orange-900/30 [.midnight_&]:border-amber-700/50">
- <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/40 [.midnight_&]:bg-amber-500/10 rounded-full blur-3xl"></div>
- <div className="relative z-10 space-y-2">
- <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Welcome back, {profile?.name || 'Beautiful'}!</h2>
- <p className="text-amber-800/80 [.midnight_&]:text-amber-200/80 font-medium">Ready for your next salon experience?</p>
- </div>
- </div>
- 
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
- <div className="bg-card border border-border p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
- <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center text-primary">
- <Calendar size={32} />
- </div>
- <div className="space-y-1">
- <h3 className="font-bold text-lg">Book an Appointment</h3>
- <p className="text-sm text-muted-foreground">Schedule your next visit easily with our online booking system.</p>
- </div>
- <motion.button whileTap={{ scale: 0.97 }} 
- onClick={() => navigate('/appointments')}
- className="mt-4 px-4 md:px-8 py-3 bg-primary text-white font-bold rounded-full hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 w-full md:w-auto"
+ <motion.div
+ className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6 pb-24 md:pb-6"
+ initial={{ opacity: 0, y: 12 }}
+ animate={{ opacity: 1, y: 0 }}
+ transition={{ duration: 0.18, ease: "easeInOut" }}
+ style={{ willChange: "transform, opacity" }}
  >
- Book Now
- </motion.button>
+ {/* 1. Welcome Banner */}
+ <div className="bg-gradient-to-br from-amber-100 via-amber-50 to-orange-100 border border-amber-200 p-6 rounded-2xl relative overflow-hidden [.midnight_&]:from-amber-900/30 [.midnight_&]:via-amber-800/20 [.midnight_&]:to-orange-900/30 [.midnight_&]:border-amber-700/50">
+   <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/40 [.midnight_&]:bg-amber-500/10 rounded-full blur-3xl"></div>
+   <div className="relative z-10 space-y-2">
+     <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-slate-900 [.midnight_&]:text-[#D4AF37]">Welcome back, {profile?.name || 'Beautiful'}!</h2>
+     <p className="text-amber-800/80 [.midnight_&]:text-amber-200/80 font-medium">Ready for your next salon experience?</p>
+   </div>
  </div>
 
- <div className="bg-card border border-border p-4 rounded-2xl flex flex-col items-center text-center space-y-3">
- <div className="w-16 h-16 bg-green-500/10 rounded-full flex items-center justify-center text-green-500">
- <Star size={32} />
+ {/* 2. Loyalty Points Card */}
+ <div className="bg-card border border-border p-5 rounded-2xl flex items-center justify-between shadow-sm">
+   <div className="flex items-center gap-4">
+      <div className="w-12 h-12 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-500">
+        <Star size={24} className="fill-amber-500 text-amber-500" />
+      </div>
+      <div>
+        <h3 className="font-bold text-base text-foreground">Loyalty Points</h3>
+        <p className="text-xs text-muted-foreground">Keep earning points for rewards!</p>
+      </div>
+   </div>
+   <div className="text-right">
+      <p className="text-2xl font-black text-amber-500">{profile?.points || 0}</p>
+      <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Pts</p>
+   </div>
  </div>
- <div className="space-y-1">
- <h3 className="font-bold text-lg">Loyalty Points</h3>
- <p className="text-sm text-muted-foreground">You currently have <strong className="text-green-500 text-xl">{profile?.points || 0}</strong> points.</p>
+
+ {/* 3. Quick Action Cards */}
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   {/* Card A */}
+   <div className="bg-card border border-border p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-shadow group">
+     <div className="flex items-start gap-3">
+       <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary shrink-0">
+         <Calendar size={20} />
+       </div>
+       <div>
+         <h3 className="font-bold text-base text-foreground">Book an Appointment</h3>
+         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Schedule your next salon visit easily with our online booking system.</p>
+       </div>
+     </div>
+     <button
+       onClick={() => navigate('/appointments')}
+       className="w-full py-2.5 bg-primary text-primary-foreground text-sm font-bold rounded-xl group-hover:brightness-110 transition-all shadow-sm"
+     >
+       Book Now
+     </button>
+   </div>
+
+   {/* Card B */}
+   <div className="bg-card border border-border p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-shadow group">
+     <div className="flex items-start gap-3">
+       <div className="w-10 h-10 bg-amber-600/10 rounded-lg flex items-center justify-center text-amber-600 shrink-0">
+         <ShoppingBag size={20} />
+       </div>
+       <div>
+         <h3 className="font-bold text-base text-foreground">Nail Gallery & Shop</h3>
+         <p className="text-xs text-muted-foreground mt-1 leading-relaxed">Browse and purchase our exclusive collection of custom press-on nails.</p>
+       </div>
+     </div>
+     <button
+       onClick={() => navigate('/gallery')}
+       className="w-full py-2.5 bg-slate-900 text-amber-400 text-sm font-bold rounded-xl hover:bg-slate-800 transition-all shadow-sm"
+     >
+       Explore Shop
+     </button>
+   </div>
  </div>
- </div>
- </div>
+
+ {/* 4. Active Status Tracker Widget */}
+ {(upcomingAppt || activeOrder) && (
+   <div className="bg-card border border-border p-5 rounded-2xl shadow-sm space-y-4">
+      <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground border-b border-border pb-3">Active Status</h3>
+      <div className="space-y-3">
+        {upcomingAppt && (
+          <div className="flex items-center justify-between p-3 bg-primary/5 rounded-xl border border-primary/20">
+             <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                   <Clock size={16} />
+                </div>
+                <div>
+                   <p className="text-xs font-bold text-foreground">Upcoming Appointment</p>
+                   <p className="text-[10px] text-muted-foreground">{upcomingAppt.date} at {upcomingAppt.time} • {upcomingAppt.serviceName}</p>
+                </div>
+             </div>
+             <div className="px-2 py-1 rounded bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider">
+               {upcomingAppt.status}
+             </div>
+          </div>
+        )}
+        
+        {activeOrder && (
+          <div className="flex items-center justify-between p-3 bg-amber-600/5 rounded-xl border border-amber-600/20">
+             <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-600/20 flex items-center justify-center text-amber-600 shrink-0">
+                   <PackageOpen size={16} />
+                </div>
+                <div>
+                   <p className="text-xs font-bold text-foreground">Active Order</p>
+                   <p className="text-[10px] text-muted-foreground">Order ID: {activeOrder.id.slice(0,6)} • {activeOrder.items.length} item(s)</p>
+                </div>
+             </div>
+             <div className="px-2 py-1 rounded bg-amber-600 text-white text-[10px] font-bold uppercase tracking-wider">
+               {activeOrder.status}
+             </div>
+          </div>
+        )}
+      </div>
+   </div>
+ )}
  </motion.div>
  );
 };
@@ -1801,8 +1945,30 @@ export const DashboardPage: React.FC = () => {
  const pendingAppts = appointments.filter(a => a.status === 'pending' || a.status === 'confirmed').length;
 
  const stats = [
-    { label: "Today's Sales", value: totalSales.toLocaleString(), suffix: "Ks", icon: <DollarSign size={24} strokeWidth={2.5} />, color: "text-amber-600", bg: "bg-amber-500/10" },
-    { label: "Today's Expenses", value: totalExpenses.toLocaleString(), suffix: "Ks", icon: <TrendingDown size={24} strokeWidth={2.5} />, color: "text-rose-600", bg: "bg-rose-500/10" }
+    { 
+      label: "Today's Sales", 
+      value: totalSales.toLocaleString(), 
+      prefix: "+ ",
+      suffix: "Ks", 
+      icon: <TrendingUp size={24} strokeWidth={2.5} />, 
+      color: "text-emerald-700", 
+      bg: "bg-emerald-100",
+      cardBg: "bg-emerald-50/30",
+      cardBorder: "border-emerald-100",
+      valueColor: "text-emerald-600 font-bold"
+    },
+    { 
+      label: "Today's Expenses", 
+      value: totalExpenses.toLocaleString(), 
+      prefix: "- ",
+      suffix: "Ks", 
+      icon: <TrendingDown size={24} strokeWidth={2.5} />, 
+      color: "text-rose-700", 
+      bg: "bg-rose-100",
+      cardBg: "bg-rose-50/30",
+      cardBorder: "border-rose-100",
+      valueColor: "text-rose-600 font-bold"
+    }
   ];
 
 
@@ -1839,7 +2005,7 @@ export const DashboardPage: React.FC = () => {
                            animate={{ opacity: 1, y: 0 }}
                            transition={{  type: "spring", damping: 30, stiffness: 350, mass: 0.8 }}
                            key={i} 
-                           className="bg-stone-50/80 [.midnight_&]:bg-[#221C18] border border-stone-100 [.midnight_&]:border-[#3D322C] shadow-sm p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group" layout
+                           className={cn("shadow-sm p-4 rounded-2xl flex flex-col justify-between relative overflow-hidden group border", (s as any).cardBg || "bg-stone-50/80 [.midnight_&]:bg-[#221C18]", (s as any).cardBorder || "border-stone-100 [.midnight_&]:border-[#3D322C]")} layout
                          >
                            <div className="flex justify-between items-start mb-2">
                              <p className="text-[10px] text-stone-500 [.midnight_&]:text-[#D4AF37] font-semibold uppercase tracking-wider leading-tight">{s.label}</p>
@@ -1847,7 +2013,8 @@ export const DashboardPage: React.FC = () => {
                                {React.cloneElement(s.icon as any, { size: 16, strokeWidth: 2 })}
                              </div>
                            </div>
-                           <h4 className="text-xl font-extrabold text-slate-800 [.midnight_&]:text-[#E6DFD9] tracking-tight truncate">
+                           <h4 className={cn("text-xl tracking-tight truncate", (s as any).valueColor || "font-extrabold text-slate-800 [.midnight_&]:text-[#E6DFD9]")}>
+                             {(s as any).prefix && <span className="mr-1">{(s as any).prefix}</span>}
                              {s.value}
                              {s.suffix && <span className="text-xs font-medium text-stone-500 [.midnight_&]:text-[#E6DFD9]/70 ml-1">{s.suffix}</span>}
                            </h4>
@@ -5127,15 +5294,21 @@ export const AppointmentsPage: React.FC = () => {
  useEffect(() => {
  if (!profile) return;
 
- const apptsQuery = isCustomer
- ? query(collection(db, 'appointments'), or(
-     where('creatorEmail', '==', profile.email),
-     where('customerEmail', '==', profile.email),
-     where('customerPhone', '==', profile.phone || 'none')
-   ))
- : query(collection(db, 'appointments'));
+ let apptConditions = [];
+ if (isCustomer) {
+   if (profile?.email) {
+     apptConditions.push(where('customerEmail', '==', profile.email));
+     apptConditions.push(where('creatorEmail', '==', profile.email));
+   }
+   if (profile?.phone) {
+     apptConditions.push(where('customerPhone', '==', profile.phone));
+   }
+ }
+ const apptsQuery = isCustomer 
+   ? (apptConditions.length > 0 ? query(collection(db, 'appointments'), or(...apptConditions)) : null)
+   : query(collection(db, 'appointments'));
 
- const unsubAppts = onSnapshot(apptsQuery, (snapshot) => {
+ const unsubAppts = apptsQuery ? onSnapshot(apptsQuery, (snapshot) => {
  let data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Appointment));
  data.sort((a, b) => {
  if (a.date !== b.date) return b.date.localeCompare(a.date);
@@ -5146,15 +5319,15 @@ export const AppointmentsPage: React.FC = () => {
  }, (error) => {
  handleFirestoreError(error, OperationType.LIST, 'appointments');
  setLoadingAppts(false);
- });
+   }) : () => { setLoadingAppts(false); };
 
- const unsubCusts = (!isCustomer)
+  const unsubCusts = (!isCustomer)
  ? onSnapshot(query(collection(db, 'customers'), orderBy('name')), (snapshot) => {
  setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
  }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'))
- : onSnapshot(query(collection(db, 'customers'), where('email', '==', profile.email)), (snapshot) => {
+ : (profile?.email ? onSnapshot(query(collection(db, 'customers'), where('email', '==', profile.email)), (snapshot) => {
  setCustomers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer)));
- }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers'));
+ }, (error) => handleFirestoreError(error, OperationType.LIST, 'customers')) : () => {});
 
  const unsubSvcs = onSnapshot(query(collection(db, 'services'), orderBy('name')), (snapshot) => {
  setServices(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Service)));
@@ -7147,36 +7320,8 @@ const PrintPreviewModal: React.FC<{
  </motion.div>
  );
 };
-
-const Modal: React.FC<{
- isOpen: boolean;
- onClose: () => void;
- title: string;
- children: React.ReactNode;
- maxWidth?: string;
-}> = ({ isOpen, onClose, title, children, maxWidth = "max-w-sm" }) => {
- if (!isOpen) return null;
- return (
- <motion.div className="fixed inset-0 bg-black/60 z-[70000] flex items-center justify-center p-4 " initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }} style={{ willChange: "transform, opacity" }}>
- <motion.div 
- initial={{ opacity: 0, scale: 0.9, y: 20 }}
- animate={{ opacity: 1, scale: 1, y: 0 }}
- className={cn("bg-card border border-border w-full rounded-2xl border-primary/30 flex flex-col relative max-h-[calc(100dvh-140px)] overflow-hidden", maxWidth)}
- >
- <div className="absolute top-0 left-0 w-full h-1 bg-primary/20"></div>
- <div className="flex justify-between items-center shrink-0 p-4 pb-4">
- <h3 className="text-primary [.midnight_&]:text-amber-400 font-bold text-xl uppercase tracking-widest">{title}</h3>
- <motion.button whileTap={{ scale: 0.97 }} onClick={onClose} className="p-3 hover:bg-muted/10 rounded-2xl transition-all text-muted-foreground hover:text-foreground active:scale-90"><X size={24} /></motion.button>
- </div>
- <div className="flex-1 overflow-y-auto custom-scrollbar p-4 pt-4 space-y-4">
- {children}
- </div>
- </motion.div>
- </motion.div>
- );
-};
-
 export const ManagePage: React.FC = () => {
+
  const { user, profile, isAdmin, isSuperAdmin, isCashier, loading } = useAuth();
  const location = useLocation();
  const [activeTab, setActiveTab] = useState<'shop' | 'categories' | 'services' | 'staff' | 'customers' | 'financials' | 'data'>('shop');
@@ -10461,14 +10606,65 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
  await new Promise(resolve => setTimeout(resolve, 1500));
  };
 
- const isPos = location.pathname === '/pos';
+ 
+const renderCustomerBottomNav = () => {
+    if (!isCustomer || isPos) return null;
+    return (
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-amber-200/60 shadow-lg pb-safe md:hidden">
+        <div className="flex items-center justify-around p-2">
+          <button 
+             onClick={() => navigate('/')} 
+             className={cn("flex flex-col items-center gap-1 p-2 transition-all duration-300 relative", location.pathname === '/' ? "text-amber-600 font-bold" : "text-slate-400 hover:text-slate-600")}
+          >
+             {location.pathname === '/' && <div className="absolute -top-2 w-8 h-1 bg-amber-500 rounded-b-full shadow-[0_0_8px_rgba(245,158,11,0.8)]" />}
+             <Home size={20} strokeWidth={location.pathname === '/' ? 2.5 : 2} />
+             <span className="text-[10px]">Home</span>
+          </button>
+          <button 
+             onClick={() => navigate('/gallery')} 
+             className={cn("flex flex-col items-center gap-1 p-2 transition-all duration-300 relative", location.pathname === '/gallery' && !(location.state as any)?.tab ? "text-amber-600 font-bold" : "text-slate-400 hover:text-slate-600")}
+          >
+             {location.pathname === '/gallery' && !(location.state as any)?.tab && <div className="absolute -top-2 w-8 h-1 bg-amber-500 rounded-b-full shadow-[0_0_8px_rgba(245,158,11,0.8)]" />}
+             <Store size={20} strokeWidth={location.pathname === '/gallery' && !(location.state as any)?.tab ? 2.5 : 2} />
+             <span className="text-[10px]">Shop</span>
+          </button>
+          <button 
+             onClick={() => navigate('/appointments')} 
+             className={cn("flex flex-col items-center gap-1 p-2 transition-all duration-300 relative", location.pathname === '/appointments' ? "text-amber-600 font-bold" : "text-slate-400 hover:text-slate-600")}
+          >
+             {location.pathname === '/appointments' && <div className="absolute -top-2 w-8 h-1 bg-amber-500 rounded-b-full shadow-[0_0_8px_rgba(245,158,11,0.8)]" />}
+             <Calendar size={20} strokeWidth={location.pathname === '/appointments' ? 2.5 : 2} />
+             <span className="text-[10px]">Booking</span>
+          </button>
+          <button 
+             onClick={() => navigate('/gallery', { state: { tab: 'orders' } })} 
+             className={cn("flex flex-col items-center gap-1 p-2 transition-all duration-300 relative", location.pathname === '/gallery' && (location.state as any)?.tab === 'orders' ? "text-amber-600 font-bold" : "text-slate-400 hover:text-slate-600")}
+          >
+             {location.pathname === '/gallery' && (location.state as any)?.tab === 'orders' && <div className="absolute -top-2 w-8 h-1 bg-amber-500 rounded-b-full shadow-[0_0_8px_rgba(245,158,11,0.8)]" />}
+             <PackageOpen size={20} strokeWidth={location.pathname === '/gallery' && (location.state as any)?.tab === 'orders' ? 2.5 : 2} />
+             <span className="text-[10px]">Orders</span>
+          </button>
+          <button 
+             onClick={() => navigate('/settings')} 
+             className={cn("flex flex-col items-center gap-1 p-2 transition-all duration-300 relative", location.pathname === '/settings' ? "text-amber-600 font-bold" : "text-slate-400 hover:text-slate-600")}
+          >
+             {location.pathname === '/settings' && <div className="absolute -top-2 w-8 h-1 bg-amber-500 rounded-b-full shadow-[0_0_8px_rgba(245,158,11,0.8)]" />}
+             <UserIcon size={20} strokeWidth={location.pathname === '/settings' ? 2.5 : 2} />
+             <span className="text-[10px]">Profile</span>
+          </button>
+        </div>
+      </div>
+    );
+};
+
+  const isPos = location.pathname === '/pos';
 
  return (
- <motion.div className={`${isPos ? 'h-screen w-full flex flex-col overflow-hidden' : 'min-h-screen pb-10'} bg-background text-foreground transition-colors select-none `} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
+ <motion.div className={`${isPos ? 'h-screen w-full flex flex-col overflow-hidden' : isCustomer ? 'min-h-screen pb-28' : 'min-h-screen pb-10'} bg-background text-foreground transition-colors select-none `} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, ease: "easeInOut" }}>
  {renderNeedsUpdate()}
  {renderExitConfirm()}
  <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
- <Header onMenuClick={() => setIsSidebarOpen(true)} className={isPos ? "flex-shrink-0" : ""} />
+ <Header onMenuClick={() => setIsSidebarOpen(true)} className={isPos ? "flex-shrink-0" : ""} isCustomer={isCustomer} profile={profile} />
  <main className={isPos ? "flex-1 flex flex-col overflow-hidden relative w-full min-h-0" : "w-full flex-1 flex flex-col"}>
  {isPos ? (
  children
@@ -10485,6 +10681,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 
 const LazyBusinessAnalysisPage = React.lazy(() => import("./pages/BusinessAnalysisPage"));
+import { NailGalleryPage } from './pages/NailGalleryPage';
 const AppRoutes = () => {
  const { profile, isAdmin, isStaff, isCashier, isStaffMember, isCustomer } = useAuth();
  
@@ -10498,6 +10695,7 @@ const AppRoutes = () => {
  <Routes>
  <Route path="/" element={isCustomer ? <CustomerDashboardPage /> : <DashboardPage />} />
  <Route path="/pos" element={!isStaff ? <Navigate to="/appointments" /> : <POSPage />} />
+<Route path="/gallery" element={<NailGalleryPage />} />
  <Route path="/appointments" element={<AppointmentsPage />} />
  <Route path="/history" element={!isStaff ? <Navigate to="/appointments" /> : <HistoryPage />} />
  <Route path="/staff-commissions" element={!(isAdmin || isCashier || isStaffMember) ? <Navigate to="/appointments" /> : <StaffCommissionsPage />} />

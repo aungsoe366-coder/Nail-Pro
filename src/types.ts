@@ -76,6 +76,7 @@ export interface UserProfile {
   uid?: string;
   name: string;
   email: string;
+  displayName?: string;
   phone?: string;
   role: 'super_admin' | 'owner' | 'cashier' | 'staff' | 'customer';
   roles?: string[]; // Multiple roles support
@@ -155,6 +156,7 @@ export interface Appointment {
   id: string;
   customerName: string;
   customerPhone: string;
+  customerEmail?: string;
   customerId?: string;
   serviceName: string;
   serviceId?: string;
@@ -174,4 +176,51 @@ export interface Appointment {
   createdAt: string;
   creatorName?: string;
   creatorEmail?: string;
+}
+
+export interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  images: string[];
+  isReadyToShip: boolean;
+  sizesAvailable: string[];
+  shapesAvailable: string[];
+  createdAt: string;
+}
+
+
+export interface Order {
+  id: string;
+  customerId: string;
+  customerName: string;
+  phone: string;
+  customerEmail?: string;
+  items: {
+    productId: string;
+    title: string;
+    shape: string;
+    size: string;
+    customNailSizes?: { thumb: string; index: string; middle: string; ring: string; pinky: string };
+    quantity: number;
+    price: number;
+  }[];
+  deliveryType: 'home' | 'pickup';
+  address: string;
+  paymentMethod: string;
+  totalAmount: number;
+  status: 'Pending' | 'Confirmed' | 'In Production' | 'Ready for Delivery' | 'Completed' | 'Cancelled';
+  createdAt: string;
+}
+
+export interface DigitalWallet {
+  id: string;
+  name: string;
+  accountName: string;
+  phone: string;
+  qrCodeUrl: string;
+  isEnabled: boolean;
+  color?: string;
 }

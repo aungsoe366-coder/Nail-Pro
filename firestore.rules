@@ -58,12 +58,23 @@ service cloud.firestore {
       allow update: if isStaff() || (isAuthenticated() && (resource.data.customerEmail == getUserEmail() || resource.data.creatorEmail == getUserEmail() || (resource.data.customerPhone != null && resource.data.customerPhone == getUserPhone())));
       allow delete: if isStaff();
     }
+
+    match /orders/{id} {
+      allow read: if isStaff() || (isAuthenticated() && resource.data.customerId == request.auth.uid);
+      allow create: if true;
+      allow update: if isStaff();
+      allow delete: if isStaff();
+    }
+    match /products/{id} {
+      allow read: if true;
+      allow write: if isStaff();
+    }
     match /categories/{id} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isOwner();
     }
     match /services/{id} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isOwner();
     }
     match /expense_categories/{id} {
@@ -73,7 +84,7 @@ service cloud.firestore {
       allow read: if true;
     }
     match /settings/{id} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow write: if isOwner();
     }
     match /{document=**} {
